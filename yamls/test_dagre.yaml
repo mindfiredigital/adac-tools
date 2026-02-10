@@ -1,0 +1,392 @@
+version: "0.1"
+
+metadata:
+  name: "Simple E-Commerce Application"
+  description: "A basic 3-tier web application with frontend, API, and database"
+  author: "DevOps Team"
+  version: "1.0.0"
+  created: "2025-01-08"
+  updated: "2025-01-08"
+  organization: "Acme Corp"
+  environment: "production"
+  tags:
+    - "ecommerce"
+    - "web"
+    - "production"
+
+applications:
+  - id: "web-frontend"
+    name: "React Frontend"
+    type: "frontend"
+    technology: "React 18 + TypeScript"
+    description: "Customer-facing web application"
+    owner: "Frontend Team"
+    repository: "https://github.com/acme/frontend"
+    sla:
+      availability_percent: 99.9
+      max_latency_ms: 200
+
+  - id: "api-backend"
+    name: "REST API"
+    type: "api"
+    technology: "Node.js + Express"
+    description: "Backend API server"
+    owner: "Backend Team"
+    repository: "https://github.com/acme/api"
+    sla:
+      availability_percent: 99.95
+      max_latency_ms: 500
+
+  - id: "product-database"
+    name: "Product Database"
+    type: "database"
+    technology: "PostgreSQL 15"
+    description: "Main product and inventory database"
+    owner: "Database Team"
+    sla:
+      availability_percent: 99.99
+      rto_minutes: 15
+      rpo_minutes: 5
+
+infrastructure:
+  clouds:
+    - id: "aws-production"
+      provider: "aws"
+      region: "us-east-1"
+      account_id: "123456789012"
+      vpc_id: "vpc-abc123"
+      tier: "primary"
+      
+      services:
+        # Compute - Frontend
+        - id: "cloudfront-cdn"
+          service: "cloudfront"
+          name: "CDN for Static Assets"
+          description: "Distributes frontend static files globally"
+          runs: ["web-frontend"]
+          configuration:
+            public_access: true
+          cost:
+            monthly_estimate: 150
+            currency: "USD"
+            breakdown:
+              - "Data transfer: 1TB/month × $0.085/GB = $85"
+              - "HTTPS requests: 10M × $0.0075/10k = $65"
+            pricing_model: "on-demand"
+
+        - id: "s3-frontend"
+          service: "s3"
+          name: "Frontend Bucket"
+          description: "Stores React build artifacts"
+          runs: ["web-frontend"]
+          configuration:
+            storage_gb: 5
+            encryption_enabled: true
+            backup_enabled: true
+            backup_retention_days: 7
+          cost:
+            monthly_estimate: 2
+            currency: "USD"
+            breakdown:
+              - "Storage: 5GB × $0.023/GB = $0.12"
+              - "GET requests: 100k × $0.0004/1k = $0.40"
+            pricing_model: "on-demand"
+
+        # Compute - Backend
+        - id: "ecs-api"
+          service: "ecs-fargate"
+          name: "API Containers"
+          description: "Runs containerized API servers"
+          runs: ["api-backend"]
+          configuration:
+            instance_count: 4
+            memory_mb: 2048
+            vpc_enabled: true
+            public_access: false
+            auto_scaling:
+              enabled: true
+              min: 2
+              max: 10
+              target_cpu: 70
+          availability_zones:
+            - "us-east-1a"
+            - "us-east-1b"
+          security_groups:
+            - "sg-api123"
+          subnets:
+            - "subnet-private-1a"
+            - "subnet-private-1b"
+          iam_role: "arn:aws:iam::123456789012:role/ECSTaskRole"
+          tags:
+            Environment: "production"
+            Team: "backend"
+          cost:
+            monthly_estimate: 850
+            currency: "USD"
+            breakdown:
+              - "Fargate vCPU: 4 tasks × 1 vCPU × 730 hrs × $0.04856 = $142"
+              - "Fargate Memory: 4 tasks × 2GB × 730 hrs × $0.00532 = $31"
+              - "Average scaling overhead: $677"
+            pricing_model: "on-demand"
+          monitoring:
+            enabled: true
+            metrics:
+              - "CPUUtilization"
+              - "MemoryUtilization"
+              - "RequestCount"
+            alarms:
+              - name: "HighCPU"
+                metric: "CPUUtilization"
+                threshold: 80
+                comparison: "GreaterThan"
+              - name: "HighMemory"
+                metric: "MemoryUtilization"
+                threshold: 85
+                comparison: "GreaterThan"
+
+        - id: "alb-api"
+          service: "alb"
+          name: "API Load Balancer"
+          description: "Distributes traffic to API containers"
+          configuration:
+            public_access: false
+            vpc_enabled: true
+          availability_zones:
+            - "us-east-1a"
+            - "us-east-1b"
+          security_groups:
+            - "sg-alb123"
+          subnets:
+            - "subnet-private-1a"
+            - "subnet-private-1b"
+          cost:
+            monthly_estimate: 35
+            currency: "USD"
+            breakdown:
+              - "ALB hours: 730 hrs × $0.0225 = $16.43"
+              - "LCU usage: ~$18.57"
+            pricing_model: "on-demand"
+
+        # Database
+        - id: "rds-postgres"
+          service: "rds-postgres"
+          name: "Product Database"
+          description: "Primary PostgreSQL database"
+          runs: ["product-database"]
+          configuration:
+            instance_type: "db.r5.large"
+            instance_count: 1
+            storage_gb: 500
+            storage_type: "gp3"
+            multi_az: true
+            engine_version: "15.3"
+            vpc_enabled: true
+            public_access: false
+            encryption_enabled: true
+            backup_enabled: true
+            backup_retention_days: 7
+          availability_zones:
+            - "us-east-1a"
+            - "us-east-1b"
+          security_groups:
+            - "sg-rds123"
+          subnets:
+            - "subnet-database-1a"
+            - "subnet-database-1b"
+          tags:
+            Environment: "production"
+            Critical: "true"
+          cost:
+            monthly_estimate: 650
+            currency: "USD"
+            breakdown:
+              - "Instance: db.r5.large Multi-AZ × 730 hrs × $0.48 = $350"
+              - "Storage: 500GB × $0.23/GB = $115"
+              - "I/O operations: ~$100"
+              - "Backup storage: 500GB × $0.095 = $47.50"
+              - "Data transfer: ~$37.50"
+            pricing_model: "on-demand"
+          monitoring:
+            enabled: true
+            metrics:
+              - "CPUUtilization"
+              - "FreeableMemory"
+              - "DatabaseConnections"
+              - "ReadLatency"
+              - "WriteLatency"
+            alarms:
+              - name: "HighCPU"
+                metric: "CPUUtilization"
+                threshold: 80
+                comparison: "GreaterThan"
+              - name: "LowStorage"
+                metric: "FreeStorageSpace"
+                threshold: 10
+                comparison: "LessThan"
+
+        # Cache
+        - id: "elasticache-redis"
+          service: "elasticache-redis"
+          name: "Session Cache"
+          description: "Redis cache for sessions and frequently accessed data"
+          configuration:
+            instance_type: "cache.r5.large"
+            instance_count: 2
+            multi_az: true
+            engine_version: "7.0"
+            vpc_enabled: true
+            encryption_enabled: true
+            backup_enabled: true
+            backup_retention_days: 1
+          availability_zones:
+            - "us-east-1a"
+            - "us-east-1b"
+          security_groups:
+            - "sg-redis123"
+          cost:
+            monthly_estimate: 320
+            currency: "USD"
+            breakdown:
+              - "Nodes: 2 × cache.r5.large × 730 hrs × $0.219 = $320"
+            pricing_model: "on-demand"
+
+        # Monitoring & Security
+        - id: "cloudwatch"
+          service: "cloudwatch"
+          name: "Monitoring & Logging"
+          description: "Centralized monitoring and log aggregation"
+          cost:
+            monthly_estimate: 100
+            currency: "USD"
+            breakdown:
+              - "Metrics: 50 custom metrics × $0.30 = $15"
+              - "API requests: 100k × $0.01/1k = $1"
+              - "Logs ingestion: 50GB × $0.50 = $25"
+              - "Logs storage: 100GB × $0.03 = $3"
+              - "Alarms: 20 alarms × $0.10 = $2"
+              - "Dashboards: 3 dashboards × $3 = $9"
+              - "CloudWatch Insights queries: ~$45"
+            pricing_model: "on-demand"
+
+        - id: "waf"
+          service: "waf"
+          name: "Web Application Firewall"
+          description: "Protects against common web exploits"
+          cost:
+            monthly_estimate: 75
+            currency: "USD"
+            breakdown:
+              - "Web ACL: 1 × $5 = $5"
+              - "Rules: 10 × $1 = $10"
+              - "Requests: 10M × $0.60/1M = $6"
+              - "Bot control: ~$54"
+            pricing_model: "on-demand"
+
+        - id: "secrets-manager"
+          service: "secrets-manager"
+          name: "Secrets Storage"
+          description: "Stores database credentials and API keys"
+          cost:
+            monthly_estimate: 8
+            currency: "USD"
+            breakdown:
+              - "Secrets: 10 × $0.40 = $4"
+              - "API calls: 10k × $0.05/10k = $0.50"
+              - "Rotation: ~$3.50"
+            pricing_model: "on-demand"
+
+connections:
+  - id: "user-to-cdn"
+    from: "external-users"
+    to: "cloudfront-cdn"
+    type: "cdn-origin"
+    protocol: "HTTPS"
+    port: 443
+    description: "Users access frontend via CloudFront"
+    latency_ms: 50
+    requests_per_second: 500
+    security:
+      encryption_in_transit: true
+      tls_version: "TLS1.3"
+      authentication_required: false
+
+  - id: "cdn-to-s3"
+    from: "cloudfront-cdn"
+    to: "s3-frontend"
+    type: "cdn-origin"
+    protocol: "S3"
+    description: "CloudFront pulls static assets from S3"
+    security:
+      encryption_in_transit: true
+
+  - id: "frontend-to-alb"
+    from: "web-frontend"
+    to: "alb-api"
+    type: "api-call"
+    protocol: "HTTPS"
+    port: 443
+    description: "Frontend makes API calls via load balancer"
+    latency_ms: 100
+    requests_per_second: 200
+    security:
+      encryption_in_transit: true
+      tls_version: "TLS1.2"
+      authentication_required: true
+      authentication_method: "JWT"
+
+  - id: "alb-to-ecs"
+    from: "alb-api"
+    to: "ecs-api"
+    type: "load-balancing"
+    protocol: "HTTP"
+    port: 8080
+    description: "Load balancer distributes to ECS tasks"
+    latency_ms: 10
+
+  - id: "api-to-rds"
+    from: "ecs-api"
+    to: "rds-postgres"
+    type: "database-query"
+    protocol: "SQL"
+    port: 5432
+    description: "API queries PostgreSQL database"
+    latency_ms: 5
+    requests_per_second: 150
+    security:
+      encryption_in_transit: true
+      authentication_required: true
+      authentication_method: "IAM"
+    compliance:
+      - "PCI-DSS"
+      - "SOC2"
+
+  - id: "api-to-redis"
+    from: "ecs-api"
+    to: "elasticache-redis"
+    type: "cache-read"
+    protocol: "Redis"
+    port: 6379
+    description: "API reads/writes session data from Redis"
+    latency_ms: 2
+    requests_per_second: 500
+    security:
+      encryption_in_transit: true
+
+cost:
+  total_monthly: 2190
+  currency: "USD"
+  by_service:
+    compute: 1037
+    database: 650
+    cache: 320
+    networking: 185
+    monitoring: 100
+    security: 83
+    storage: 2
+  by_environment:
+    production: 2190
+  notes:
+    - "Costs based on us-east-1 pricing as of January 2025"
+    - "Auto-scaling may increase compute costs during peak traffic"
+    - "Data transfer costs estimated based on 1TB/month outbound"
+    - "Reserved Instance pricing could reduce costs by ~40%"

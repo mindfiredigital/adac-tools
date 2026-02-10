@@ -1,0 +1,677 @@
+version: "0.1"
+
+metadata:
+  name: "E-Commerce Microservices Platform"
+  description: "Event-driven microservices architecture on AWS EKS"
+  author: "Platform Team"
+  version: "2.5.0"
+  created: "2024-06-15"
+  updated: "2025-01-08"
+  organization: "TechRetail Inc"
+  environment: "production"
+  tags:
+    - "microservices"
+    - "kubernetes"
+    - "event-driven"
+    - "production"
+
+applications:
+  - id: "api-gateway"
+    name: "API Gateway"
+    type: "api"
+    technology: "Kong Gateway"
+    description: "Central API gateway for all microservices"
+    owner: "Platform Team"
+    sla:
+      availability_percent: 99.99
+      max_latency_ms: 50
+
+  - id: "user-service"
+    name: "User Service"
+    type: "microservice"
+    technology: "Java Spring Boot"
+    description: "Handles user authentication and profiles"
+    owner: "Identity Team"
+    repository: "https://github.com/techretail/user-service"
+    sla:
+      availability_percent: 99.95
+      max_latency_ms: 200
+
+  - id: "product-service"
+    name: "Product Service"
+    type: "microservice"
+    technology: "Node.js + Express"
+    description: "Product catalog and inventory management"
+    owner: "Catalog Team"
+    repository: "https://github.com/techretail/product-service"
+    sla:
+      availability_percent: 99.9
+      max_latency_ms: 300
+
+  - id: "order-service"
+    name: "Order Service"
+    type: "microservice"
+    technology: "Python FastAPI"
+    description: "Order processing and fulfillment"
+    owner: "Orders Team"
+    repository: "https://github.com/techretail/order-service"
+    sla:
+      availability_percent: 99.99
+      max_latency_ms: 500
+      rto_minutes: 10
+      rpo_minutes: 1
+
+  - id: "payment-service"
+    name: "Payment Service"
+    type: "microservice"
+    technology: "Go + gRPC"
+    description: "Payment processing and fraud detection"
+    owner: "Payments Team"
+    repository: "https://github.com/techretail/payment-service"
+    sla:
+      availability_percent: 99.99
+      max_latency_ms: 1000
+
+  - id: "notification-service"
+    name: "Notification Service"
+    type: "microservice"
+    technology: "Node.js"
+    description: "Email, SMS, and push notifications"
+    owner: "Engagement Team"
+    repository: "https://github.com/techretail/notification-service"
+
+  - id: "analytics-worker"
+    name: "Analytics Worker"
+    type: "worker"
+    technology: "Python + Spark"
+    description: "Real-time analytics processing"
+    owner: "Data Team"
+
+  - id: "recommendation-ml"
+    name: "Recommendation Engine"
+    type: "ml-model"
+    technology: "TensorFlow + SageMaker"
+    description: "Product recommendation ML model"
+    owner: "ML Team"
+
+infrastructure:
+  clouds:
+    - id: "aws-prod-us"
+      provider: "aws"
+      region: "us-east-1"
+      account_id: "987654321098"
+      vpc_id: "vpc-prod123"
+      tier: "primary"
+      
+      services:
+        # Kubernetes Cluster
+        - id: "eks-cluster"
+          service: "eks"
+          name: "Production EKS Cluster"
+          description: "Managed Kubernetes cluster for microservices"
+          runs: 
+            - "api-gateway"
+            - "user-service"
+            - "product-service"
+            - "order-service"
+            - "payment-service"
+            - "notification-service"
+          configuration:
+            instance_type: "m5.xlarge"
+            instance_count: 6
+            auto_scaling:
+              enabled: true
+              min: 3
+              max: 20
+              target_cpu: 70
+            vpc_enabled: true
+            encryption_enabled: true
+          availability_zones:
+            - "us-east-1a"
+            - "us-east-1b"
+            - "us-east-1c"
+          security_groups:
+            - "sg-eks-cluster"
+            - "sg-eks-nodes"
+          subnets:
+            - "subnet-private-1a"
+            - "subnet-private-1b"
+            - "subnet-private-1c"
+          tags:
+            Environment: "production"
+            ManagedBy: "terraform"
+          cost:
+            monthly_estimate: 2400
+            currency: "USD"
+            breakdown:
+              - "EKS cluster: $73/month"
+              - "EC2 nodes: 6 × m5.xlarge × 730 hrs × $0.192 = $841"
+              - "Additional nodes (scaling): ~$1486"
+            pricing_model: "on-demand"
+
+        # Container Registry
+        - id: "ecr-registry"
+          service: "ecr"
+          name: "Container Registry"
+          description: "Private Docker image registry"
+          configuration:
+            storage_gb: 200
+            encryption_enabled: true
+          cost:
+            monthly_estimate: 20
+            currency: "USD"
+            breakdown:
+              - "Storage: 200GB × $0.10 = $20"
+            pricing_model: "on-demand"
+
+        # API Gateway
+        - id: "api-gateway-rest"
+          service: "api-gateway-rest"
+          name: "External API Gateway"
+          description: "REST API gateway for external traffic"
+          configuration:
+            public_access: true
+          cost:
+            monthly_estimate: 180
+            currency: "USD"
+            breakdown:
+              - "API calls: 50M × $3.50/M = $175"
+              - "Cache: ~$5"
+            pricing_model: "on-demand"
+
+        # Databases - User Service
+        - id: "rds-aurora-users"
+          service: "rds-aurora-postgres"
+          name: "User Database"
+          description: "Aurora PostgreSQL for user data"
+          runs: ["user-service"]
+          configuration:
+            instance_type: "db.r5.large"
+            instance_count: 2
+            storage_gb: 200
+            multi_az: true
+            engine_version: "14.6"
+            vpc_enabled: true
+            public_access: false
+            encryption_enabled: true
+            backup_enabled: true
+            backup_retention_days: 7
+          availability_zones:
+            - "us-east-1a"
+            - "us-east-1b"
+          cost:
+            monthly_estimate: 520
+            currency: "USD"
+            breakdown:
+              - "Aurora instances: 2 × db.r5.large × 730 hrs × $0.29 = $423"
+              - "Storage: 200GB × $0.10 = $20"
+              - "I/O: ~$50"
+              - "Backup: ~$27"
+            pricing_model: "on-demand"
+
+        # Databases - Product Service
+        - id: "dynamodb-products"
+          service: "dynamodb"
+          name: "Product Catalog"
+          description: "DynamoDB table for product data"
+          runs: ["product-service"]
+          configuration:
+            storage_gb: 500
+            encryption_enabled: true
+            backup_enabled: true
+            backup_retention_days: 35
+          cost:
+            monthly_estimate: 380
+            currency: "USD"
+            breakdown:
+              - "On-demand reads: 50M × $0.25/M = $12.50"
+              - "On-demand writes: 10M × $1.25/M = $12.50"
+              - "Storage: 500GB × $0.25 = $125"
+              - "Global tables replication: ~$230"
+            pricing_model: "on-demand"
+
+        # Databases - Order Service
+        - id: "rds-postgres-orders"
+          service: "rds-postgres"
+          name: "Order Database"
+          description: "PostgreSQL for order transactions"
+          runs: ["order-service"]
+          configuration:
+            instance_type: "db.r5.2xlarge"
+            instance_count: 1
+            storage_gb: 1000
+            storage_type: "gp3"
+            multi_az: true
+            engine_version: "15.3"
+            vpc_enabled: true
+            public_access: false
+            encryption_enabled: true
+            backup_enabled: true
+            backup_retention_days: 14
+          cost:
+            monthly_estimate: 980
+            currency: "USD"
+            breakdown:
+              - "Instance: db.r5.2xlarge Multi-AZ × 730 hrs × $0.96 = $700"
+              - "Storage: 1000GB × $0.23 = $230"
+              - "Backup storage: ~$50"
+            pricing_model: "reserved-1yr"
+
+        # Cache
+        - id: "elasticache-redis-cluster"
+          service: "elasticache-redis"
+          name: "Distributed Cache"
+          description: "Redis cluster for caching and sessions"
+          configuration:
+            instance_type: "cache.r5.xlarge"
+            instance_count: 3
+            multi_az: true
+            engine_version: "7.0"
+            vpc_enabled: true
+            encryption_enabled: true
+          cost:
+            monthly_estimate: 960
+            currency: "USD"
+            breakdown:
+              - "Nodes: 3 × cache.r5.xlarge × 730 hrs × $0.438 = $960"
+            pricing_model: "reserved-1yr"
+
+        # Message Queue
+        - id: "sqs-orders"
+          service: "sqs"
+          name: "Order Queue"
+          description: "Queue for order processing events"
+          cost:
+            monthly_estimate: 45
+            currency: "USD"
+            breakdown:
+              - "Requests: 100M × $0.40/M = $40"
+              - "Data transfer: ~$5"
+            pricing_model: "on-demand"
+
+        - id: "sns-events"
+          service: "sns"
+          name: "Event Notifications"
+          description: "Pub/sub for microservice events"
+          cost:
+            monthly_estimate: 25
+            currency: "USD"
+            breakdown:
+              - "Publishes: 50M × $0.50/M = $25"
+            pricing_model: "on-demand"
+
+        # Event Streaming
+        - id: "kinesis-analytics"
+          service: "kinesis-streams"
+          name: "Analytics Stream"
+          description: "Real-time analytics data stream"
+          runs: ["analytics-worker"]
+          configuration:
+            storage_gb: 1000
+          cost:
+            monthly_estimate: 220
+            currency: "USD"
+            breakdown:
+              - "Shard hours: 10 shards × 730 hrs × $0.015 = $110"
+              - "PUT payload units: 50M × $0.014/M = $0.70"
+              - "Extended retention (7 days): 10 shards × 730 hrs × $0.020 = $146"
+            pricing_model: "on-demand"
+
+        # Machine Learning
+        - id: "sagemaker-endpoint"
+          service: "sagemaker"
+          name: "Recommendation Model Endpoint"
+          description: "ML model serving for recommendations"
+          runs: ["recommendation-ml"]
+          configuration:
+            instance_type: "ml.m5.xlarge"
+            instance_count: 2
+          cost:
+            monthly_estimate: 560
+            currency: "USD"
+            breakdown:
+              - "Endpoints: 2 × ml.m5.xlarge × 730 hrs × $0.384 = $560"
+            pricing_model: "on-demand"
+
+        # Storage
+        - id: "s3-documents"
+          service: "s3"
+          name: "Document Storage"
+          description: "S3 bucket for order documents and images"
+          configuration:
+            storage_gb: 5000
+            encryption_enabled: true
+            backup_enabled: true
+          cost:
+            monthly_estimate: 120
+            currency: "USD"
+            breakdown:
+              - "Storage: 5000GB × $0.023 = $115"
+              - "Requests: ~$5"
+            pricing_model: "on-demand"
+
+        # Monitoring & Observability
+        - id: "cloudwatch-observability"
+          service: "cloudwatch"
+          name: "Observability Platform"
+          description: "Metrics, logs, and traces"
+          cost:
+            monthly_estimate: 450
+            currency: "USD"
+            breakdown:
+              - "Custom metrics: 500 × $0.30 = $150"
+              - "Logs ingestion: 500GB × $0.50 = $250"
+              - "Alarms: 100 × $0.10 = $10"
+              - "Dashboards: 10 × $3 = $30"
+              - "Insights queries: ~$10"
+            pricing_model: "on-demand"
+
+        - id: "x-ray"
+          service: "x-ray"
+          name: "Distributed Tracing"
+          description: "Request tracing across microservices"
+          cost:
+            monthly_estimate: 80
+            currency: "USD"
+            breakdown:
+              - "Traces recorded: 20M × $5/M = $100"
+              - "Traces retrieved: 5M × $0.50/M = $2.50"
+              - "First 100k free: -$22.50"
+            pricing_model: "on-demand"
+
+        # Security
+        - id: "waf-api"
+          service: "waf"
+          name: "API Protection"
+          description: "WAF for API Gateway"
+          cost:
+            monthly_estimate: 125
+            currency: "USD"
+            breakdown:
+              - "Web ACL: $5"
+              - "Rules: 15 × $1 = $15"
+              - "Requests: 50M × $0.60/M = $30"
+              - "Bot control: ~$75"
+            pricing_model: "on-demand"
+
+        - id: "guardduty"
+          service: "guardduty"
+          name: "Threat Detection"
+          description: "Continuous security monitoring"
+          cost:
+            monthly_estimate: 180
+            currency: "USD"
+            breakdown:
+              - "CloudTrail analysis: 100M events × $4.50/M = $450"
+              - "VPC Flow Logs: 50GB × $1.18/GB = $59"
+              - "DNS Logs: 10M queries × $0.40/M = $4"
+              - "First 30 days free tier: -$333"
+            pricing_model: "on-demand"
+
+        - id: "secrets-manager-app"
+          service: "secrets-manager"
+          name: "Application Secrets"
+          description: "Stores microservice credentials and API keys"
+          cost:
+            monthly_estimate: 25
+            currency: "USD"
+            breakdown:
+              - "Secrets: 50 × $0.40 = $20"
+              - "API calls: 100k × $0.05/10k = $5"
+            pricing_model: "on-demand"
+
+        # CI/CD
+        - id: "codepipeline"
+          service: "codepipeline"
+          name: "Deployment Pipeline"
+          description: "CI/CD pipelines for all microservices"
+          cost:
+            monthly_estimate: 60
+            currency: "USD"
+            breakdown:
+              - "Pipelines: 8 pipelines × $1/active pipeline × 30 days = $240"
+              - "Free tier: 1 pipeline free = -$180"
+            pricing_model: "on-demand"
+
+        - id: "codebuild"
+          service: "codebuild"
+          name: "Build Service"
+          description: "Compiles and tests microservices"
+          cost:
+            monthly_estimate: 150
+            currency: "USD"
+            breakdown:
+              - "Build minutes: 3000 min/month × general1.large"
+              - "Compute: 3000 × $0.05/min = $150"
+            pricing_model: "on-demand"
+
+        # Networking
+        - id: "nat-gateway"
+          service: "nat-gateway"
+          name: "NAT Gateway"
+          description: "Outbound internet access for private subnets"
+          availability_zones:
+            - "us-east-1a"
+            - "us-east-1b"
+            - "us-east-1c"
+          cost:
+            monthly_estimate: 195
+            currency: "USD"
+            breakdown:
+              - "NAT Gateway hours: 3 × 730 hrs × $0.045 = $98.55"
+              - "Data processed: 2TB × $0.045/GB = $96.45"
+            pricing_model: "on-demand"
+
+        - id: "alb-ingress"
+          service: "alb"
+          name: "Ingress Load Balancer"
+          description: "Load balancer for EKS ingress"
+          availability_zones:
+            - "us-east-1a"
+            - "us-east-1b"
+            - "us-east-1c"
+          cost:
+            monthly_estimate: 85
+            currency: "USD"
+            breakdown:
+              - "ALB hours: 730 hrs × $0.0225 = $16.43"
+              - "LCU usage: ~$68.57"
+            pricing_model: "on-demand"
+
+connections:
+  - id: "external-to-api-gateway"
+    from: "external-clients"
+    to: "api-gateway-rest"
+    type: "api-call"
+    protocol: "HTTPS"
+    port: 443
+    description: "External clients call API Gateway"
+    latency_ms: 50
+    requests_per_second: 1000
+    security:
+      encryption_in_transit: true
+      tls_version: "TLS1.3"
+      authentication_required: true
+      authentication_method: "OAuth2"
+
+  - id: "apigateway-to-kong"
+    from: "api-gateway-rest"
+    to: "api-gateway"
+    type: "api-call"
+    protocol: "HTTP"
+    description: "API Gateway routes to Kong"
+    latency_ms: 5
+
+  - id: "kong-to-user-service"
+    from: "api-gateway"
+    to: "user-service"
+    type: "api-call"
+    protocol: "gRPC"
+    port: 9090
+    description: "Kong routes authentication requests"
+    latency_ms: 10
+    requests_per_second: 500
+    security:
+      authentication_required: true
+      authentication_method: "JWT"
+
+  - id: "kong-to-product-service"
+    from: "api-gateway"
+    to: "product-service"
+    type: "api-call"
+    protocol: "REST"
+    port: 8080
+    description: "Kong routes product queries"
+    latency_ms: 15
+    requests_per_second: 300
+
+  - id: "kong-to-order-service"
+    from: "api-gateway"
+    to: "order-service"
+    type: "api-call"
+    protocol: "REST"
+    port: 8000
+    description: "Kong routes order requests"
+    latency_ms: 20
+    requests_per_second: 200
+    compliance:
+      - "PCI-DSS"
+      - "SOC2"
+
+  - id: "user-service-to-aurora"
+    from: "user-service"
+    to: "rds-aurora-users"
+    type: "database-query"
+    protocol: "SQL"
+    port: 5432
+    description: "User service queries Aurora"
+    latency_ms: 3
+    security:
+      encryption_in_transit: true
+      authentication_required: true
+      authentication_method: "IAM"
+
+  - id: "product-service-to-dynamodb"
+    from: "product-service"
+    to: "dynamodb-products"
+    type: "database-query"
+    protocol: "HTTPS"
+    description: "Product service queries DynamoDB"
+    latency_ms: 5
+    requests_per_second: 500
+
+  - id: "order-service-to-rds"
+    from: "order-service"
+    to: "rds-postgres-orders"
+    type: "database-query"
+    protocol: "SQL"
+    port: 5432
+    description: "Order service writes to PostgreSQL"
+    latency_ms: 4
+    compliance:
+      - "PCI-DSS"
+
+  - id: "order-service-to-payment"
+    from: "order-service"
+    to: "payment-service"
+    type: "api-call"
+    protocol: "gRPC"
+    description: "Order service calls payment processing"
+    latency_ms: 50
+    security:
+      encryption_in_transit: true
+      authentication_required: true
+    compliance:
+      - "PCI-DSS"
+
+  - id: "order-to-sqs"
+    from: "order-service"
+    to: "sqs-orders"
+    type: "message-publish"
+    protocol: "HTTPS"
+    description: "Order service publishes to queue"
+    latency_ms: 10
+
+  - id: "payment-to-sns"
+    from: "payment-service"
+    to: "sns-events"
+    type: "message-publish"
+    protocol: "HTTPS"
+    description: "Payment events published to SNS"
+    latency_ms: 8
+
+  - id: "sns-to-notification"
+    from: "sns-events"
+    to: "notification-service"
+    type: "message-consume"
+    protocol: "HTTPS"
+    description: "Notification service subscribes to events"
+    latency_ms: 5
+
+  - id: "services-to-redis"
+    from: "user-service"
+    to: "elasticache-redis-cluster"
+    type: "cache-read"
+    protocol: "Redis"
+    port: 6379
+    description: "Services cache data in Redis"
+    latency_ms: 1
+    requests_per_second: 2000
+
+  - id: "analytics-to-kinesis"
+    from: "order-service"
+    to: "kinesis-analytics"
+    type: "stream-write"
+    protocol: "HTTPS"
+    description: "Order events streamed to Kinesis"
+    latency_ms: 15
+
+  - id: "kinesis-to-worker"
+    from: "kinesis-analytics"
+    to: "analytics-worker"
+    type: "stream-read"
+    protocol: "HTTPS"
+    description: "Analytics worker processes stream"
+    bandwidth_mbps: 100
+
+  - id: "product-to-ml"
+    from: "product-service"
+    to: "recommendation-ml"
+    type: "api-call"
+    protocol: "HTTPS"
+    description: "Product service calls ML model"
+    latency_ms: 100
+    requests_per_second: 50
+
+  - id: "order-to-s3"
+    from: "order-service"
+    to: "s3-documents"
+    type: "file-upload"
+    protocol: "S3"
+    description: "Order documents stored in S3"
+    security:
+      encryption_in_transit: true
+
+cost:
+  total_monthly: 8260
+  currency: "USD"
+  by_service:
+    compute: 3170
+    database: 1880
+    cache: 960
+    storage: 140
+    networking: 280
+    messaging: 290
+    ml: 560
+    monitoring: 530
+    security: 330
+    cicd: 210
+  by_environment:
+    production: 8260
+  notes:
+    - "Costs based on us-east-1 pricing as of January 2025"
+    - "EKS auto-scaling may increase compute costs by 30-50% during peak"
+    - "Reserved Instances already applied for RDS and ElastiCache (40% savings)"
+    - "Data transfer costs estimated at 2TB/month outbound"
+    - "Savings Plans could reduce compute costs by additional 15-20%"
+    - "Consider Spot instances for non-critical workloads to save ~70% on compute"

@@ -1,0 +1,1468 @@
+{
+  "id": "root",
+  "properties": {
+    "type": "container",
+    "cssClass": "aws-root"
+  },
+  "layoutOptions": {
+    "elk.algorithm": "layered",
+    "elk.direction": "RIGHT",
+    "elk.hierarchyHandling": "INCLUDE_CHILDREN",
+    "elk.edgeRouting": "ORTHOGONAL",
+    "elk.layered.spacing.nodeNodeBetweenLayers": "110",
+    "elk.spacing.nodeNode": "80",
+    "elk.layered.spacing.edgeNodeBetweenLayers": "50",
+    "elk.layered.spacing.edgeEdgeBetweenLayers": "25",
+    "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
+    "elk.layered.crossingMinimization.strategy": "LAYER_SWEEP"
+  },
+  "children": [
+    {
+      "id": "group-utility-shared",
+      "width": 940,
+      "height": 1636.6666666666665,
+      "labels": [
+        {
+          "text": "Shared Infrastructure",
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        }
+      ],
+      "children": [
+        {
+          "id": "eks-cluster",
+          "width": 360,
+          "height": 422,
+          "labels": [
+            {
+              "text": "Production EKS Cluster",
+              "x": 0,
+              "y": 0,
+              "width": 0,
+              "height": 0
+            }
+          ],
+          "children": [
+            {
+              "id": "api-gateway",
+              "width": 80,
+              "height": 80,
+              "labels": [
+                {
+                  "text": "API Gateway",
+                  "x": 0,
+                  "y": 0,
+                  "width": 0,
+                  "height": 0
+                }
+              ],
+              "properties": {
+                "type": "app",
+                "iconPath": "D:\\Pre-training\\adac_nodejs\\adac_nodejs\\src\\assets\\aws-icons\\image740.png",
+                "title": "api"
+              },
+              "$H": 284,
+              "x": 20,
+              "y": 150
+            },
+            {
+              "id": "user-service",
+              "width": 80,
+              "height": 80,
+              "labels": [
+                {
+                  "text": "User Service",
+                  "x": 0,
+                  "y": 0,
+                  "width": 0,
+                  "height": 0
+                }
+              ],
+              "properties": {
+                "type": "app",
+                "iconPath": "D:\\Pre-training\\adac_nodejs\\adac_nodejs\\src\\assets\\aws-icons\\image486.png",
+                "title": "microservice"
+              },
+              "$H": 287,
+              "x": 140,
+              "y": 40
+            },
+            {
+              "id": "product-service",
+              "width": 80,
+              "height": 80,
+              "labels": [
+                {
+                  "text": "Product Service",
+                  "x": 0,
+                  "y": 0,
+                  "width": 0,
+                  "height": 0
+                }
+              ],
+              "properties": {
+                "type": "app",
+                "iconPath": "D:\\Pre-training\\adac_nodejs\\adac_nodejs\\src\\assets\\aws-icons\\image486.png",
+                "title": "microservice"
+              },
+              "$H": 290,
+              "x": 140,
+              "y": 150
+            },
+            {
+              "id": "order-service",
+              "width": 80,
+              "height": 80,
+              "labels": [
+                {
+                  "text": "Order Service",
+                  "x": 0,
+                  "y": 0,
+                  "width": 0,
+                  "height": 0
+                }
+              ],
+              "properties": {
+                "type": "app",
+                "iconPath": "D:\\Pre-training\\adac_nodejs\\adac_nodejs\\src\\assets\\aws-icons\\image486.png",
+                "title": "microservice"
+              },
+              "$H": 293,
+              "x": 140,
+              "y": 260
+            },
+            {
+              "id": "payment-service",
+              "width": 80,
+              "height": 80,
+              "labels": [
+                {
+                  "text": "Payment Service",
+                  "x": 0,
+                  "y": 0,
+                  "width": 0,
+                  "height": 0
+                }
+              ],
+              "properties": {
+                "type": "app",
+                "iconPath": "D:\\Pre-training\\adac_nodejs\\adac_nodejs\\src\\assets\\aws-icons\\image496.png",
+                "title": "microservice"
+              },
+              "$H": 296,
+              "x": 260,
+              "y": 322
+            },
+            {
+              "id": "notification-service",
+              "width": 80,
+              "height": 80,
+              "labels": [
+                {
+                  "text": "Notification Service",
+                  "x": 0,
+                  "y": 0,
+                  "width": 0,
+                  "height": 0
+                }
+              ],
+              "properties": {
+                "type": "app",
+                "iconPath": "D:\\Pre-training\\adac_nodejs\\adac_nodejs\\src\\assets\\aws-icons\\image486.png",
+                "title": "microservice"
+              },
+              "$H": 299,
+              "x": 20,
+              "y": 260
+            }
+          ],
+          "properties": {
+            "type": "container",
+            "cssClass": "aws-compute-cluster",
+            "iconPath": "D:\\Pre-training\\adac_nodejs\\adac_nodejs\\src\\assets\\aws-icons\\image556.png",
+            "description": "Managed Kubernetes cluster for microservices"
+          },
+          "layoutOptions": {
+            "elk.padding": "[top=40,left=20,bottom=20,right=20]",
+            "elk.spacing.nodeNode": "30"
+          },
+          "$H": 281,
+          "x": 145,
+          "y": 110
+        },
+        {
+          "id": "ecr-registry",
+          "width": 80,
+          "height": 80,
+          "labels": [
+            {
+              "text": "Container Registry",
+              "x": 0,
+              "y": 0,
+              "width": 0,
+              "height": 0
+            }
+          ],
+          "children": [],
+          "properties": {
+            "type": "node",
+            "iconPath": "D:\\Pre-training\\adac_nodejs\\adac_nodejs\\src\\assets\\aws-icons\\image1448.png",
+            "description": "Private Docker image registry"
+          },
+          "layoutOptions": {
+            "elk.padding": "[top=40,left=20,bottom=20,right=20]",
+            "elk.spacing.nodeNode": "30"
+          },
+          "$H": 302,
+          "x": 20,
+          "y": 810
+        },
+        {
+          "id": "api-gateway-rest",
+          "width": 80,
+          "height": 80,
+          "labels": [
+            {
+              "text": "External API Gateway",
+              "x": 0,
+              "y": 0,
+              "width": 0,
+              "height": 0
+            }
+          ],
+          "children": [],
+          "properties": {
+            "type": "node",
+            "iconPath": "D:\\Pre-training\\adac_nodejs\\adac_nodejs\\src\\assets\\aws-icons\\image1302.png",
+            "description": "REST API gateway for external traffic"
+          },
+          "layoutOptions": {
+            "elk.padding": "[top=40,left=20,bottom=20,right=20]",
+            "elk.spacing.nodeNode": "30"
+          },
+          "$H": 305,
+          "x": 20,
+          "y": 260
+        },
+        {
+          "id": "rds-aurora-users",
+          "width": 300,
+          "height": 250,
+          "labels": [
+            {
+              "text": "User Database",
+              "x": 0,
+              "y": 0,
+              "width": 0,
+              "height": 0
+            }
+          ],
+          "children": [],
+          "properties": {
+            "type": "container",
+            "cssClass": "aws-compute-cluster",
+            "iconPath": "D:\\Pre-training\\adac_nodejs\\adac_nodejs\\src\\assets\\aws-icons\\image16.png",
+            "description": "Aurora PostgreSQL for user data"
+          },
+          "layoutOptions": {
+            "elk.padding": "[top=40,left=20,bottom=20,right=20]",
+            "elk.spacing.nodeNode": "30"
+          },
+          "$H": 308,
+          "x": 620,
+          "y": 246.66666666666666
+        },
+        {
+          "id": "dynamodb-products",
+          "width": 300,
+          "height": 250,
+          "labels": [
+            {
+              "text": "Product Catalog",
+              "x": 0,
+              "y": 0,
+              "width": 0,
+              "height": 0
+            }
+          ],
+          "children": [],
+          "properties": {
+            "type": "container",
+            "cssClass": "aws-compute-cluster",
+            "iconPath": "D:\\Pre-training\\adac_nodejs\\adac_nodejs\\src\\assets\\aws-icons\\image622.png",
+            "description": "DynamoDB table for product data"
+          },
+          "layoutOptions": {
+            "elk.padding": "[top=40,left=20,bottom=20,right=20]",
+            "elk.spacing.nodeNode": "30"
+          },
+          "$H": 311,
+          "x": 620,
+          "y": 526.6666666666666
+        },
+        {
+          "id": "rds-postgres-orders",
+          "width": 300,
+          "height": 250,
+          "labels": [
+            {
+              "text": "Order Database",
+              "x": 0,
+              "y": 0,
+              "width": 0,
+              "height": 0
+            }
+          ],
+          "children": [],
+          "properties": {
+            "type": "container",
+            "cssClass": "aws-compute-cluster",
+            "iconPath": "D:\\Pre-training\\adac_nodejs\\adac_nodejs\\src\\assets\\aws-icons\\image16.png",
+            "description": "PostgreSQL for order transactions"
+          },
+          "layoutOptions": {
+            "elk.padding": "[top=40,left=20,bottom=20,right=20]",
+            "elk.spacing.nodeNode": "30"
+          },
+          "$H": 314,
+          "x": 620,
+          "y": 976.6666666666666
+        },
+        {
+          "id": "elasticache-redis-cluster",
+          "width": 80,
+          "height": 80,
+          "labels": [
+            {
+              "text": "Distributed Cache",
+              "x": 0,
+              "y": 0,
+              "width": 0,
+              "height": 0
+            }
+          ],
+          "children": [],
+          "properties": {
+            "type": "node",
+            "iconPath": "D:\\Pre-training\\adac_nodejs\\adac_nodejs\\src\\assets\\aws-icons\\image16.png",
+            "description": "Redis cluster for caching and sessions"
+          },
+          "layoutOptions": {
+            "elk.padding": "[top=40,left=20,bottom=20,right=20]",
+            "elk.spacing.nodeNode": "30"
+          },
+          "$H": 317,
+          "x": 625,
+          "y": 136.66666666666666
+        },
+        {
+          "id": "sqs-orders",
+          "width": 80,
+          "height": 80,
+          "labels": [
+            {
+              "text": "Order Queue",
+              "x": 0,
+              "y": 0,
+              "width": 0,
+              "height": 0
+            }
+          ],
+          "children": [],
+          "properties": {
+            "type": "node",
+            "iconPath": "D:\\Pre-training\\adac_nodejs\\adac_nodejs\\src\\assets\\aws-icons\\image290.png",
+            "description": "Queue for order processing events"
+          },
+          "layoutOptions": {
+            "elk.padding": "[top=40,left=20,bottom=20,right=20]",
+            "elk.spacing.nodeNode": "30"
+          },
+          "$H": 320,
+          "x": 625,
+          "y": 1536.6666666666665
+        },
+        {
+          "id": "sns-events",
+          "width": 80,
+          "height": 80,
+          "labels": [
+            {
+              "text": "Event Notifications",
+              "x": 0,
+              "y": 0,
+              "width": 0,
+              "height": 0
+            }
+          ],
+          "children": [],
+          "properties": {
+            "type": "node",
+            "iconPath": "D:\\Pre-training\\adac_nodejs\\adac_nodejs\\src\\assets\\aws-icons\\image282.png",
+            "description": "Pub/sub for microservice events"
+          },
+          "layoutOptions": {
+            "elk.padding": "[top=40,left=20,bottom=20,right=20]",
+            "elk.spacing.nodeNode": "30"
+          },
+          "$H": 323,
+          "x": 20,
+          "y": 1140
+        },
+        {
+          "id": "kinesis-analytics",
+          "width": 140,
+          "height": 140,
+          "labels": [
+            {
+              "text": "Analytics Stream",
+              "x": 0,
+              "y": 0,
+              "width": 0,
+              "height": 0
+            }
+          ],
+          "children": [
+            {
+              "id": "analytics-worker",
+              "width": 80,
+              "height": 80,
+              "labels": [
+                {
+                  "text": "Analytics Worker",
+                  "x": 0,
+                  "y": 0,
+                  "width": 0,
+                  "height": 0
+                }
+              ],
+              "properties": {
+                "type": "app",
+                "iconPath": "D:\\Pre-training\\adac_nodejs\\adac_nodejs\\src\\assets\\aws-icons\\image486.png",
+                "title": "worker"
+              },
+              "$H": 329,
+              "x": 40,
+              "y": 40
+            }
+          ],
+          "properties": {
+            "type": "container",
+            "cssClass": "aws-compute-cluster",
+            "iconPath": "D:\\Pre-training\\adac_nodejs\\adac_nodejs\\src\\assets\\aws-icons\\image630.png",
+            "description": "Real-time analytics data stream"
+          },
+          "layoutOptions": {
+            "elk.padding": "[top=40,left=20,bottom=20,right=20]",
+            "elk.spacing.nodeNode": "30"
+          },
+          "$H": 326,
+          "x": 625,
+          "y": 1256.6666666666665
+        },
+        {
+          "id": "sagemaker-endpoint",
+          "width": 120,
+          "height": 140,
+          "labels": [
+            {
+              "text": "Recommendation Model Endpoint",
+              "x": 0,
+              "y": 0,
+              "width": 0,
+              "height": 0
+            }
+          ],
+          "children": [
+            {
+              "id": "recommendation-ml",
+              "width": 80,
+              "height": 80,
+              "labels": [
+                {
+                  "text": "Recommendation Engine",
+                  "x": 0,
+                  "y": 0,
+                  "width": 0,
+                  "height": 0
+                }
+              ],
+              "properties": {
+                "type": "app",
+                "iconPath": "D:\\Pre-training\\adac_nodejs\\adac_nodejs\\src\\assets\\aws-icons\\image358.png",
+                "title": "ml-model"
+              },
+              "$H": 335,
+              "x": 20,
+              "y": 40
+            }
+          ],
+          "properties": {
+            "type": "container",
+            "cssClass": "aws-compute-cluster",
+            "iconPath": "D:\\Pre-training\\adac_nodejs\\adac_nodejs\\src\\assets\\aws-icons\\image278.png",
+            "description": "ML model serving for recommendations"
+          },
+          "layoutOptions": {
+            "elk.padding": "[top=40,left=20,bottom=20,right=20]",
+            "elk.spacing.nodeNode": "30"
+          },
+          "$H": 332,
+          "x": 625,
+          "y": 806.6666666666666
+        },
+        {
+          "id": "s3-documents",
+          "width": 80,
+          "height": 80,
+          "labels": [
+            {
+              "text": "Document Storage",
+              "x": 0,
+              "y": 0,
+              "width": 0,
+              "height": 0
+            }
+          ],
+          "children": [],
+          "properties": {
+            "type": "node",
+            "iconPath": "D:\\Pre-training\\adac_nodejs\\adac_nodejs\\src\\assets\\aws-icons\\image1614.png",
+            "description": "S3 bucket for order documents and images"
+          },
+          "layoutOptions": {
+            "elk.padding": "[top=40,left=20,bottom=20,right=20]",
+            "elk.spacing.nodeNode": "30"
+          },
+          "$H": 338,
+          "x": 625,
+          "y": 1426.6666666666665
+        },
+        {
+          "id": "cloudwatch-observability",
+          "width": 80,
+          "height": 80,
+          "labels": [
+            {
+              "text": "Observability Platform",
+              "x": 0,
+              "y": 0,
+              "width": 0,
+              "height": 0
+            }
+          ],
+          "children": [],
+          "properties": {
+            "type": "node",
+            "iconPath": "D:\\Pre-training\\adac_nodejs\\adac_nodejs\\src\\assets\\aws-icons\\image974.png",
+            "description": "Metrics, logs, and traces"
+          },
+          "layoutOptions": {
+            "elk.padding": "[top=40,left=20,bottom=20,right=20]",
+            "elk.spacing.nodeNode": "30"
+          },
+          "$H": 341,
+          "x": 20,
+          "y": 920
+        },
+        {
+          "id": "x-ray",
+          "width": 80,
+          "height": 80,
+          "labels": [
+            {
+              "text": "Distributed Tracing",
+              "x": 0,
+              "y": 0,
+              "width": 0,
+              "height": 0
+            }
+          ],
+          "children": [],
+          "properties": {
+            "type": "node",
+            "iconPath": "D:\\Pre-training\\adac_nodejs\\adac_nodejs\\src\\assets\\aws-icons\\image730.png",
+            "description": "Request tracing across microservices"
+          },
+          "layoutOptions": {
+            "elk.padding": "[top=40,left=20,bottom=20,right=20]",
+            "elk.spacing.nodeNode": "30"
+          },
+          "$H": 344,
+          "x": 20,
+          "y": 1250
+        },
+        {
+          "id": "waf-api",
+          "width": 80,
+          "height": 80,
+          "labels": [
+            {
+              "text": "API Protection",
+              "x": 0,
+              "y": 0,
+              "width": 0,
+              "height": 0
+            }
+          ],
+          "children": [],
+          "properties": {
+            "type": "node",
+            "iconPath": "D:\\Pre-training\\adac_nodejs\\adac_nodejs\\src\\assets\\aws-icons\\image1460.png",
+            "description": "WAF for API Gateway"
+          },
+          "layoutOptions": {
+            "elk.padding": "[top=40,left=20,bottom=20,right=20]",
+            "elk.spacing.nodeNode": "30"
+          },
+          "$H": 347,
+          "x": 20,
+          "y": 590
+        },
+        {
+          "id": "guardduty",
+          "width": 80,
+          "height": 80,
+          "labels": [
+            {
+              "text": "Threat Detection",
+              "x": 0,
+              "y": 0,
+              "width": 0,
+              "height": 0
+            }
+          ],
+          "children": [],
+          "properties": {
+            "type": "node",
+            "iconPath": "D:\\Pre-training\\adac_nodejs\\adac_nodejs\\src\\assets\\aws-icons\\image1394.png",
+            "description": "Continuous security monitoring"
+          },
+          "layoutOptions": {
+            "elk.padding": "[top=40,left=20,bottom=20,right=20]",
+            "elk.spacing.nodeNode": "30"
+          },
+          "$H": 350,
+          "x": 20,
+          "y": 370
+        },
+        {
+          "id": "secrets-manager-app",
+          "width": 80,
+          "height": 80,
+          "labels": [
+            {
+              "text": "Application Secrets",
+              "x": 0,
+              "y": 0,
+              "width": 0,
+              "height": 0
+            }
+          ],
+          "children": [],
+          "properties": {
+            "type": "node",
+            "iconPath": "D:\\Pre-training\\adac_nodejs\\adac_nodejs\\src\\assets\\aws-icons\\image1448.png",
+            "description": "Stores microservice credentials and API keys"
+          },
+          "layoutOptions": {
+            "elk.padding": "[top=40,left=20,bottom=20,right=20]",
+            "elk.spacing.nodeNode": "30"
+          },
+          "$H": 353,
+          "x": 20,
+          "y": 40
+        },
+        {
+          "id": "codepipeline",
+          "width": 80,
+          "height": 80,
+          "labels": [
+            {
+              "text": "Deployment Pipeline",
+              "x": 0,
+              "y": 0,
+              "width": 0,
+              "height": 0
+            }
+          ],
+          "children": [],
+          "properties": {
+            "type": "node",
+            "iconPath": "D:\\Pre-training\\adac_nodejs\\adac_nodejs\\src\\assets\\aws-icons\\image724.png",
+            "description": "CI/CD pipelines for all microservices"
+          },
+          "layoutOptions": {
+            "elk.padding": "[top=40,left=20,bottom=20,right=20]",
+            "elk.spacing.nodeNode": "30"
+          },
+          "$H": 356,
+          "x": 20,
+          "y": 700
+        },
+        {
+          "id": "codebuild",
+          "width": 80,
+          "height": 80,
+          "labels": [
+            {
+              "text": "Build Service",
+              "x": 0,
+              "y": 0,
+              "width": 0,
+              "height": 0
+            }
+          ],
+          "children": [],
+          "properties": {
+            "type": "node",
+            "iconPath": "D:\\Pre-training\\adac_nodejs\\adac_nodejs\\src\\assets\\aws-icons\\image718.png",
+            "description": "Compiles and tests microservices"
+          },
+          "layoutOptions": {
+            "elk.padding": "[top=40,left=20,bottom=20,right=20]",
+            "elk.spacing.nodeNode": "30"
+          },
+          "$H": 359,
+          "x": 20,
+          "y": 1030
+        },
+        {
+          "id": "nat-gateway",
+          "width": 80,
+          "height": 80,
+          "labels": [
+            {
+              "text": "NAT Gateway",
+              "x": 0,
+              "y": 0,
+              "width": 0,
+              "height": 0
+            }
+          ],
+          "children": [],
+          "properties": {
+            "type": "node",
+            "iconPath": "D:\\Pre-training\\adac_nodejs\\adac_nodejs\\src\\assets\\aws-icons\\image22.png",
+            "description": "Outbound internet access for private subnets"
+          },
+          "layoutOptions": {
+            "elk.padding": "[top=40,left=20,bottom=20,right=20]",
+            "elk.spacing.nodeNode": "30"
+          },
+          "$H": 362,
+          "x": 20,
+          "y": 150
+        },
+        {
+          "id": "alb-ingress",
+          "width": 80,
+          "height": 80,
+          "labels": [
+            {
+              "text": "Ingress Load Balancer",
+              "x": 0,
+              "y": 0,
+              "width": 0,
+              "height": 0
+            }
+          ],
+          "children": [],
+          "properties": {
+            "type": "node",
+            "iconPath": "D:\\Pre-training\\adac_nodejs\\adac_nodejs\\src\\assets\\aws-icons\\image1312.png",
+            "description": "Load balancer for EKS ingress"
+          },
+          "layoutOptions": {
+            "elk.padding": "[top=40,left=20,bottom=20,right=20]",
+            "elk.spacing.nodeNode": "30"
+          },
+          "$H": 365,
+          "x": 20,
+          "y": 480
+        }
+      ],
+      "properties": {
+        "type": "container",
+        "cssClass": "aws-compute-cluster",
+        "title": "Shared Services"
+      },
+      "layoutOptions": {
+        "elk.padding": "[top=40,left=20,bottom=20,right=20]",
+        "elk.spacing.nodeNode": "30"
+      },
+      "$H": 277,
+      "x": 317,
+      "y": 12
+    },
+    {
+      "id": "external-clients",
+      "width": 80,
+      "height": 80,
+      "labels": [
+        {
+          "text": "external-clients",
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        }
+      ],
+      "properties": {
+        "type": "node",
+        "iconPath": "D:\\Pre-training\\adac_nodejs\\adac_nodejs\\src\\assets\\aws-icons\\image84.png",
+        "description": "External System"
+      },
+      "$H": 368,
+      "x": 12,
+      "y": 272
+    }
+  ],
+  "edges": [
+    {
+      "id": "external-to-api-gateway",
+      "sources": ["external-clients"],
+      "targets": ["api-gateway-rest"],
+      "labels": [
+        {
+          "text": "api-call",
+          "x": 202,
+          "y": 315,
+          "width": 0,
+          "height": 0
+        }
+      ],
+      "sections": [
+        {
+          "id": "external-to-api-gateway_s0",
+          "startPoint": {
+            "x": 92,
+            "y": 312
+          },
+          "endPoint": {
+            "x": 337,
+            "y": 312
+          },
+          "incomingShape": "external-clients",
+          "outgoingShape": "api-gateway-rest"
+        }
+      ],
+      "container": "root"
+    },
+    {
+      "id": "apigateway-to-kong",
+      "sources": ["api-gateway-rest"],
+      "targets": ["api-gateway"],
+      "labels": [
+        {
+          "text": "api-call",
+          "x": 120,
+          "y": 303,
+          "width": 0,
+          "height": 0
+        }
+      ],
+      "sections": [
+        {
+          "id": "apigateway-to-kong_s0",
+          "startPoint": {
+            "x": 100,
+            "y": 300
+          },
+          "endPoint": {
+            "x": 165,
+            "y": 300
+          },
+          "incomingShape": "api-gateway-rest",
+          "outgoingShape": "api-gateway"
+        }
+      ],
+      "container": "group-utility-shared"
+    },
+    {
+      "id": "kong-to-user-service",
+      "sources": ["api-gateway"],
+      "targets": ["user-service"],
+      "labels": [
+        {
+          "text": "api-call",
+          "x": 120,
+          "y": 83,
+          "width": 0,
+          "height": 0
+        }
+      ],
+      "sections": [
+        {
+          "id": "kong-to-user-service_s0",
+          "startPoint": {
+            "x": 100,
+            "y": 170
+          },
+          "endPoint": {
+            "x": 140,
+            "y": 80
+          },
+          "bendPoints": [
+            {
+              "x": 110,
+              "y": 170
+            },
+            {
+              "x": 110,
+              "y": 80
+            }
+          ],
+          "incomingShape": "api-gateway",
+          "outgoingShape": "user-service"
+        }
+      ],
+      "container": "eks-cluster"
+    },
+    {
+      "id": "kong-to-product-service",
+      "sources": ["api-gateway"],
+      "targets": ["product-service"],
+      "labels": [
+        {
+          "text": "api-call",
+          "x": 120,
+          "y": 193,
+          "width": 0,
+          "height": 0
+        }
+      ],
+      "sections": [
+        {
+          "id": "kong-to-product-service_s0",
+          "startPoint": {
+            "x": 100,
+            "y": 190
+          },
+          "endPoint": {
+            "x": 140,
+            "y": 190
+          },
+          "incomingShape": "api-gateway",
+          "outgoingShape": "product-service"
+        }
+      ],
+      "container": "eks-cluster"
+    },
+    {
+      "id": "kong-to-order-service",
+      "sources": ["api-gateway"],
+      "targets": ["order-service"],
+      "labels": [
+        {
+          "text": "api-call",
+          "x": 120,
+          "y": 303,
+          "width": 0,
+          "height": 0
+        }
+      ],
+      "sections": [
+        {
+          "id": "kong-to-order-service_s0",
+          "startPoint": {
+            "x": 100,
+            "y": 210
+          },
+          "endPoint": {
+            "x": 140,
+            "y": 300
+          },
+          "bendPoints": [
+            {
+              "x": 110,
+              "y": 210
+            },
+            {
+              "x": 110,
+              "y": 300
+            }
+          ],
+          "incomingShape": "api-gateway",
+          "outgoingShape": "order-service"
+        }
+      ],
+      "container": "eks-cluster"
+    },
+    {
+      "id": "user-service-to-aurora",
+      "sources": ["user-service"],
+      "targets": ["rds-aurora-users"],
+      "labels": [
+        {
+          "text": "database-query",
+          "x": 600,
+          "y": 374.66666666666663,
+          "width": 0,
+          "height": 0
+        }
+      ],
+      "sections": [
+        {
+          "id": "user-service-to-aurora_s0",
+          "startPoint": {
+            "x": 365,
+            "y": 203.33333333333334
+          },
+          "endPoint": {
+            "x": 620,
+            "y": 371.66666666666663
+          },
+          "bendPoints": [
+            {
+              "x": 590,
+              "y": 203.33333333333334
+            },
+            {
+              "x": 590,
+              "y": 371.66666666666663
+            }
+          ],
+          "incomingShape": "user-service",
+          "outgoingShape": "rds-aurora-users"
+        }
+      ],
+      "container": "group-utility-shared"
+    },
+    {
+      "id": "product-service-to-dynamodb",
+      "sources": ["product-service"],
+      "targets": ["dynamodb-products"],
+      "labels": [
+        {
+          "text": "database-query",
+          "x": 600,
+          "y": 654.6666666666666,
+          "width": 0,
+          "height": 0
+        }
+      ],
+      "sections": [
+        {
+          "id": "product-service-to-dynamodb_s0",
+          "startPoint": {
+            "x": 365,
+            "y": 286.66666666666663
+          },
+          "endPoint": {
+            "x": 620,
+            "y": 651.6666666666666
+          },
+          "bendPoints": [
+            {
+              "x": 580,
+              "y": 286.66666666666663
+            },
+            {
+              "x": 580,
+              "y": 651.6666666666666
+            }
+          ],
+          "incomingShape": "product-service",
+          "outgoingShape": "dynamodb-products"
+        }
+      ],
+      "container": "group-utility-shared"
+    },
+    {
+      "id": "order-service-to-rds",
+      "sources": ["order-service"],
+      "targets": ["rds-postgres-orders"],
+      "labels": [
+        {
+          "text": "database-query",
+          "x": 600,
+          "y": 1104.6666666666665,
+          "width": 0,
+          "height": 0
+        }
+      ],
+      "sections": [
+        {
+          "id": "order-service-to-rds_s0",
+          "startPoint": {
+            "x": 365,
+            "y": 383.3333333333333
+          },
+          "endPoint": {
+            "x": 620,
+            "y": 1101.6666666666665
+          },
+          "bendPoints": [
+            {
+              "x": 560,
+              "y": 383.3333333333333
+            },
+            {
+              "x": 560,
+              "y": 1101.6666666666665
+            }
+          ],
+          "incomingShape": "order-service",
+          "outgoingShape": "rds-postgres-orders"
+        }
+      ],
+      "container": "group-utility-shared"
+    },
+    {
+      "id": "order-service-to-payment",
+      "sources": ["order-service"],
+      "targets": ["payment-service"],
+      "labels": [
+        {
+          "text": "api-call",
+          "x": 240,
+          "y": 365,
+          "width": 0,
+          "height": 0
+        }
+      ],
+      "sections": [
+        {
+          "id": "order-service-to-payment_s0",
+          "startPoint": {
+            "x": 220,
+            "y": 326.6666666666667
+          },
+          "endPoint": {
+            "x": 260,
+            "y": 362
+          },
+          "bendPoints": [
+            {
+              "x": 230,
+              "y": 326.6666666666667
+            },
+            {
+              "x": 230,
+              "y": 362
+            }
+          ],
+          "incomingShape": "order-service",
+          "outgoingShape": "payment-service"
+        }
+      ],
+      "container": "eks-cluster"
+    },
+    {
+      "id": "order-to-sqs",
+      "sources": ["order-service"],
+      "targets": ["sqs-orders"],
+      "labels": [
+        {
+          "text": "message-publish",
+          "x": 600,
+          "y": 1579.6666666666665,
+          "width": 0,
+          "height": 0
+        }
+      ],
+      "sections": [
+        {
+          "id": "order-to-sqs_s0",
+          "startPoint": {
+            "x": 365,
+            "y": 423.3333333333333
+          },
+          "endPoint": {
+            "x": 625,
+            "y": 1576.6666666666665
+          },
+          "bendPoints": [
+            {
+              "x": 375,
+              "y": 423.3333333333333
+            },
+            {
+              "x": 375,
+              "y": 421
+            },
+            {
+              "x": 530,
+              "y": 421
+            },
+            {
+              "x": 530,
+              "y": 1576.6666666666665
+            }
+          ],
+          "incomingShape": "order-service",
+          "outgoingShape": "sqs-orders"
+        }
+      ],
+      "container": "group-utility-shared"
+    },
+    {
+      "id": "payment-to-sns",
+      "sources": ["payment-service"],
+      "targets": ["sns-events"],
+      "labels": [
+        {
+          "text": "message-publish",
+          "x": 120,
+          "y": 1196.3333333333333,
+          "width": 0,
+          "height": 0
+        }
+      ],
+      "sections": [
+        {
+          "id": "payment-to-sns_s0",
+          "startPoint": {
+            "x": 485,
+            "y": 472
+          },
+          "endPoint": {
+            "x": 100,
+            "y": 1193.3333333333333
+          },
+          "bendPoints": [
+            {
+              "x": 520,
+              "y": 472
+            },
+            {
+              "x": 520,
+              "y": 1193.3333333333333
+            }
+          ],
+          "incomingShape": "payment-service",
+          "outgoingShape": "sns-events"
+        }
+      ],
+      "container": "group-utility-shared"
+    },
+    {
+      "id": "sns-to-notification",
+      "sources": ["sns-events"],
+      "targets": ["notification-service"],
+      "labels": [
+        {
+          "text": "message-consume",
+          "x": 120,
+          "y": 1163.6666666666667,
+          "width": 0,
+          "height": 0
+        }
+      ],
+      "sections": [
+        {
+          "id": "sns-to-notification_s0",
+          "startPoint": {
+            "x": 100,
+            "y": 1166.6666666666667
+          },
+          "endPoint": {
+            "x": 165,
+            "y": 410
+          },
+          "bendPoints": [
+            {
+              "x": 130,
+              "y": 1166.6666666666667
+            },
+            {
+              "x": 130,
+              "y": 410
+            }
+          ],
+          "incomingShape": "sns-events",
+          "outgoingShape": "notification-service"
+        }
+      ],
+      "container": "group-utility-shared"
+    },
+    {
+      "id": "services-to-redis",
+      "sources": ["user-service"],
+      "targets": ["elasticache-redis-cluster"],
+      "labels": [
+        {
+          "text": "cache-read",
+          "x": 600,
+          "y": 179.66666666666666,
+          "width": 0,
+          "height": 0
+        }
+      ],
+      "sections": [
+        {
+          "id": "services-to-redis_s0",
+          "startPoint": {
+            "x": 365,
+            "y": 176.66666666666666
+          },
+          "endPoint": {
+            "x": 625,
+            "y": 176.66666666666666
+          },
+          "incomingShape": "user-service",
+          "outgoingShape": "elasticache-redis-cluster"
+        }
+      ],
+      "container": "group-utility-shared"
+    },
+    {
+      "id": "analytics-to-kinesis",
+      "sources": ["order-service"],
+      "targets": ["kinesis-analytics"],
+      "labels": [
+        {
+          "text": "stream-write",
+          "x": 600,
+          "y": 1329.6666666666665,
+          "width": 0,
+          "height": 0
+        }
+      ],
+      "sections": [
+        {
+          "id": "analytics-to-kinesis_s0",
+          "startPoint": {
+            "x": 365,
+            "y": 396.6666666666667
+          },
+          "endPoint": {
+            "x": 625,
+            "y": 1326.6666666666665
+          },
+          "bendPoints": [
+            {
+              "x": 550,
+              "y": 396.6666666666667
+            },
+            {
+              "x": 550,
+              "y": 1326.6666666666665
+            }
+          ],
+          "incomingShape": "order-service",
+          "outgoingShape": "kinesis-analytics"
+        }
+      ],
+      "container": "group-utility-shared"
+    },
+    {
+      "id": "kinesis-to-worker",
+      "sources": ["kinesis-analytics"],
+      "targets": ["analytics-worker"],
+      "labels": [
+        {
+          "text": "stream-read",
+          "x": 20,
+          "y": 83,
+          "width": 0,
+          "height": 0
+        }
+      ],
+      "sections": [
+        {
+          "id": "kinesis-to-worker_s0",
+          "startPoint": {
+            "x": 0,
+            "y": 80
+          },
+          "endPoint": {
+            "x": 40,
+            "y": 80
+          },
+          "incomingShape": "kinesis-analytics",
+          "outgoingShape": "analytics-worker"
+        }
+      ],
+      "container": "kinesis-analytics"
+    },
+    {
+      "id": "product-to-ml",
+      "sources": ["product-service"],
+      "targets": ["recommendation-ml"],
+      "labels": [
+        {
+          "text": "api-call",
+          "x": 600,
+          "y": 889.6666666666666,
+          "width": 0,
+          "height": 0
+        }
+      ],
+      "sections": [
+        {
+          "id": "product-to-ml_s0",
+          "startPoint": {
+            "x": 365,
+            "y": 313.33333333333337
+          },
+          "endPoint": {
+            "x": 645,
+            "y": 886.6666666666666
+          },
+          "bendPoints": [
+            {
+              "x": 570,
+              "y": 313.33333333333337
+            },
+            {
+              "x": 570,
+              "y": 886.6666666666666
+            }
+          ],
+          "incomingShape": "product-service",
+          "outgoingShape": "recommendation-ml"
+        }
+      ],
+      "container": "group-utility-shared"
+    },
+    {
+      "id": "order-to-s3",
+      "sources": ["order-service"],
+      "targets": ["s3-documents"],
+      "labels": [
+        {
+          "text": "file-upload",
+          "x": 600,
+          "y": 1469.6666666666665,
+          "width": 0,
+          "height": 0
+        }
+      ],
+      "sections": [
+        {
+          "id": "order-to-s3_s0",
+          "startPoint": {
+            "x": 365,
+            "y": 410
+          },
+          "endPoint": {
+            "x": 625,
+            "y": 1466.6666666666665
+          },
+          "bendPoints": [
+            {
+              "x": 540,
+              "y": 410
+            },
+            {
+              "x": 540,
+              "y": 1466.6666666666665
+            }
+          ],
+          "incomingShape": "order-service",
+          "outgoingShape": "s3-documents"
+        }
+      ],
+      "container": "group-utility-shared"
+    }
+  ],
+  "$H": 13,
+  "x": 0,
+  "y": 0,
+  "width": 1269,
+  "height": 1660.6666666666665
+}

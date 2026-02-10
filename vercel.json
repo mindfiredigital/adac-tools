@@ -1,0 +1,17 @@
+{
+    "functions": {
+        "api/**/*.ts": {
+            "includeFiles": "src/{mappings,assets}/**"
+        }
+    },
+    "rewrites": [
+        {
+            "source": "/api/(.*)",
+            "destination": "/api/index"
+        },
+        {
+            "source": "/(.*)",
+            "destination": "/api/index"
+        }
+    ]
+}

@@ -1,0 +1,143 @@
+version: "1.0"
+
+metadata:
+  name: "AWS Web Application"
+  author: "ADAC Test Suite"
+  description: "AWS ECS application with full VPC and networking"
+  created: "2026-01-05"
+  adac_version: "1.0"
+
+applications:
+  - id: "frontend"
+    name: "Web Frontend"
+    type: "frontend"
+    technology: "React"
+    owner: "frontend-team"
+
+  - id: "backend"
+    name: "Backend API"
+    type: "backend"
+    technology: "FastAPI"
+    owner: "backend-team"
+
+  - id: "database"
+    name: "PostgreSQL"
+    type: "database"
+    technology: "PostgreSQL"
+    owner: "data-team"
+
+infrastructure:
+  clouds:
+    - id: "aws-primary"
+      provider: "aws"
+      region: "us-east-1"
+      tier: "primary"
+      services:
+
+        # ---------- VPC ----------
+        - id: "vpc-main"
+          type: "network"
+          subtype: "vpc"
+          config:
+            cidr: "10.0.0.0/16"
+            dns_support: true
+            dns_hostnames: true
+
+        - id: "public-subnet-a"
+          type: "network"
+          subtype: "subnet"
+          config:
+            vpc: "vpc-main"
+            cidr: "10.0.1.0/24"
+            availability_zone: "us-east-1a"
+            public: true
+
+        - id: "private-subnet-a"
+          type: "network"
+          subtype: "subnet"
+          config:
+            vpc: "vpc-main"
+            cidr: "10.0.2.0/24"
+            availability_zone: "us-east-1a"
+            public: false
+
+        # ---------- Security Groups ----------
+        - id: "alb-sg"
+          type: "security"
+          subtype: "security-group"
+          config:
+            vpc: "vpc-main"
+            ingress:
+              - port: 443
+                protocol: "tcp"
+                cidr: "0.0.0.0/0"
+
+        - id: "ecs-sg"
+          type: "security"
+          subtype: "security-group"
+          config:
+            vpc: "vpc-main"
+            ingress:
+              - port: 8080
+                protocol: "tcp"
+                source_security_group: "alb-sg"
+
+        # ---------- Load Balancer ----------
+        - id: "alb"
+          type: "network"
+          subtype: "application-load-balancer"
+          config:
+            subnets: ["public-subnet-a"]
+            security_groups: ["alb-sg"]
+            scheme: "internet-facing"
+
+        # ---------- ECS ----------
+        - id: "ecs-service"
+          type: "compute"
+          subtype: "ecs-fargate"
+          runs: ["frontend", "backend"]
+          config:
+            subnets: ["private-subnet-a"]
+            security_groups: ["ecs-sg"]
+            cpu: 512
+            memory: 1024
+            containers:
+              - name: "frontend"
+                image: "example/frontend:1.0.0"
+                port: 3000
+              - name: "backend"
+                image: "example/backend:1.0.0"
+                port: 8080
+
+        # ---------- RDS ----------
+        - id: "rds-postgres"
+          type: "database"
+          subtype: "rds-postgres"
+          runs: ["database"]
+          config:
+            engine_version: "14"
+            instance_class: "db.t3.micro"
+            allocated_storage: 20
+            subnets: ["private-subnet-a"]
+            security_groups: ["ecs-sg"]
+            multi_az: false
+
+connections:
+  - id: "alb-to-frontend"
+    from: "alb"
+    to: "frontend"
+    type: "api-call"
+    protocol: "HTTPS"
+
+  - id: "frontend-to-backend"
+    from: "frontend"
+    to: "backend"
+    type: "api-call"
+    protocol: "HTTP"
+
+  - id: "backend-to-database"
+    from: "backend"
+    to: "database"
+    type: "database"
+    protocol: "PostgreSQL"
+ 
