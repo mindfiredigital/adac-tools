@@ -2,5 +2,24 @@
   "parser": "@typescript-eslint/parser",
   "plugins": ["@typescript-eslint"],
   "extends": ["eslint:recommended", "plugin:@typescript-eslint/recommended"],
-  "ignorePatterns": ["dist/", "node_modules/"]
+  "ignorePatterns": [
+    "dist/",
+    "node_modules/",
+    "packages/*/node_modules/",
+    "public/",
+    "scripts/",
+    "*.js",
+    "*.cjs"
+  ],
+  "rules": {
+    "@typescript-eslint/no-explicit-any": "error"
+  },
+  "overrides": [
+    {
+      "files": ["packages/web/**/*.tsx"],
+      "rules": {
+        "@typescript-eslint/no-explicit-any": "warn"
+      }
+    }
+  ]
 }

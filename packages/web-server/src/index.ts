@@ -1,7 +1,6 @@
 import express from 'express';
 import path from 'path';
 import cors from 'cors';
-import { fileURLToPath } from 'url';
 import { generateDiagramSvg } from '@mindfiredigital/adac-diagram';
 
 const app: express.Application = express();
@@ -18,29 +17,33 @@ app.use(express.static(publicPath));
 
 // API Endpoint
 app.post('/api/generate', async (req, res) => {
-    try {
-        const { content, layout } = req.body;
-        
-        if (!content) {
-             res.status(400).json({ error: 'Missing content' });
-             return;
-        }
+  try {
+    const { content, layout } = req.body;
 
-        const result = await generateDiagramSvg(content, layout);
-        res.status(200).json(result);
-    } catch (e: any) {
-        console.error('Generation failed:', e);
-        res.status(500).json({ error: e.message || 'Internal Server Error', logs: e.logs });
+    if (!content) {
+      res.status(400).json({ error: 'Missing content' });
+      return;
     }
+
+    const result = await generateDiagramSvg(content, layout);
+    res.status(200).json(result);
+  } catch (e) {
+    const error = e as Error & { logs?: string[] };
+    console.error('Generation failed:', error);
+    res.status(500).json({
+      error: error.message || 'Internal Server Error',
+      logs: error.logs,
+    });
+  }
 });
 
 // Start Server only if run directly (not imported as module)
 // if (require.main === module) { // This works in Node.js CJS
 if (process.argv[1].endsWith('index.js')) {
-    app.listen(PORT, () => {
-        console.log(`Server is running at http://localhost:${PORT}`);
-        console.log(`Serving static files from: ${publicPath}`);
-    });
+  app.listen(PORT, () => {
+    console.log(`Server is running at http://localhost:${PORT}`);
+    console.log(`Serving static files from: ${publicPath}`);
+  });
 }
 
 export default app;

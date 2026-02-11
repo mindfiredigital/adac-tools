@@ -1,4 +1,3 @@
-
 import fs from 'fs-extra';
 import path from 'path';
 import { generateDiagramSvg } from '../src/core/generate.js';
@@ -25,8 +24,10 @@ interface ReportEntry {
 
 async function main() {
   const files = await fs.readdir(YAMLS_DIR);
-  const yamlFiles = files.filter(f => f.endsWith('.yaml') || f.endsWith('.yml'));
-  
+  const yamlFiles = files.filter(
+    (f) => f.endsWith('.yaml') || f.endsWith('.yml')
+  );
+
   const reportData: ReportEntry[] = [];
 
   console.log(`Found ${yamlFiles.length} YAML files.`);
@@ -35,11 +36,11 @@ async function main() {
     console.log(`Processing ${file}...`);
     const filePath = path.join(YAMLS_DIR, file);
     const content = await fs.readFile(filePath, 'utf8');
-    
+
     const entry: ReportEntry = {
       file,
       dagre: { time: 0, svg: '', success: false },
-      elk: { time: 0, svg: '', success: false }
+      elk: { time: 0, svg: '', success: false },
     };
 
     // Dagre
@@ -49,8 +50,8 @@ async function main() {
       entry.dagre.svg = res.svg;
       entry.dagre.success = true;
     } catch (e: any) {
-        console.error(`Error generating Dagre for ${file}:`, e.message);
-        entry.dagre.error = e.message;
+      console.error(`Error generating Dagre for ${file}:`, e.message);
+      entry.dagre.error = e.message;
     }
 
     // Elk
@@ -60,8 +61,8 @@ async function main() {
       entry.elk.svg = res.svg;
       entry.elk.success = true;
     } catch (e: any) {
-        console.error(`Error generating Elk for ${file}:`, e.message);
-        entry.elk.error = e.message;
+      console.error(`Error generating Elk for ${file}:`, e.message);
+      entry.elk.error = e.message;
     }
 
     reportData.push(entry);
@@ -144,7 +145,7 @@ async function main() {
   `;
 
   for (const item of reportData) {
-      html += `
+    html += `
         <tr>
             <td>${item.file}</td>
             <td>${item.dagre.success ? item.dagre.time : '-'}</td>
@@ -163,7 +164,7 @@ async function main() {
   `;
 
   for (const item of reportData) {
-      html += `
+    html += `
         <button type="button" class="collapsible">${item.file}</button>
         <div class="content">
             <div class="svg-wrapper">
