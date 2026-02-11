@@ -45,34 +45,34 @@ export async function renderSvg(
   // Shift all content to top-left (padding: 20px) and resize root to fit content.
   const padding = 20;
   if (layout.children && layout.children.length > 0) {
-      let minX = Infinity;
-      let minY = Infinity;
-      let maxX = -Infinity;
-      let maxY = -Infinity;
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
+
+    layout.children.forEach((child: ElkNode) => {
+      const cx = child.x || 0;
+      const cy = child.y || 0;
+      const cw = child.width || 0;
+      const ch = child.height || 0;
+      if (cx < minX) minX = cx;
+      if (cy < minY) minY = cy;
+      if (cx + cw > maxX) maxX = cx + cw;
+      if (cy + ch > maxY) maxY = cy + ch;
+    });
+
+    if (minX !== Infinity) {
+      const shiftX = -minX + padding;
+      const shiftY = -minY + padding;
 
       layout.children.forEach((child: ElkNode) => {
-         const cx = child.x || 0;
-         const cy = child.y || 0;
-         const cw = child.width || 0;
-         const ch = child.height || 0;
-         if (cx < minX) minX = cx;
-         if (cy < minY) minY = cy;
-         if (cx + cw > maxX) maxX = cx + cw;
-         if (cy + ch > maxY) maxY = cy + ch;
+        if (child.x !== undefined) child.x += shiftX;
+        if (child.y !== undefined) child.y += shiftY;
       });
 
-      if (minX !== Infinity) {
-          const shiftX = -minX + padding;
-          const shiftY = -minY + padding;
-
-          layout.children.forEach((child: ElkNode) => {
-             if (child.x !== undefined) child.x += shiftX;
-             if (child.y !== undefined) child.y += shiftY;
-          });
-
-          layout.width = (maxX - minX) + (2 * padding);
-          layout.height = (maxY - minY) + (2 * padding);
-      }
+      layout.width = maxX - minX + 2 * padding;
+      layout.height = maxY - minY + 2 * padding;
+    }
   }
   // --- Normalization End ---
 
@@ -150,24 +150,32 @@ export async function renderSvg(
         // Clone and Transform coordinates to Global Space
         const globalEdge: ElkEdge = JSON.parse(JSON.stringify(edge));
         if (globalEdge.sections) {
-          globalEdge.sections.forEach((sec: any) => {
-            sec.startPoint.x += containerOffset.x;
-            sec.startPoint.y += containerOffset.y;
-            sec.endPoint.x += containerOffset.x;
-            sec.endPoint.y += containerOffset.y;
-            if (sec.bendPoints) {
-              sec.bendPoints.forEach((bp: any) => {
-                bp.x += containerOffset.x;
-                bp.y += containerOffset.y;
-              });
+          globalEdge.sections.forEach(
+            (sec: {
+              startPoint: { x: number; y: number };
+              endPoint: { x: number; y: number };
+              bendPoints?: { x: number; y: number }[];
+            }) => {
+              sec.startPoint.x += containerOffset.x;
+              sec.startPoint.y += containerOffset.y;
+              sec.endPoint.x += containerOffset.x;
+              sec.endPoint.y += containerOffset.y;
+              if (sec.bendPoints) {
+                sec.bendPoints.forEach((bp: { x: number; y: number }) => {
+                  bp.x += containerOffset.x;
+                  bp.y += containerOffset.y;
+                });
+              }
             }
-          });
+          );
         }
         allEdges.push(globalEdge);
       });
     }
     if (node.children) {
-      node.children.forEach((child: ElkNode) => collectAndTransformEdges(child));
+      node.children.forEach((child: ElkNode) =>
+        collectAndTransformEdges(child)
+      );
     }
   };
 
@@ -177,19 +185,24 @@ export async function renderSvg(
   let edgesOutput = '';
   allEdges.forEach((edge) => {
     if (edge.sections) {
-      edge.sections.forEach((sec: any) => {
-        let d = `M ${sec.startPoint.x} ${sec.startPoint.y}`;
-        if (sec.bendPoints) {
-          sec.bendPoints.forEach((bp: any) => {
-            d += ` L ${bp.x} ${bp.y}`;
-          });
+      edge.sections.forEach(
+        (sec: {
+          startPoint: { x: number; y: number };
+          endPoint: { x: number; y: number };
+          bendPoints?: { x: number; y: number }[];
+        }) => {
+          let d = `M ${sec.startPoint.x} ${sec.startPoint.y}`;
+          if (sec.bendPoints) {
+            sec.bendPoints.forEach((bp: { x: number; y: number }) => {
+              d += ` L ${bp.x} ${bp.y}`;
+            });
+          }
+          d += ` L ${sec.endPoint.x} ${sec.endPoint.y}`;
+          edgesOutput += `<path d="${d}" class="aws-edge" marker-end="url(#arrow)" />`;
         }
-        d += ` L ${sec.endPoint.x} ${sec.endPoint.y}`;
-        edgesOutput += `<path d="${d}" class="aws-edge" marker-end="url(#arrow)" />`;
-      });
+      );
     }
   });
-
 
   // 3. Render Nodes (Foreground Layer)
   // Recursive Render Function (No internal edge rendering)
@@ -220,6 +233,7 @@ export async function renderSvg(
           case '"':
             return '&quot;';
         }
+        /* istanbul ignore next */
         return c;
       });
     };
@@ -245,10 +259,9 @@ export async function renderSvg(
 
       return `<text x="${x}" y="${y}" class="${cssClass}">${escapeXml(displayText)}</text>`;
     };
-    
-        // Group for this node
-    output += `<g transform="translate(${nodeX}, ${nodeY})">`;
 
+    // Group for this node
+    output += `<g transform="translate(${nodeX}, ${nodeY})">`;
 
     if (props.type === 'container') {
       // Render Container Rect

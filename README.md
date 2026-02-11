@@ -36,31 +36,39 @@ adac_nodejs/
 - **Frontend**: React, Vite, TailwindCSS, React Flow
 - **Backend/CLI**: TypeScript, Express (for serving UI/API)
 - **CLI Framework**: [Commander.js](https://github.com/tj/commander.js)
-- **Graph Layouts**: 
-  - [elkjs](https://github.com/kieler/elkjs) (Eclipse Layout Kernel) - *Default*
+- **Graph Layouts**:
+  - [elkjs](https://github.com/kieler/elkjs) (Eclipse Layout Kernel) - _Default_
   - [dagre](https://github.com/dagrejs/dagre) (Directed Graph Layout)
 - **YAML Parser**: [js-yaml](https://github.com/nodeca/js-yaml)
 
 ## 🚀 Setup & Installation Guide
 
 ### Prerequisites
+
 - Ensure you have **Node.js** (v16+ recommended) installed.
 
 ### 1. Clone & Install
+
 Navigate to the project directory and install dependencies:
+
 ```bash
 npm install
 ```
 
 ### 2. Build the Project
+
 Compile the TypeScript backend and building the React frontend:
+
 ```bash
 npm run build
 ```
+
 This processes both the CLI tools (`dist/`) and the Web UI (`frontend/dist` -> `public/`).
 
 ### 3. Setup Icons
+
 Run the icon generation script to index available AWS icons for the frontend:
+
 ```bash
 node generate_icons.js
 ```
@@ -72,21 +80,26 @@ node generate_icons.js
 The ADAC Web UI provides a modern interface for designing architectures visually or generating diagrams from existing code.
 
 ### 1. Start the Server
+
 Start the web application:
+
 ```bash
 npm start
 ```
+
 The application will be accessible at **http://localhost:3000**.
 
 ### 2. Features
 
 #### 🎨 Visual Designer
+
 - **Drag & Drop**: Select AWS components from the sidebar (organized by category) and drag them onto the infinite canvas.
 - **Connect**: Draw lines between nodes to define relationships.
 - **View YAML**: Instantly see the ADAC-compliant YAML representation of your visual design.
 - **Export**: Generate and download a high-quality SVG image of your architecture.
 
 #### 📤 Upload YAML
+
 - **Quick Generation**: Click "Upload YAML" from the home screen.
 - **Direct Preview**: Upload any valid `.yaml` file. The screen will split to show your file details on the left and the generated diagram on the right.
 - **Download**: Save the generated result as an SVG.
@@ -98,17 +111,20 @@ The application will be accessible at **http://localhost:3000**.
 You can generate diagrams programmatically using the built-in CLI tool.
 
 **Syntax:**
+
 ```bash
 node dist/bin/adac-diagram.js diagram <file> [options]
 ```
 
 **Options:**
+
 - `-o, --out <path>`: Output SVG file path (default: `diagram.svg`).
 - `--layout <engine>`: Layout engine to use (`elk` or `dagre`).
 
 **Examples:**
 
 1. **Default Generation (ELK):**
+
    ```bash
    node dist/bin/adac-diagram.js diagram yamls/adac_example_webapp.yaml -o output_diagrams/webapp.svg
    ```
@@ -119,8 +135,9 @@ node dist/bin/adac-diagram.js diagram <file> [options]
    ```
 
 ## 📊 Layout Engines
-| Feature | **ELK (Default)** | **Dagre** |
-| :--- | :--- | :--- |
-| **Best For** | Complex, deeply nested architectures with many containers. | Simpler, standard directed graphs (flowcharts). |
-| **Routing** | Advanced orthogonal routing. | Simple routing. |
-| **Alignment** | Port-based alignment. | Rank-based alignment. |
+
+| Feature       | **ELK (Default)**                                          | **Dagre**                                       |
+| :------------ | :--------------------------------------------------------- | :---------------------------------------------- |
+| **Best For**  | Complex, deeply nested architectures with many containers. | Simpler, standard directed graphs (flowcharts). |
+| **Routing**   | Advanced orthogonal routing.                               | Simple routing.                                 |
+| **Alignment** | Port-based alignment.                                      | Rank-based alignment.                           |

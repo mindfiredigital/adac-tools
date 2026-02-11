@@ -19,7 +19,7 @@ program
     try {
       const inputPath = path.resolve(process.cwd(), file);
       const layout = options.layout as 'elk' | 'dagre';
-      
+
       let outputPath = options.output;
       if (!outputPath) {
         const parsed = path.parse(inputPath);
@@ -29,9 +29,9 @@ program
 
       console.log(`Generating diagram from ${inputPath}...`);
       await generateDiagram(inputPath, outputPath, layout);
-      
-    } catch (error: any) {
-      console.error('Error generating diagram:', error.message);
+    } catch (error) {
+      const err = error as Error;
+      console.error('Error generating diagram:', err.message);
       process.exit(1);
     }
   });
