@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ADAC Diagram Generator</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            padding: 20px;
+            max-width: 100%;
+            margin: 0 auto;
+            background: #fdfdfd;
+            color: #333;
+            box-sizing: border-box;
+        }
+
+        *,
+        *:before,
+        *:after {
+            box-sizing: inherit;
+        }
+
+        h1 {
+            color: #232f3e;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        p {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .app-container {
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+            padding: 0 20px;
+            justify-content: center;
+            min-height: 80vh;
+            transition: all 0.5s ease;
+        }
+
+        .sidebar {
+            width: 350px;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .controls {
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            border: 1px solid #eee;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            z-index: 10;
+        }
+
+        .logs-panel {
+            max-height: 0;
+            opacity: 0;
+            padding: 0;
+            overflow: hidden;
+            background: #1e1e1e;
+            color: #a5d6a7;
+            font-family: 'Consolas', 'Monaco', monospace;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+            font-size: 13px;
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 0 solid #333;
+        }
+
+        .logs-panel.visible {
+            max-height: 500px;
+            opacity: 1;
+            padding: 15px;
+            border: 1px solid #333;
+            overflow-y: auto;
+        }
+
+        .graph-container {
+            flex-grow: 1;
+            min-width: 0;
+            display: none;
+            opacity: 0;
+            animation: fadeIn 0.5s forwards;
+        }
+
+        .graph-container.visible {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        label {
+            font-weight: 500;
+        }
+
+        input[type="file"] {
+            padding: 10px;
+            border: 1px dashed #ccc;
+            border-radius: 4px;
+            width: 100%;
+        }
+
+        .radio-group {
+            display: flex;
+            gap: 20px;
+        }
+
+        .radio-group label {
+            font-weight: normal;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .actions {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-top: 10px;
+        }
+
+        button#generateBtn {
+            background: #ec7211;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+            flex: 1;
+        }
+
+        button#generateBtn:hover {
+            background: #eb5f07;
+        }
+
+        button#generateBtn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        button#toggleLogsBtn {
+            background: #232f3e;
+            color: #fff;
+            border: 1px solid #444;
+            padding: 9px;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 44px;
+            font-family: monospace;
+            font-size: 16px;
+            transition: all 0.2s;
+        }
+
+        button#toggleLogsBtn:hover,
+        button#toggleLogsBtn.active {
+            background: #333;
+            border-color: #666;
+            color: #4CAF50;
+        }
+
+        #output {
+            border: 1px solid #ddd;
+            padding: 10px;
+            background: #fff;
+            min-height: 600px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+        }
+
+        #output svg {
+            width: 100%;
+            height: auto;
+            max-width: 100%;
+        }
+
+        .error {
+            color: #ff6b6b;
+            background: rgba(255, 0, 0, 0.1);
+            padding: 5px;
+            border-radius: 4px;
+        }
+
+        /* Scrollbar */
+        .logs-panel::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .logs-panel::-webkit-scrollbar-track {
+            background: #1e1e1e;
+        }
+
+        .logs-panel::-webkit-scrollbar-thumb {
+            background: #444;
+            border-radius: 4px;
+        }
+
+        .logs-panel::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>ADAC Diagram Generator</h1>
+    <p>Upload your <code>.adac.yaml</code> file to generate an architecture diagram.</p>
+
+    <div class="app-container">
+        <div class="sidebar">
+            <div class="controls">
+                <div class="form-group">
+                    <label for="yamlFile">1. Select YAML File</label>
+                    <input type="file" id="yamlFile" accept=".yaml,.yml">
+                </div>
+
+                <div class="form-group">
+                    <label>2. Choose Layout Engine</label>
+                    <div class="radio-group">
+                        <label><input type="radio" name="layout" value="elk" checked> ELK (Recommended)</label>
+                        <label><input type="radio" name="layout" value="dagre"> Dagre</label>
+                    </div>
+                </div>
+
+                <div class="actions">
+                    <button id="generateBtn">Generate Diagram</button>
+                    <button id="toggleLogsBtn" title="Logs">_></button>
+                </div>
+
+                <div id="status" style="font-size: 14px; color: #666; min-height: 20px;"></div>
+            </div>
+
+            <div id="logsPanel" class="logs-panel">
+                <div
+                    style="border-bottom: 1px solid #333; padding-bottom: 5px; margin-bottom: 10px; font-weight: bold; color: #fff; display:flex; justify-content:space-between;">
+                    <span>TERMINAL OUTPUT</span>
+                    <span id="execTime" style="color: #4CAF50;"></span>
+                </div>
+                <div id="logList">
+                    <div style="color: #666;">Waiting for input...</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="graph-container">
+            <div id="output">
+                <span style="color: #999;">Diagram will appear here...</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const generateBtn = document.getElementById('generateBtn');
+        const toggleLogsBtn = document.getElementById('toggleLogsBtn');
+        const fileInput = document.getElementById('yamlFile');
+        const output = document.getElementById('output');
+        const logsPanel = document.getElementById('logsPanel');
+        const logList = document.getElementById('logList');
+        const statusDiv = document.getElementById('status');
+        const execTimeSpan = document.getElementById('execTime');
+        const graphContainer = document.querySelector('.graph-container');
+
+        // Toggle Logs
+        toggleLogsBtn.addEventListener('click', () => {
+            logsPanel.classList.toggle('visible');
+            toggleLogsBtn.classList.toggle('active');
+        });
+
+        const appendLog = (msg, type = 'info') => {
+            const div = document.createElement('div');
+            div.textContent = msg;
+            if (type === 'error') div.style.color = '#ff6b6b';
+            if (type === 'success') div.style.color = '#4CAF50';
+            logList.appendChild(div);
+            logsPanel.scrollTop = logsPanel.scrollHeight;
+        };
+
+        generateBtn.addEventListener('click', async () => {
+            const file = fileInput.files[0];
+            if (!file) {
+                alert('Please select a file first.');
+                return;
+            }
+
+            const layout = document.querySelector('input[name="layout"]:checked').value;
+
+            generateBtn.disabled = true;
+            generateBtn.innerText = 'Generating...';
+            statusDiv.textContent = 'Processing...';
+            output.innerHTML = '<span style="color: #666;">Processing...</span>';
+
+            // Auto open logs
+            if (!logsPanel.classList.contains('visible')) {
+                logsPanel.classList.add('visible');
+                toggleLogsBtn.classList.add('active');
+            }
+
+            // Show graph container
+            if (!graphContainer.classList.contains('visible')) {
+                graphContainer.classList.add('visible');
+            }
+
+            // Clear previous logs
+            logList.innerHTML = '';
+            execTimeSpan.textContent = '';
+            appendLog(`> Initializing generation for ${file.name}...`);
+            appendLog(`> Engine: ${layout.toUpperCase()}`);
+
+            try {
+                const text = await file.text();
+
+                const response = await fetch('/api/generate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        content: text,
+                        layout: layout
+                    })
+                });
+
+                if (!response.ok) {
+                    const err = await response.json();
+                    throw new Error(err.error || 'Failed to generate');
+                }
+
+                const result = await response.json();
+
+                output.innerHTML = result.svg;
+
+                // Add Server Logs
+                if (result.logs && result.logs.length) {
+                    result.logs.forEach(l => appendLog(l));
+                }
+
+                const duration = result.duration || 0;
+                execTimeSpan.textContent = `${duration}ms`;
+                appendLog(`> Done.`, 'success');
+                statusDiv.textContent = `Completed in ${duration}ms`;
+
+            } catch (e) {
+                output.innerHTML = `<div class="error">Error: ${e.message}</div>`;
+                appendLog(`Error: ${e.message}`, 'error');
+                if (e.logs) {
+                    e.logs.forEach(l => appendLog(l));
+                }
+                statusDiv.textContent = 'Failed';
+            } finally {
+                generateBtn.disabled = false;
+                generateBtn.innerText = 'Generate Diagram';
+            }
+        });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,22 @@
+{
+  "name": "@mindfiredigital/adac-icons-aws",
+  "version": "0.0.1",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "setup-icons": "npx ts-node scripts/iconSetup.ts"
+  },
+  "devDependencies": {
+    "axios": "^1.6.2",
+    "adm-zip": "^0.5.10",
+    "js-yaml": "^4.1.0",
+    "fs-extra": "^11.2.0",
+    "@types/adm-zip": "^0.5.5",
+    "@types/js-yaml": "^4.0.9",
+    "@types/fs-extra": "^11.0.4",
+    "ts-node": "^10.9.2"
+  },
+  "license": "ISC"
+}

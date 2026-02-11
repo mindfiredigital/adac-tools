@@ -1,0 +1,132 @@
+version: "1.0"
+
+metadata:
+  name: "Kubernetes Web Application"
+  author: "ADAC Test Suite"
+  description: "Production-ready Kubernetes app with full container configuration"
+  created: "2026-01-05"
+  adac_version: "1.0"
+
+applications:
+  - id: "web-frontend"
+    name: "Web Frontend"
+    type: "frontend"
+    technology: "React"
+    owner: "frontend-team"
+
+  - id: "api-backend"
+    name: "API Backend"
+    type: "backend"
+    technology: "Node.js"
+    owner: "backend-team"
+
+infrastructure:
+  clouds:
+    - id: "k8s-cluster"
+      provider: "kubernetes"
+      region: "prod-cluster"
+      tier: "primary"
+      services:
+
+        # ---------- Frontend Deployment ----------
+        - id: "frontend-deployment"
+          type: "compute"
+          subtype: "kubernetes-deployment"
+          runs: ["web-frontend"]
+          config:
+            namespace: "web"
+            replicas: 3
+            container:
+              name: "frontend"
+              image: "example/web-frontend:1.0.0"
+              port: 3000
+              resources:
+                requests:
+                  cpu: "100m"
+                  memory: "128Mi"
+                limits:
+                  cpu: "500m"
+                  memory: "256Mi"
+              env:
+                - name: "API_BASE_URL"
+                  value: "http://api-service.api.svc.cluster.local"
+              liveness_probe:
+                http_get:
+                  path: "/health"
+                  port: 3000
+                initial_delay_seconds: 30
+              readiness_probe:
+                http_get:
+                  path: "/ready"
+                  port: 3000
+                initial_delay_seconds: 10
+
+        - id: "frontend-service"
+          type: "network"
+          subtype: "kubernetes-service"
+          config:
+            namespace: "web"
+            service_type: "ClusterIP"
+            selector: "frontend-deployment"
+            port: 80
+            target_port: 3000
+
+        # ---------- Backend Deployment ----------
+        - id: "backend-deployment"
+          type: "compute"
+          subtype: "kubernetes-deployment"
+          runs: ["api-backend"]
+          config:
+            namespace: "api"
+            replicas: 2
+            container:
+              name: "backend"
+              image: "example/api-backend:1.0.0"
+              port: 8080
+              resources:
+                requests:
+                  cpu: "200m"
+                  memory: "256Mi"
+                limits:
+                  cpu: "1"
+                  memory: "512Mi"
+              env:
+                - name: "DATABASE_URL"
+                  value: "postgres://db:5432/app"
+              liveness_probe:
+                http_get:
+                  path: "/health"
+                  port: 8080
+                initial_delay_seconds: 20
+
+        - id: "backend-service"
+          type: "network"
+          subtype: "kubernetes-service"
+          config:
+            namespace: "api"
+            service_type: "ClusterIP"
+            selector: "backend-deployment"
+            port: 8080
+            target_port: 8080
+
+        # ---------- Ingress ----------
+        - id: "web-ingress"
+          type: "network"
+          subtype: "kubernetes-ingress"
+          config:
+            namespace: "web"
+            ingress_class: "nginx"
+            rules:
+              - host: "example.local"
+                paths:
+                  - path: "/"
+                    service: "frontend-service"
+                    port: 80
+
+connections:
+  - id: "frontend-to-backend"
+    from: "web-frontend"
+    to: "api-backend"
+    type: "api-call"
+    protocol: "HTTP"
+ 

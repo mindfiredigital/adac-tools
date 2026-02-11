@@ -1,0 +1,22 @@
+{
+  "name": "@mindfiredigital/adac-diagram",
+  "version": "0.0.1",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "elkjs": "^0.11.0",
+    "fs-extra": "^11.3.3",
+    "@mindfiredigital/adac-schema": "workspace:*",
+    "@mindfiredigital/adac-parser": "workspace:*",
+    "@mindfiredigital/adac-layout-dagre": "workspace:*",
+    "@mindfiredigital/adac-layout-elk": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/fs-extra": "^11.0.4"
+  },
+  "license": "ISC"
+}
