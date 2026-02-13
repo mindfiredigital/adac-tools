@@ -4,140 +4,107 @@ ADAC (AWS Diagram As Code) is a comprehensive architecture diagramming tool that
 
 ## 📂 Folder Structure
 
+The project is organized as a monorepo using pnpm workspaces:
+
 ```
 adac_nodejs/
-├── bin/                # CLI entry point scripts
-│   └── adac-diagram.ts # Main CLI command definition
-├── frontend/           # React-based Web Application
-│   ├── src/
-│   │   ├── components/ # React components (Flow, Sidebar, Uploader, Home)
-│   │   └── assets/     # Frontend assets
-│   ├── public/         # Static assets served by the web server
-│   └── ...
-├── src/                # Core application source code
-│   ├── buildElkGraph.ts # Logic to transform ADAC model to ELK graph
-│   ├── diagram.ts       # Main orchestrator function
-│   ├── layoutDagre.ts   # Adapter for Dagre layout engine
-│   ├── mappings/        # Icon mapping definitions and assets
-│   │   ├── definition.yaml # Raw ADAC definition file
-│   │   └── icon-map.json   # Processed icon mapping
-│   ├── parseAdac.ts     # YAML parsing logic
-│   ├── renderSvg.ts     # SVG rendering engine
-│   └── types.ts        # TypeScript type definitions
-├── yamls/              # Example and usage YAML input files
-├── output_diagrams/    # Directory for generated SVG outputs
-├── dist/               # Compiled Backend/CLI JavaScript files
-└── package.json        # Project manifest and dependencies
+├── packages/
+│   ├── diagram/            # Core Diagram Logic & CLI (@mindfiredigital/adac-diagram)
+│   ├── layout-elk/         # ELK Layout Logic
+│   ├── layout-dagre/       # Dagre Layout Logic
+│   ├── icons-aws/          # AWS Icons and utility scripts
+│   ├── parser/             # YAML Parsing Logic
+│   ├── schema/             # Schema Definitions
+│   └── ...                 # Other utility packages
+├── yamls/                  # Example YAML input files
+└── ...
 ```
 
-## 🛠 Tools & Technologies Used
+## 🛠 Tools & Technologies
 
-- **Runtime**: Node.js
-- **Frontend**: React, Vite, TailwindCSS, React Flow
-- **Backend/CLI**: TypeScript, Express (for serving UI/API)
-- **CLI Framework**: [Commander.js](https://github.com/tj/commander.js)
-- **Graph Layouts**:
-  - [elkjs](https://github.com/kieler/elkjs) (Eclipse Layout Kernel) - _Default_
-  - [dagre](https://github.com/dagrejs/dagre) (Directed Graph Layout)
-- **YAML Parser**: [js-yaml](https://github.com/nodeca/js-yaml)
+- **Runtime**: Node.js (v20+ recommended)
+- **Package Manager**: [pnpm](https://pnpm.io/)
+- **Frontend**: React, Vite, TailwindCSS, React Flow (in `packages/web`)
+- **CLI**: Commander.js (in `packages/diagram`)
+- **Graph Layouts**: `elkjs` (default), `dagre`
 
-## 🚀 Setup & Installation Guide
+## 🚀 Setup & Installation
 
 ### Prerequisites
 
-- Ensure you have **Node.js** (v16+ recommended) installed.
+- [Node.js](https://nodejs.org/) (v20 or newer)
+- [pnpm](https://pnpm.io/) (Install via `npm install -g pnpm`)
 
-### 1. Clone & Install
+### Installation
 
-Navigate to the project directory and install dependencies:
-
-```bash
-npm install
-```
-
-### 2. Build the Project
-
-Compile the TypeScript backend and building the React frontend:
+1. Clone the repository.
+2. Install dependencies from the root directory:
 
 ```bash
-npm run build
+pnpm install
 ```
 
-This processes both the CLI tools (`dist/`) and the Web UI (`frontend/dist` -> `public/`).
-
-### 3. Setup Icons
-
-Run the icon generation script to index available AWS icons for the frontend:
+3. Build all packages:
 
 ```bash
-node generate_icons.js
+pnpm run build
 ```
 
----
+This will compile TypeScript code across all packages.
 
-## 🖥️ Using the Web Interface (Visual Designer)
+### Running Tests
 
-The ADAC Web UI provides a modern interface for designing architectures visually or generating diagrams from existing code.
-
-### 1. Start the Server
-
-Start the web application:
+To verify that all packages are working correctly, run the test suite:
 
 ```bash
-npm start
+npm test
 ```
 
-The application will be accessible at **http://localhost:3000**.
+This executes Jest/Vitest tests across the monorepo to ensure functionality.
 
-### 2. Features
+## 🖥️ Web Application
 
-#### 🎨 Visual Designer
+To start the web interface in development mode:
 
-- **Drag & Drop**: Select AWS components from the sidebar (organized by category) and drag them onto the infinite canvas.
-- **Connect**: Draw lines between nodes to define relationships.
-- **View YAML**: Instantly see the ADAC-compliant YAML representation of your visual design.
-- **Export**: Generate and download a high-quality SVG image of your architecture.
+1. Navigate to the web package:
+   ```bash
+   cd packages/web
+   ```
+2. Start the development server:
+   ```bash
+   pnpm dev
+   ```
+3. Open your browser and navigate to the local URL (usually `http://localhost:5173`).
 
-#### 📤 Upload YAML
+## 💻 CLI Usage
 
-- **Quick Generation**: Click "Upload YAML" from the home screen.
-- **Direct Preview**: Upload any valid `.yaml` file. The screen will split to show your file details on the left and the generated diagram on the right.
-- **Download**: Save the generated result as an SVG.
+You can use the CLI to generate diagrams programmatically.
 
----
-
-## 💻 Using the CLI (Command Line Interface)
-
-You can generate diagrams programmatically using the built-in CLI tool.
-
-**Syntax:**
+To run the CLI from source (after building):
 
 ```bash
-node dist/bin/adac-diagram.js diagram <file> [options]
+pnpm cli --help
+# Or directly:
+node packages/diagram/dist/cli.js --help
 ```
 
-**Options:**
+### Example Usage
+
+Generate a diagram from a YAML file:
+
+```bash
+pnpm cli diagram yamls/adac_example_webapp.yaml -o output.svg
+```
+
+### Options
 
 - `-o, --out <path>`: Output SVG file path (default: `diagram.svg`).
 - `--layout <engine>`: Layout engine to use (`elk` or `dagre`).
 
-**Examples:**
+## 🎨 Icons Setup
 
-1. **Default Generation (ELK):**
+If icons are missing or need updating, you can run the setup script from the root:
 
-   ```bash
-   node dist/bin/adac-diagram.js diagram yamls/adac_example_webapp.yaml -o output_diagrams/webapp.svg
-   ```
-
-2. **Using Dagre Layout:**
-   ```bash
-   node dist/bin/adac-diagram.js diagram yamls/test_dagre.yaml --layout dagre -o output_diagrams/test_dagre.svg
-   ```
-
-## 📊 Layout Engines
-
-| Feature       | **ELK (Default)**                                          | **Dagre**                                       |
-| :------------ | :--------------------------------------------------------- | :---------------------------------------------- |
-| **Best For**  | Complex, deeply nested architectures with many containers. | Simpler, standard directed graphs (flowcharts). |
-| **Routing**   | Advanced orthogonal routing.                               | Simple routing.                                 |
-| **Alignment** | Port-based alignment.                                      | Rank-based alignment.                           |
+```bash
+pnpm setup:icons
+```

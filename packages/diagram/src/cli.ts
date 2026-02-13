@@ -1,14 +1,23 @@
 #!/usr/bin/env node
 import { Command } from 'commander';
-import { generateDiagram } from '@mindfiredigital/adac-diagram';
+import { generateDiagram } from './index.js'; // Updated import
 import path from 'path';
+import { readFileSync } from 'fs';
 
 const program = new Command();
+
+// Read version from package.json
+const pkgPath = path.resolve(__dirname, '../package.json');
+let version = '0.0.1';
+try {
+  const pkg = JSON.parse(readFileSync(pkgPath, 'utf-8'));
+  version = pkg.version;
+} catch (e) {}
 
 program
   .name('adac')
   .description('ADAC - AWS Diagram Generator')
-  .version('1.0.0');
+  .version(version);
 
 program
   .command('diagram <file>')
@@ -19,7 +28,7 @@ program
     try {
       const inputPath = path.resolve(process.cwd(), file);
       const layout = options.layout as 'elk' | 'dagre';
-
+      
       let outputPath = options.output;
       if (!outputPath) {
         const parsed = path.parse(inputPath);
@@ -29,9 +38,9 @@ program
 
       console.log(`Generating diagram from ${inputPath}...`);
       await generateDiagram(inputPath, outputPath, layout);
-    } catch (error) {
-      const err = error as Error;
-      console.error('Error generating diagram:', err.message);
+      
+    } catch (error: any) {
+      console.error('Error generating diagram:', error.message);
       process.exit(1);
     }
   });

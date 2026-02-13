@@ -3,7 +3,6 @@
 ## ✅ Configured Tools
 
 ### ESLint
-
 - **Config**: `.eslintrc.json`
 - **Extensions**: `.ts`, `.tsx`
 - **Ignores**: `dist/`, `node_modules/`
@@ -14,7 +13,6 @@
   ```
 
 ### Prettier
-
 - **Config**: `.prettierrc`
 - **Ignore**: `.prettierignore`
 - **Settings**:
@@ -30,23 +28,18 @@
 ### Husky Git Hooks
 
 #### Pre-commit Hook
-
 Runs before every commit:
-
 - ✓ ESLint checks (`pnpm lint`)
 - ✓ Prettier format validation (`pnpm format:check`)
 
 #### Commit-msg Hook
-
 Validates commit message format. **Only allows**:
-
 - `feat: <message>` - New features
 - `fix: <message>` - Bug fixes
 - `patch: <message>` - Small patches/updates
 - `doc: <message>` - Documentation changes
 
 **Examples of valid commits**:
-
 ```bash
 git commit -m "feat: add user authentication"
 git commit -m "fix: resolve memory leak in parser"
@@ -55,7 +48,6 @@ git commit -m "patch: update dependency versions"
 ```
 
 **Examples of invalid commits** (will be rejected):
-
 ```bash
 git commit -m "Added new feature"  # ❌ Missing prefix
 git commit -m "chore: update deps" # ❌ 'chore' not allowed
