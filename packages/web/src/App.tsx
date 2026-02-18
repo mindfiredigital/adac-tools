@@ -8,11 +8,11 @@ function App() {
   const [view, setView] = useState<'home' | 'ui' | 'upload'>('home');
 
   if (view === 'home') {
-    return <Home onSelect={setView} />;
+      return <Home onSelect={setView} />;
   }
 
   if (view === 'upload') {
-    return <Uploader onBack={() => setView('home')} />;
+      return <Uploader onBack={() => setView('home')} />;
   }
 
   return (
@@ -20,7 +20,7 @@ function App() {
       <Sidebar />
       <Flow onBack={() => setView('home')} />
     </div>
-  );
+  )
 }
 
-export default App;
+export default App

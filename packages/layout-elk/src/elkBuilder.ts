@@ -3,52 +3,34 @@ import {
   AdacService,
   AdacApplication,
   AdacCloud,
+  AdacConnection,
 } from '@mindfiredigital/adac-schema';
 import { ElkNode, ElkEdge } from './types.js';
 import path from 'path';
 import fs from 'fs';
+import { fileURLToPath } from 'url';
 
 // Load Icon Map
 // We use fs.readFileSync to avoid TS import issues with JSON for now and ensure runtime correctness
+// const __filename = fileURLToPath(import.meta.url);
 // const __dirname = path.dirname(__filename);
 
 // Adjust path to find mappings from compiled dist or src
-// Current file: src/graph/elkBuilder.ts
-// Mappings: src/mappings/icon-map.json
-const MAPPING_PATH = path.join(
-  __dirname,
-  '..',
-  '..',
-  'src',
-  'mappings',
-  'icon-map.json'
-);
-
 let ICON_MAP: Record<string, string> = {};
 
 try {
-  // Try loading from local src (dev) or relative
-  if (fs.existsSync(MAPPING_PATH)) {
-    ICON_MAP = JSON.parse(fs.readFileSync(MAPPING_PATH, 'utf8'));
+  // 1. Look in ./mappings/icon-map.json (Expected relative to compiled file in dist/elkBuilder.js)
+  const distMapping = path.join(__dirname, 'mappings', 'icon-map.json');
+  
+  // 2. Look in ../src/mappings/icon-map.json (Dev environment, running from dist but source separate)
+  const srcMapping = path.resolve(__dirname, '..', 'src', 'mappings', 'icon-map.json');
+
+  if (fs.existsSync(distMapping)) {
+    ICON_MAP = JSON.parse(fs.readFileSync(distMapping, 'utf8'));
+  } else if (fs.existsSync(srcMapping)) {
+    ICON_MAP = JSON.parse(fs.readFileSync(srcMapping, 'utf8'));
   } else {
-    // Try looking in dist structure: dist/src/graph/elkBuilder.js -> dist/src/mappings/
-    const distMapping = path.resolve(__dirname, '../mappings/icon-map.json');
-    if (fs.existsSync(distMapping)) {
-      ICON_MAP = JSON.parse(fs.readFileSync(distMapping, 'utf8'));
-    } else {
-      // Just in case it's flat in dist
-      const flatMapping = path.resolve(
-        __dirname,
-        '../../mappings/icon-map.json'
-      );
-      if (fs.existsSync(flatMapping)) {
-        ICON_MAP = JSON.parse(fs.readFileSync(flatMapping, 'utf8'));
-      } else {
-        console.warn(
-          `Warning: Could not find icon-map.json at ${distMapping} or ${MAPPING_PATH}`
-        );
-      }
-    }
+    console.warn(`Warning: Could not find icon-map.json at ${distMapping} or ${srcMapping}`);
   }
 } catch (e) {
   console.error('Failed to load icon-map.json', e);
@@ -172,28 +154,28 @@ export function buildElkGraph(adac: AdacConfig): ElkNode {
   const resolveAssetPath = (relativePath?: string) => {
     if (!relativePath) return undefined;
     // console.log('Resolving:', relativePath);
-
+    
     // relativePath is like "aws-icons/image.png"
     try {
       // We need absolute path.
       // Try to find assets dir.
-      // If running from src: src/assets
-      // If running from dist: src/assets (we aren't copying assets to dist usually)
+    // If running from src: src/assets
+    // If running from dist: src/assets (we aren't copying assets to dist usually)
 
-      // We can try to resolve from CWD or __dirname
-      const possiblePath = path.resolve(
-        __dirname,
-        '../../src/assets',
-        relativePath
-      );
-      // check if exists
-      if (fs.existsSync(possiblePath)) return possiblePath;
+    // We can try to resolve from CWD or __dirname
+    const possiblePath = path.resolve(
+      __dirname,
+      '../../src/assets',
+      relativePath
+    );
+    // check if exists
+    if (fs.existsSync(possiblePath)) return possiblePath;
 
-      const possiblePath2 = path.resolve(__dirname, '../assets', relativePath);
-      if (fs.existsSync(possiblePath2)) return possiblePath2;
+    const possiblePath2 = path.resolve(__dirname, '../assets', relativePath);
+    if (fs.existsSync(possiblePath2)) return possiblePath2;
 
-      // Fallback relative to CWD
-      return path.resolve(process.cwd(), 'src/assets', relativePath);
+    // Fallback relative to CWD
+    return path.resolve(process.cwd(), 'src/assets', relativePath);
     } catch (e) {
       console.warn('Error resolving path:', relativePath, e);
       return undefined;
@@ -254,9 +236,7 @@ export function buildElkGraph(adac: AdacConfig): ElkNode {
   };
 
   (adac.applications || []).forEach(collectGroup);
-  (adac.infrastructure?.clouds || []).forEach((c: AdacCloud) =>
-    (c.services || []).forEach(collectGroup)
-  );
+  (adac.infrastructure?.clouds || []).forEach((c: AdacCloud) => (c.services || []).forEach(collectGroup));
 
   logicalGroups.forEach((groupName) => {
     const groupId = `group-${groupName.replace(/\s+/g, '-')}`;
@@ -555,7 +535,7 @@ export function buildElkGraph(adac: AdacConfig): ElkNode {
   });
 
   // 5. Edges and Implicit Nodes
-  (adac.connections || []).forEach((conn) => {
+  (adac.connections || []).forEach((conn: any) => {
     const from = conn.from || conn.source;
     const to = conn.to || conn.target;
 
