@@ -10,5 +10,13 @@
     "build": "tsc",
     "test": "echo \"No tests specified\" && exit 0"
   },
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "ajv": "^8.18.0",
+    "ajv-formats": "^3.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^25.2.3",
+    "vitest": "^4.0.18"
+  }
 }

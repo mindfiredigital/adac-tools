@@ -51,3 +51,5 @@ export interface AdacConfig {
   connections?: AdacConnection[];
   layout?: 'elk' | 'dagre';
 }
+
+export * from './validator.js';

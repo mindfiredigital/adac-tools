@@ -14,7 +14,7 @@ adac_nodejs/
 │   ├── layout-dagre/       # Dagre Layout Logic
 │   ├── icons-aws/          # AWS Icons and utility scripts
 │   ├── parser/             # YAML Parsing Logic
-│   ├── schema/             # Schema Definitions
+│   ├── schema/             # Schema Definitions & Validation Logic (@mindfiredigital/adac-schema)
 │   └── ...                 # Other utility packages
 ├── yamls/                  # Example YAML input files
 └── ...
@@ -98,8 +98,24 @@ pnpm cli diagram yamls/adac_example_webapp.yaml -o output.svg
 
 ### Options
 
+
 - `-o, --out <path>`: Output SVG file path (default: `diagram.svg`).
 - `--layout <engine>`: Layout engine to use (`elk` or `dagre`).
+- `--validate`: Validate strict adherence to ADAC schema before generation.
+
+### Schema Validation
+
+You can validate your ADAC YAML files against the official specification without generating a diagram:
+
+```bash
+pnpm cli validate yamls/my-architecture.yaml
+```
+
+Or enforce validation during diagram generation:
+
+```bash
+pnpm cli diagram yamls/my-architecture.yaml --validate
+```
 
 ## 🎨 Icons Setup
 
