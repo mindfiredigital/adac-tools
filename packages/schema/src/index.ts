@@ -12,16 +12,21 @@ export interface AdacApplication {
 
 export interface AdacService {
   id: string;
-  type: string;
-  subtype?: string;
-  runs?: string[];
+  service: string; // Renamed from type to match schema
   name?: string;
   description?: string;
-  subnets?: string[];
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  config?: any; // shorthand used in some yamls
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  configuration?: any; // full name used in others
+  runs?: string[]; // Application IDs
+  configuration?: any; // Service-specific config
+  cost?: any;
+  monitoring?: any;
+  tags?: Record<string, string>;
+  
+  // Deprecated/Legacy fields to keep for now if needed, or remove? 
+  // Schema does not have these, so removing to be safe and strictly typed.
+  // subtype?: string; 
+  // subnets?: string[];
+  // config?: any;
+  
   ai_tags?: {
     icon?: string;
     group?: string;
@@ -30,7 +35,12 @@ export interface AdacService {
 }
 
 export interface AdacCloud {
-  provider: string;
+  id: string; // Added id
+  provider: 'aws'; // Constrained to aws
+  region: string;
+  account_id?: string;
+  vpc_id?: string;
+  tier?: string;
   services: AdacService[];
 }
 

@@ -8,14 +8,15 @@
   ],
   "scripts": {
     "build": "tsc",
-    "test": "echo \"No tests specified\" && exit 0"
+    "test": "vitest run"
   },
   "dependencies": {
     "js-yaml": "^4.1.1",
     "@mindfiredigital/adac-schema": "workspace:*"
   },
   "devDependencies": {
-    "@types/js-yaml": "^4.0.9"
+    "@types/js-yaml": "^4.0.9",
+    "vitest": "^4.0.18"
   },
   "license": "ISC"
 }
