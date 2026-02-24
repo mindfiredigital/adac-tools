@@ -16,7 +16,9 @@
     "lint:fix": "eslint . --ext .ts,.tsx --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "prepare": "husky"
+    "prepare": "husky",
+    "cli": "node packages/diagram/dist/cli.js",
+    "setup:icons": "pnpm --filter @mindfiredigital/adac-icons-aws run setup-icons"
   },
   "keywords": [
     "adac",

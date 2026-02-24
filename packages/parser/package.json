@@ -1,8 +1,12 @@
 {
   "name": "@mindfiredigital/adac-parser",
   "version": "0.0.1",
+  "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsc",
     "test": "vitest run"
@@ -12,7 +16,8 @@
     "@mindfiredigital/adac-schema": "workspace:*"
   },
   "devDependencies": {
-    "@types/js-yaml": "^4.0.9"
+    "@types/js-yaml": "^4.0.9",
+    "vitest": "^4.0.18"
   },
   "license": "ISC"
 }

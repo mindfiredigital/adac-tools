@@ -16,33 +16,21 @@ import { fileURLToPath } from 'url';
 // const __dirname = path.dirname(__filename);
 
 // Adjust path to find mappings from compiled dist or src
-// Current file: src/graph/elkBuilder.ts
-// Mappings: src/mappings/icon-map.json
-const MAPPING_PATH = path.join(__dirname, '..', '..', 'src', 'mappings', 'icon-map.json');
-
 let ICON_MAP: Record<string, string> = {};
 
 try {
-  // Try loading from local src (dev) or relative
-  if (fs.existsSync(MAPPING_PATH)) {
-    ICON_MAP = JSON.parse(fs.readFileSync(MAPPING_PATH, 'utf8'));
+  // 1. Look in ./mappings/icon-map.json (Expected relative to compiled file in dist/elkBuilder.js)
+  const distMapping = path.join(__dirname, 'mappings', 'icon-map.json');
+  
+  // 2. Look in ../src/mappings/icon-map.json (Dev environment, running from dist but source separate)
+  const srcMapping = path.resolve(__dirname, '..', 'src', 'mappings', 'icon-map.json');
+
+  if (fs.existsSync(distMapping)) {
+    ICON_MAP = JSON.parse(fs.readFileSync(distMapping, 'utf8'));
+  } else if (fs.existsSync(srcMapping)) {
+    ICON_MAP = JSON.parse(fs.readFileSync(srcMapping, 'utf8'));
   } else {
-    // Try looking in dist structure: dist/src/graph/elkBuilder.js -> dist/src/mappings/
-    const distMapping = path.resolve(
-      __dirname,
-      '../mappings/icon-map.json'
-    );
-    if (fs.existsSync(distMapping)) {
-      ICON_MAP = JSON.parse(fs.readFileSync(distMapping, 'utf8'));
-    } else {
-        // Just in case it's flat in dist
-        const flatMapping = path.resolve(__dirname, '../../mappings/icon-map.json');
-        if (fs.existsSync(flatMapping)) {
-             ICON_MAP = JSON.parse(fs.readFileSync(flatMapping, 'utf8'));
-        } else {
-            console.warn(`Warning: Could not find icon-map.json at ${distMapping} or ${MAPPING_PATH}`);
-        }
-    }
+    console.warn(`Warning: Could not find icon-map.json at ${distMapping} or ${srcMapping}`);
   }
 } catch (e) {
   console.error('Failed to load icon-map.json', e);

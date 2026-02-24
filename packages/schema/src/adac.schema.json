@@ -1,0 +1,865 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://adac-spec.org/schema/v0.1/adac.schema.json",
+  "title": "ADAC (Architecture Diagram as Code) v0.1",
+  "description": "Minimal schema for describing cloud infrastructure architectures with comprehensive AWS service coverage",
+  "type": "object",
+  "required": [
+    "version",
+    "metadata",
+    "infrastructure"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "type": "string",
+      "description": "ADAC specification version"
+    },
+    "metadata": {
+      "$ref": "#/$defs/metadata"
+    },
+    "applications": {
+      "type": "array",
+      "description": "Logical applications and services",
+      "items": {
+        "$ref": "#/$defs/application"
+      }
+    },
+    "infrastructure": {
+      "type": "object",
+      "required": [
+        "clouds"
+      ],
+      "properties": {
+        "clouds": {
+          "type": "array",
+          "description": "Cloud provider configurations",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/cloud"
+          }
+        }
+      }
+    },
+    "connections": {
+      "type": "array",
+      "description": "Connections between applications and infrastructure",
+      "items": {
+        "$ref": "#/$defs/connection"
+      }
+    },
+    "cost": {
+      "$ref": "#/$defs/cost_summary"
+    },
+    "layout": {
+      "type": "string",
+      "enum": [
+        "elk",
+        "dagre"
+      ],
+      "description": "Layout engine for the diagram"
+    }
+  },
+  "$defs": {
+    "metadata": {
+      "type": "object",
+      "required": [
+        "name",
+        "created"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Architecture name",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "description": {
+          "type": "string",
+          "description": "Architecture description",
+          "maxLength": 1000
+        },
+        "author": {
+          "type": "string",
+          "description": "Author or team name"
+        },
+        "version": {
+          "type": "string",
+          "description": "Architecture version (semantic versioning recommended)",
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+        },
+        "created": {
+          "type": "string",
+          "format": "date",
+          "description": "Creation date (ISO 8601 format: YYYY-MM-DD)"
+        },
+        "updated": {
+          "type": "string",
+          "format": "date",
+          "description": "Last update date"
+        },
+        "organization": {
+          "type": "string",
+          "description": "Organization name"
+        },
+        "tags": {
+          "type": "array",
+          "description": "Tags for categorization",
+          "items": {
+            "type": "string"
+          }
+        },
+        "environment": {
+          "type": "string",
+          "enum": [
+            "development",
+            "staging",
+            "production",
+            "test",
+            "demo"
+          ],
+          "description": "Environment type"
+        },
+        "adac_version": {
+          "type": "string"
+        }
+      }
+    },
+    "application": {
+      "type": "object",
+      "required": [
+        "id",
+        "name",
+        "type"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the application",
+          "pattern": "^[a-z0-9-]+$"
+        },
+        "name": {
+          "type": "string",
+          "description": "Human-readable application name"
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "frontend",
+            "backend",
+            "api",
+            "database",
+            "cache",
+            "queue",
+            "worker",
+            "batch-job",
+            "mobile",
+            "desktop",
+            "iot",
+            "ml-model",
+            "data-pipeline",
+            "microservice"
+          ],
+          "description": "Application type"
+        },
+        "technology": {
+          "type": "string",
+          "description": "Technology stack (e.g., React, Node.js, Python)"
+        },
+        "description": {
+          "type": "string",
+          "description": "Application description"
+        },
+        "owner": {
+          "type": "string",
+          "description": "Team or person responsible"
+        },
+        "repository": {
+          "type": "string",
+          "format": "uri",
+          "description": "Source code repository URL"
+        },
+        "sla": {
+          "$ref": "#/$defs/sla"
+        },
+        "visual": {
+          "$ref": "#/$defs/visual"
+        }
+      }
+    },
+    "visual": {
+      "type": "object",
+      "properties": {
+        "icon": {
+          "type": "string"
+        },
+        "group": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "cloud": {
+      "type": "object",
+      "required": [
+        "id",
+        "provider",
+        "region"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for this cloud configuration",
+          "pattern": "^[a-z0-9-]+$"
+        },
+        "provider": {
+          "type": "string",
+          "description": "Cloud provider (aws, kubernetes, azure, gcp, etc.)"
+        },
+        "region": {
+          "type": "string",
+          "description": "Region or cluster identifier"
+        },
+        "account_id": {
+          "type": "string",
+          "description": "AWS Account ID",
+          "pattern": "^[0-9]{12}$"
+        },
+        "vpc_id": {
+          "type": "string",
+          "description": "VPC identifier",
+          "pattern": "^vpc-[a-z0-9-]+$"
+        },
+        "tier": {
+          "type": "string",
+          "enum": [
+            "primary",
+            "secondary",
+            "failover",
+            "disaster-recovery",
+            "development",
+            "test"
+          ],
+          "description": "Infrastructure tier"
+        },
+        "services": {
+          "type": "array",
+          "description": "AWS services in this region",
+          "items": {
+            "$ref": "#/$defs/aws_service"
+          }
+        }
+      }
+    },
+    "aws_service": {
+      "type": "object",
+      "required": [
+        "id"
+      ],
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for this service instance",
+          "pattern": "^[a-z0-9-]+$"
+        },
+        "service": {
+          "type": "string",
+          "enum": [
+            "ec2",
+            "ecs-fargate",
+            "ecs-ec2",
+            "eks",
+            "lambda",
+            "elastic-beanstalk",
+            "lightsail",
+            "batch",
+            "rds-mysql",
+            "rds-postgres",
+            "rds-mariadb",
+            "rds-oracle",
+            "rds-sqlserver",
+            "rds-aurora-mysql",
+            "rds-aurora-postgres",
+            "dynamodb",
+            "documentdb",
+            "neptune",
+            "elasticache-redis",
+            "elasticache-memcached",
+            "redshift",
+            "timestream",
+            "s3",
+            "efs",
+            "fsx",
+            "glacier",
+            "storage-gateway",
+            "alb",
+            "nlb",
+            "clb",
+            "cloudfront",
+            "route53",
+            "api-gateway-rest",
+            "api-gateway-http",
+            "api-gateway-websocket",
+            "appsync",
+            "vpc",
+            "direct-connect",
+            "vpn",
+            "transit-gateway",
+            "nat-gateway",
+            "internet-gateway",
+            "vpc-peering",
+            "privatelink",
+            "sqs",
+            "sns",
+            "kinesis-streams",
+            "kinesis-firehose",
+            "kinesis-analytics",
+            "msk",
+            "eventbridge",
+            "step-functions",
+            "cloudwatch",
+            "cloudwatch-logs",
+            "x-ray",
+            "cloudtrail",
+            "config",
+            "systems-manager",
+            "iam",
+            "cognito",
+            "secrets-manager",
+            "kms",
+            "waf",
+            "shield",
+            "guardduty",
+            "security-hub",
+            "macie",
+            "inspector",
+            "acm",
+            "sagemaker",
+            "rekognition",
+            "comprehend",
+            "textract",
+            "transcribe",
+            "translate",
+            "polly",
+            "bedrock",
+            "glue",
+            "athena",
+            "emr",
+            "data-pipeline",
+            "quicksight",
+            "codepipeline",
+            "codebuild",
+            "codecommit",
+            "codedeploy",
+            "codeartifact",
+            "ecr",
+            "amplify",
+            "ses",
+            "pinpoint",
+            "workspaces",
+            "appstream",
+            "backup",
+            "cloudformation",
+            "cdk",
+            "opsworks",
+            "elastic-disaster-recovery",
+            "network",
+            "security",
+            "compute",
+            "database",
+            "storage",
+            "subnet",
+            "application-load-balancer",
+            "security-group"
+          ],
+          "description": "AWS service type"
+        },
+        "type": {
+          "type": "string"
+        },
+        "subtype": {
+          "type": "string"
+        },
+        "config": {
+          "type": "object"
+        },
+        "name": {
+          "type": "string",
+          "description": "Human-readable service name"
+        },
+        "description": {
+          "type": "string",
+          "description": "Service description"
+        },
+        "runs": {
+          "type": "array",
+          "description": "Application IDs that run on this service",
+          "items": {
+            "type": "string"
+          }
+        },
+        "configuration": {
+          "type": "object",
+          "description": "Service-specific configuration",
+          "properties": {
+            "instance_type": {
+              "type": "string",
+              "description": "EC2/RDS instance type (e.g., t3.medium, db.r5.large)"
+            },
+            "instance_count": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Number of instances"
+            },
+            "auto_scaling": {
+              "type": "object",
+              "properties": {
+                "enabled": {
+                  "type": "boolean"
+                },
+                "min": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "max": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "target_cpu": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 100
+                }
+              }
+            },
+            "storage_gb": {
+              "type": "number",
+              "minimum": 0,
+              "description": "Storage size in GB"
+            },
+            "storage_type": {
+              "type": "string",
+              "enum": [
+                "gp3",
+                "gp2",
+                "io2",
+                "io1",
+                "st1",
+                "sc1",
+                "standard"
+              ],
+              "description": "EBS volume type"
+            },
+            "multi_az": {
+              "type": "boolean",
+              "description": "Multi-AZ deployment"
+            },
+            "engine_version": {
+              "type": "string",
+              "description": "Database engine version"
+            },
+            "memory_mb": {
+              "type": "integer",
+              "minimum": 128,
+              "description": "Lambda memory in MB"
+            },
+            "timeout_seconds": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 900,
+              "description": "Lambda timeout in seconds"
+            },
+            "vpc_enabled": {
+              "type": "boolean",
+              "description": "Whether service runs in VPC"
+            },
+            "public_access": {
+              "type": "boolean",
+              "description": "Whether service is publicly accessible"
+            },
+            "encryption_enabled": {
+              "type": "boolean",
+              "description": "Whether encryption at rest is enabled"
+            },
+            "backup_enabled": {
+              "type": "boolean",
+              "description": "Whether automated backups are enabled"
+            },
+            "backup_retention_days": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 35,
+              "description": "Backup retention period"
+            }
+          }
+        },
+        "availability_zones": {
+          "type": "array",
+          "description": "Availability zones where service is deployed",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z]{2}-[a-z]+-[0-9][a-z]$"
+          }
+        },
+        "security_groups": {
+          "type": "array",
+          "description": "Security group IDs",
+          "items": {
+            "type": "string",
+            "pattern": "^sg-[a-z0-9-]+$"
+          }
+        },
+        "subnets": {
+          "type": "array",
+          "description": "Subnet IDs",
+          "items": {
+            "type": "string",
+            "pattern": "^subnet-[a-z0-9-]+$"
+          }
+        },
+        "iam_role": {
+          "type": "string",
+          "description": "IAM role ARN or name"
+        },
+        "tags": {
+          "type": "object",
+          "description": "AWS resource tags",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "cost": {
+          "$ref": "#/$defs/cost"
+        },
+        "monitoring": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "metrics": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "alarms": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "metric": {
+                    "type": "string"
+                  },
+                  "threshold": {
+                    "type": "number"
+                  },
+                  "comparison": {
+                    "type": "string",
+                    "enum": [
+                      "GreaterThan",
+                      "LessThan",
+                      "GreaterThanOrEqualTo",
+                      "LessThanOrEqualTo"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "visual": {
+          "$ref": "#/$defs/visual"
+        }
+      }
+    },
+    "connection": {
+      "type": "object",
+      "required": [
+        "id",
+        "from",
+        "to",
+        "type"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for this connection",
+          "pattern": "^[a-z0-9-]+$"
+        },
+        "from": {
+          "type": "string",
+          "description": "Source application or service ID"
+        },
+        "to": {
+          "type": "string",
+          "description": "Target application or service ID"
+        },
+        "source": {
+          "type": "string",
+          "description": "Legacy field for source (same as from)"
+        },
+        "target": {
+          "type": "string",
+          "description": "Legacy field for target (same as to)"
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "api-call",
+            "database-query",
+            "cache-read",
+            "cache-write",
+            "message-publish",
+            "message-consume",
+            "file-upload",
+            "file-download",
+            "stream-read",
+            "stream-write",
+            "replication",
+            "backup",
+            "failover",
+            "cdn-origin",
+            "dns-resolution",
+            "vpn-tunnel",
+            "direct-connect",
+            "vpc-peering",
+            "transit-gateway",
+            "load-balancing",
+            "authentication",
+            "authorization",
+            "database"
+          ],
+          "description": "Connection type"
+        },
+        "protocol": {
+          "type": "string",
+          "enum": [
+            "HTTP",
+            "HTTPS",
+            "HTTP/2",
+            "HTTP/3",
+            "WebSocket",
+            "gRPC",
+            "GraphQL",
+            "REST",
+            "SOAP",
+            "TCP",
+            "UDP",
+            "MQTT",
+            "AMQP",
+            "Redis",
+            "SQL",
+            "MongoDB",
+            "S3",
+            "NFS",
+            "SMB",
+            "FTP",
+            "SFTP",
+            "SSH",
+            "RDP",
+            "PostgreSQL",
+            "MySQL"
+          ],
+          "description": "Communication protocol"
+        },
+        "port": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 65535,
+          "description": "Network port"
+        },
+        "description": {
+          "type": "string",
+          "description": "Connection description"
+        },
+        "latency_ms": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Expected latency in milliseconds"
+        },
+        "bandwidth_mbps": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Expected bandwidth in Mbps"
+        },
+        "requests_per_second": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Expected request rate"
+        },
+        "security": {
+          "type": "object",
+          "properties": {
+            "encryption_in_transit": {
+              "type": "boolean",
+              "description": "Whether connection is encrypted"
+            },
+            "tls_version": {
+              "type": "string",
+              "enum": [
+                "TLS1.2",
+                "TLS1.3"
+              ],
+              "description": "TLS version"
+            },
+            "authentication_required": {
+              "type": "boolean",
+              "description": "Whether authentication is required"
+            },
+            "authentication_method": {
+              "type": "string",
+              "enum": [
+                "IAM",
+                "API-Key",
+                "OAuth2",
+                "JWT",
+                "SAML",
+                "BasicAuth",
+                "Certificate"
+              ],
+              "description": "Authentication method"
+            }
+          }
+        },
+        "compliance": {
+          "type": "array",
+          "description": "Compliance requirements",
+          "items": {
+            "type": "string",
+            "enum": [
+              "PCI-DSS",
+              "HIPAA",
+              "GDPR",
+              "SOC2",
+              "ISO27001",
+              "FedRAMP"
+            ]
+          }
+        }
+      }
+    },
+    "sla": {
+      "type": "object",
+      "description": "Service Level Agreement",
+      "properties": {
+        "availability_percent": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Availability percentage (e.g., 99.99)"
+        },
+        "max_latency_ms": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Maximum acceptable latency in milliseconds"
+        },
+        "rto_minutes": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Recovery Time Objective in minutes"
+        },
+        "rpo_minutes": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Recovery Point Objective in minutes"
+        }
+      }
+    },
+    "cost": {
+      "type": "object",
+      "description": "Cost information for a service",
+      "properties": {
+        "monthly_estimate": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Estimated monthly cost in USD"
+        },
+        "currency": {
+          "type": "string",
+          "enum": [
+            "USD",
+            "EUR",
+            "GBP",
+            "JPY",
+            "INR"
+          ],
+          "default": "USD",
+          "description": "Currency"
+        },
+        "breakdown": {
+          "type": "array",
+          "description": "Cost breakdown details",
+          "items": {
+            "type": "string"
+          }
+        },
+        "pricing_model": {
+          "type": "string",
+          "enum": [
+            "on-demand",
+            "reserved-1yr",
+            "reserved-3yr",
+            "spot",
+            "savings-plan"
+          ],
+          "description": "AWS pricing model"
+        }
+      }
+    },
+    "cost_summary": {
+      "type": "object",
+      "description": "Overall architecture cost summary",
+      "properties": {
+        "total_monthly": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Total monthly cost"
+        },
+        "currency": {
+          "type": "string",
+          "enum": [
+            "USD",
+            "EUR",
+            "GBP",
+            "JPY",
+            "INR"
+          ],
+          "default": "USD"
+        },
+        "by_service": {
+          "type": "object",
+          "description": "Cost breakdown by service type",
+          "additionalProperties": {
+            "type": "number"
+          }
+        },
+        "by_environment": {
+          "type": "object",
+          "description": "Cost breakdown by environment",
+          "additionalProperties": {
+            "type": "number"
+          }
+        },
+        "notes": {
+          "type": "array",
+          "description": "Cost calculation notes",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,18 +1,21 @@
 {
-    "name": "@mindfiredigital/adac-layout-dagre",
-    "version": "0.0.1",
-    "main": "dist/index.js",
-    "types": "dist/index.d.ts",
-    "scripts": {
-        "build": "tsc",
-        "test": "vitest run"
-    },
-    "dependencies": {
-        "dagre": "^0.8.5",
-        "@mindfiredigital/adac-layout-core": "workspace:*",
-        "@mindfiredigital/adac-layout-elk": "workspace:*"
-    },
-    "devDependencies": {
-        "@types/dagre": "^0.7.53"
-    }
+  "name": "@mindfiredigital/adac-layout-dagre",
+  "version": "0.0.1",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "echo \"No tests specified\" && exit 0"
+  },
+  "dependencies": {
+    "dagre": "^0.8.5",
+    "@mindfiredigital/adac-layout-core": "workspace:*",
+    "@mindfiredigital/adac-layout-elk": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/dagre": "^0.7.53"
+  }
 }

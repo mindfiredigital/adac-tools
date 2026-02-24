@@ -2,6 +2,7 @@ import fs from 'fs-extra';
 import { parseAdac, parseAdacFromContent } from '@mindfiredigital/adac-parser';
 import { buildElkGraph } from '@mindfiredigital/adac-layout-elk';
 import { renderSvg } from '../renderers/svgRenderer.js';
+import { validateAdacConfig } from '@mindfiredigital/adac-schema';
 
 // New function returning SVG string
 export interface GenerationResult {
@@ -12,7 +13,8 @@ export interface GenerationResult {
 
 export async function generateDiagramSvg(
   inputContent: string,
-  layoutOverride?: 'elk' | 'dagre'
+  layoutOverride?: 'elk' | 'dagre',
+  validate: boolean = false
 ): Promise<GenerationResult> {
   const logs: string[] = [];
   const start = Date.now();
@@ -25,6 +27,16 @@ export async function generateDiagramSvg(
     log('Parsing ADAC content...');
     // const { parseAdacFromContent } = await import('../parsers/adacParser.js');
     const adac = parseAdacFromContent(inputContent);
+    
+    if (validate) {
+      log('Validating ADAC schema...');
+      const validation = validateAdacConfig(adac);
+      if (!validation.valid) {
+        throw new Error(`Schema validation failed:\n${validation.errors?.join('\n')}`);
+      }
+      log('Schema validation passed.');
+    }
+    
     log('Parsing complete.');
 
     log('Building ELK Graph structure...');
@@ -56,10 +68,11 @@ export async function generateDiagramSvg(
 export async function generateDiagram(
   input: string,
   output: string,
-  layoutOverride?: 'elk' | 'dagre'
+  layoutOverride?: 'elk' | 'dagre',
+  validate: boolean = false
 ): Promise<void> {
   const raw = await fs.readFile(input, 'utf8');
-  const { svg } = await generateDiagramSvg(raw, layoutOverride);
+  const { svg } = await generateDiagramSvg(raw, layoutOverride, validate);
 
   await fs.outputFile(output, svg);
   console.log(`✅ Diagram generated: ${output}`);

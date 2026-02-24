@@ -24,11 +24,11 @@ pnpm -r build
 ## 3. CLI Testing
 Test the CLI executable:
 ```bash
-node packages/cli/dist/index.js --help
+node packages/diagram/dist/cli.js --help
 ```
 Test diagram generation:
 ```bash
-node packages/cli/dist/index.js diagram ./yamls/example.yaml -o output.svg
+node packages/diagram/dist/cli.js diagram ./yamls/example.yaml -o output.svg
 ```
 
 ## 4. Visual Testing
