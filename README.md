@@ -57,7 +57,7 @@ This will compile TypeScript code across all packages.
 To verify that all packages are working correctly, run the test suite:
 
 ```bash
-npm test
+pnpm test
 ```
 
 This executes Jest/Vitest tests across the monorepo to ensure functionality.
@@ -93,7 +93,7 @@ node packages/diagram/dist/cli.js --help
 Generate a diagram from a YAML file:
 
 ```bash
-pnpm cli diagram yamls/adac_example_webapp.yaml -o output.svg
+pnpm cli diagram yamls/aws.adac.yaml -o output.svg
 ```
 
 ### Options

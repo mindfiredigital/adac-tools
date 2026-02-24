@@ -56,7 +56,7 @@ program
       const inputPath = path.resolve(process.cwd(), file);
       console.log(`Validating ${inputPath}...`);
       
-      const config = parseAdac(inputPath);
+      const config = parseAdac(inputPath, { validate: false });
       const result = validateAdacConfig(config);
       
       if (result.valid) {

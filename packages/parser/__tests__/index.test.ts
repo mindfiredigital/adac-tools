@@ -1,6 +1,6 @@
 
 import { describe, it, expect } from 'vitest';
-import { parseAdacFromContent, AdacParseError } from './index';
+import { parseAdacFromContent, AdacParseError } from '../src/index';
 import { AdacConfig } from '@mindfiredigital/adac-schema';
 
 describe('Adac Parser', () => {
