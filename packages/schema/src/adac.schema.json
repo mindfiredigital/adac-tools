@@ -4,12 +4,15 @@
   "title": "ADAC (Architecture Diagram as Code) v0.1",
   "description": "Minimal schema for describing cloud infrastructure architectures with comprehensive AWS service coverage",
   "type": "object",
-  "required": ["version", "metadata", "infrastructure"],
+  "required": [
+    "version",
+    "metadata",
+    "infrastructure"
+  ],
   "additionalProperties": false,
   "properties": {
     "version": {
       "type": "string",
-      "const": "0.1",
       "description": "ADAC specification version"
     },
     "metadata": {
@@ -24,7 +27,9 @@
     },
     "infrastructure": {
       "type": "object",
-      "required": ["clouds"],
+      "required": [
+        "clouds"
+      ],
       "properties": {
         "clouds": {
           "type": "array",
@@ -45,12 +50,23 @@
     },
     "cost": {
       "$ref": "#/$defs/cost_summary"
+    },
+    "layout": {
+      "type": "string",
+      "enum": [
+        "elk",
+        "dagre"
+      ],
+      "description": "Layout engine for the diagram"
     }
   },
   "$defs": {
     "metadata": {
       "type": "object",
-      "required": ["name", "created"],
+      "required": [
+        "name",
+        "created"
+      ],
       "additionalProperties": false,
       "properties": {
         "name": {
@@ -96,14 +112,27 @@
         },
         "environment": {
           "type": "string",
-          "enum": ["development", "staging", "production", "test", "demo"],
+          "enum": [
+            "development",
+            "staging",
+            "production",
+            "test",
+            "demo"
+          ],
           "description": "Environment type"
+        },
+        "adac_version": {
+          "type": "string"
         }
       }
     },
     "application": {
       "type": "object",
-      "required": ["id", "name", "type"],
+      "required": [
+        "id",
+        "name",
+        "type"
+      ],
       "additionalProperties": false,
       "properties": {
         "id": {
@@ -154,12 +183,34 @@
         },
         "sla": {
           "$ref": "#/$defs/sla"
+        },
+        "visual": {
+          "$ref": "#/$defs/visual"
         }
       }
     },
+    "visual": {
+      "type": "object",
+      "properties": {
+        "icon": {
+          "type": "string"
+        },
+        "group": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
     "cloud": {
       "type": "object",
-      "required": ["id", "provider", "region"],
+      "required": [
+        "id",
+        "provider",
+        "region"
+      ],
       "additionalProperties": false,
       "properties": {
         "id": {
@@ -169,22 +220,11 @@
         },
         "provider": {
           "type": "string",
-          "const": "aws",
-          "description": "Cloud provider (AWS only in v0.1)"
+          "description": "Cloud provider (aws, kubernetes, azure, gcp, etc.)"
         },
         "region": {
           "type": "string",
-          "description": "AWS region",
-          "enum": [
-            "us-east-1", "us-east-2", "us-west-1", "us-west-2",
-            "ca-central-1",
-            "eu-west-1", "eu-west-2", "eu-west-3", "eu-central-1", "eu-north-1", "eu-south-1",
-            "ap-south-1", "ap-northeast-1", "ap-northeast-2", "ap-northeast-3", 
-            "ap-southeast-1", "ap-southeast-2", "ap-east-1",
-            "sa-east-1",
-            "me-south-1",
-            "af-south-1"
-          ]
+          "description": "Region or cluster identifier"
         },
         "account_id": {
           "type": "string",
@@ -194,11 +234,18 @@
         "vpc_id": {
           "type": "string",
           "description": "VPC identifier",
-          "pattern": "^vpc-[a-z0-9]+$"
+          "pattern": "^vpc-[a-z0-9-]+$"
         },
         "tier": {
           "type": "string",
-          "enum": ["primary", "secondary", "failover", "disaster-recovery", "development", "test"],
+          "enum": [
+            "primary",
+            "secondary",
+            "failover",
+            "disaster-recovery",
+            "development",
+            "test"
+          ],
           "description": "Infrastructure tier"
         },
         "services": {
@@ -212,8 +259,10 @@
     },
     "aws_service": {
       "type": "object",
-      "required": ["id", "service"],
-      "additionalProperties": false,
+      "required": [
+        "id"
+      ],
+      "additionalProperties": true,
       "properties": {
         "id": {
           "type": "string",
@@ -320,9 +369,26 @@
             "cloudformation",
             "cdk",
             "opsworks",
-            "elastic-disaster-recovery"
+            "elastic-disaster-recovery",
+            "network",
+            "security",
+            "compute",
+            "database",
+            "storage",
+            "subnet",
+            "application-load-balancer",
+            "security-group"
           ],
           "description": "AWS service type"
+        },
+        "type": {
+          "type": "string"
+        },
+        "subtype": {
+          "type": "string"
+        },
+        "config": {
+          "type": "object"
         },
         "name": {
           "type": "string",
@@ -355,10 +421,22 @@
             "auto_scaling": {
               "type": "object",
               "properties": {
-                "enabled": {"type": "boolean"},
-                "min": {"type": "integer", "minimum": 0},
-                "max": {"type": "integer", "minimum": 1},
-                "target_cpu": {"type": "number", "minimum": 0, "maximum": 100}
+                "enabled": {
+                  "type": "boolean"
+                },
+                "min": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "max": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "target_cpu": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 100
+                }
               }
             },
             "storage_gb": {
@@ -368,7 +446,15 @@
             },
             "storage_type": {
               "type": "string",
-              "enum": ["gp3", "gp2", "io2", "io1", "st1", "sc1", "standard"],
+              "enum": [
+                "gp3",
+                "gp2",
+                "io2",
+                "io1",
+                "st1",
+                "sc1",
+                "standard"
+              ],
               "description": "EBS volume type"
             },
             "multi_az": {
@@ -427,7 +513,7 @@
           "description": "Security group IDs",
           "items": {
             "type": "string",
-            "pattern": "^sg-[a-z0-9]+$"
+            "pattern": "^sg-[a-z0-9-]+$"
           }
         },
         "subnets": {
@@ -435,7 +521,7 @@
           "description": "Subnet IDs",
           "items": {
             "type": "string",
-            "pattern": "^subnet-[a-z0-9]+$"
+            "pattern": "^subnet-[a-z0-9-]+$"
           }
         },
         "iam_role": {
@@ -455,33 +541,56 @@
         "monitoring": {
           "type": "object",
           "properties": {
-            "enabled": {"type": "boolean"},
+            "enabled": {
+              "type": "boolean"
+            },
             "metrics": {
               "type": "array",
-              "items": {"type": "string"}
+              "items": {
+                "type": "string"
+              }
             },
             "alarms": {
               "type": "array",
               "items": {
                 "type": "object",
                 "properties": {
-                  "name": {"type": "string"},
-                  "metric": {"type": "string"},
-                  "threshold": {"type": "number"},
+                  "name": {
+                    "type": "string"
+                  },
+                  "metric": {
+                    "type": "string"
+                  },
+                  "threshold": {
+                    "type": "number"
+                  },
                   "comparison": {
                     "type": "string",
-                    "enum": ["GreaterThan", "LessThan", "GreaterThanOrEqualTo", "LessThanOrEqualTo"]
+                    "enum": [
+                      "GreaterThan",
+                      "LessThan",
+                      "GreaterThanOrEqualTo",
+                      "LessThanOrEqualTo"
+                    ]
                   }
                 }
               }
             }
           }
+        },
+        "visual": {
+          "$ref": "#/$defs/visual"
         }
       }
     },
     "connection": {
       "type": "object",
-      "required": ["id", "from", "to", "type"],
+      "required": [
+        "id",
+        "from",
+        "to",
+        "type"
+      ],
       "additionalProperties": false,
       "properties": {
         "id": {
@@ -496,6 +605,14 @@
         "to": {
           "type": "string",
           "description": "Target application or service ID"
+        },
+        "source": {
+          "type": "string",
+          "description": "Legacy field for source (same as from)"
+        },
+        "target": {
+          "type": "string",
+          "description": "Legacy field for target (same as to)"
         },
         "type": {
           "type": "string",
@@ -521,7 +638,8 @@
             "transit-gateway",
             "load-balancing",
             "authentication",
-            "authorization"
+            "authorization",
+            "database"
           ],
           "description": "Connection type"
         },
@@ -550,7 +668,9 @@
             "FTP",
             "SFTP",
             "SSH",
-            "RDP"
+            "RDP",
+            "PostgreSQL",
+            "MySQL"
           ],
           "description": "Communication protocol"
         },
@@ -588,7 +708,10 @@
             },
             "tls_version": {
               "type": "string",
-              "enum": ["TLS1.2", "TLS1.3"],
+              "enum": [
+                "TLS1.2",
+                "TLS1.3"
+              ],
               "description": "TLS version"
             },
             "authentication_required": {
@@ -597,7 +720,15 @@
             },
             "authentication_method": {
               "type": "string",
-              "enum": ["IAM", "API-Key", "OAuth2", "JWT", "SAML", "BasicAuth", "Certificate"],
+              "enum": [
+                "IAM",
+                "API-Key",
+                "OAuth2",
+                "JWT",
+                "SAML",
+                "BasicAuth",
+                "Certificate"
+              ],
               "description": "Authentication method"
             }
           }
@@ -607,7 +738,14 @@
           "description": "Compliance requirements",
           "items": {
             "type": "string",
-            "enum": ["PCI-DSS", "HIPAA", "GDPR", "SOC2", "ISO27001", "FedRAMP"]
+            "enum": [
+              "PCI-DSS",
+              "HIPAA",
+              "GDPR",
+              "SOC2",
+              "ISO27001",
+              "FedRAMP"
+            ]
           }
         }
       }
@@ -650,7 +788,13 @@
         },
         "currency": {
           "type": "string",
-          "enum": ["USD", "EUR", "GBP", "JPY", "INR"],
+          "enum": [
+            "USD",
+            "EUR",
+            "GBP",
+            "JPY",
+            "INR"
+          ],
           "default": "USD",
           "description": "Currency"
         },
@@ -663,7 +807,13 @@
         },
         "pricing_model": {
           "type": "string",
-          "enum": ["on-demand", "reserved-1yr", "reserved-3yr", "spot", "savings-plan"],
+          "enum": [
+            "on-demand",
+            "reserved-1yr",
+            "reserved-3yr",
+            "spot",
+            "savings-plan"
+          ],
           "description": "AWS pricing model"
         }
       }
@@ -679,7 +829,13 @@
         },
         "currency": {
           "type": "string",
-          "enum": ["USD", "EUR", "GBP", "JPY", "INR"],
+          "enum": [
+            "USD",
+            "EUR",
+            "GBP",
+            "JPY",
+            "INR"
+          ],
           "default": "USD"
         },
         "by_service": {
