@@ -22,3 +22,4 @@ docs/BUILD_REPORT.md
 *.png
 packages/icons-*/assets/
 packages/icons-*/mappings/
+public/assets/

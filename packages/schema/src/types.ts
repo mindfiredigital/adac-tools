@@ -1,4 +1,3 @@
-
 export interface AdacApplication {
   id: string;
   name: string;
@@ -32,15 +31,15 @@ export interface AdacService {
   name?: string;
   description?: string;
   runs?: string[];
-  configuration?: any;
-  cost?: any;
-  monitoring?: any;
+  configuration?: Record<string, unknown>;
+  cost?: Record<string, unknown>;
+  monitoring?: Record<string, unknown>;
   tags?: Record<string, string>;
   availability_zones?: string[];
   security_groups?: string[];
   subnets?: string[];
   iam_role?: string;
-  
+
   visual?: {
     icon?: string;
     group?: string;
@@ -54,7 +53,7 @@ export interface AdacService {
   };
   subtype?: string;
   type?: string;
-  config?: any;
+  config?: Record<string, unknown>;
 }
 
 export interface AdacCloud {
@@ -77,7 +76,7 @@ export interface AdacConnection {
 }
 
 export interface AdacConfig {
-  version: "0.1";
+  version: '0.1';
   metadata: {
     name: string;
     created: string;
@@ -94,6 +93,6 @@ export interface AdacConfig {
     clouds: AdacCloud[];
   };
   connections?: AdacConnection[];
-  cost?: any;
+  cost?: Record<string, unknown>;
   layout?: 'elk' | 'dagre';
 }

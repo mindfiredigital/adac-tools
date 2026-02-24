@@ -1,17 +1,17 @@
 {
-    "functions": {
-        "api/**/*.ts": {
-            "includeFiles": "src/{mappings,assets}/**"
-        }
+  "functions": {
+    "api/**/*.ts": {
+      "includeFiles": "src/{mappings,assets}/**"
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "/api/index"
     },
-    "rewrites": [
-        {
-            "source": "/api/(.*)",
-            "destination": "/api/index"
-        },
-        {
-            "source": "/(.*)",
-            "destination": "/api/index"
-        }
-    ]
+    {
+      "source": "/(.*)",
+      "destination": "/api/index"
+    }
+  ]
 }
