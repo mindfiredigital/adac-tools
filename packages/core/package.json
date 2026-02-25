@@ -1,0 +1,30 @@
+{
+  "name": "@mindfiredigital/adac-core",
+  "version": "0.1.0",
+  "description": "Core integration package for ADAC (Parser, Validator, and Layouts)",
+  "author": "Yogesh Sharma",
+  "license": "ISC",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "elkjs": "^0.11.0"
+  },
+  "devDependencies": {
+    "@mindfiredigital/adac-parser": "workspace:*",
+    "@mindfiredigital/adac-schema": "workspace:*",
+    "@mindfiredigital/adac-layout-elk": "workspace:*",
+    "@mindfiredigital/adac-layout-dagre": "workspace:*",
+    "@mindfiredigital/adac-layout-core": "workspace:*",
+    "tsup": "^8.3.5",
+    "vitest": "^4.0.18",
+    "typescript": "^5.9.3"
+  }
+}

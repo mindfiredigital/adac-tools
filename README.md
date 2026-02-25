@@ -1,126 +1,141 @@
-# ADAC - AWS Diagram Generator
+# ADAC - AWS Diagram As Code
 
-ADAC (AWS Diagram As Code) is a comprehensive architecture diagramming tool that offers both a powerful CLI for programmatic generation and a modern Web UI for visual design. It leverages the precision of `elkjs` for graph layout algorithms to produce high-quality SVG diagrams from ADAC-formatted YAML files or visual drag-and-drop interactions.
+ADAC is a comprehensive ecosystem for generating high-quality AWS architecture diagrams. It provides a powerful command-line interface (CLI), a developer-friendly core engine, and a modern Web UI for both programmatic and visual diagram creation.
 
-## 📂 Folder Structure
+## 📂 Project Overview & Structure
 
-The project is organized as a monorepo using pnpm workspaces:
+The project is managed as a **pnpm monorepo**, ensuring modularity and clean separation of concerns.
 
-```
-adac_nodejs/
-├── packages/
-│   ├── diagram/            # Core Diagram Logic & CLI (@mindfiredigital/adac-diagram)
-│   ├── layout-elk/         # ELK Layout Logic
-│   ├── layout-dagre/       # Dagre Layout Logic
-│   ├── icons-aws/          # AWS Icons and utility scripts
-│   ├── parser/             # YAML Parsing Logic
-│   ├── schema/             # Schema Definitions & Validation Logic (@mindfiredigital/adac-schema)
-│   └── ...                 # Other utility packages
-├── yamls/                  # Example YAML input files
-└── ...
-```
+### 📦 Packages
 
-## 🛠 Tools & Technologies
+| Package                                  | Description                     | Key Responsibilities                                                            |
+| :--------------------------------------- | :------------------------------ | :------------------------------------------------------------------------------ |
+| **`@mindfiredigital/adac-core`**         | The brain of the system.        | Orchestrates parsing, validation, and rendering. Bundles layout engines.        |
+| **`@mindfiredigital/adac-diagram`**      | Distribution package for users. | Provides the `adac` CLI and a public API for web applications.                  |
+| **`@mindfiredigital/adac-cli`**          | CLI Engine.                     | Handles command-line arguments and help text. Separated from the diagram logic. |
+| **`@mindfiredigital/adac-parser`**       | YAML Logic.                     | Robust parsing of ADAC-formatted YAML files into structured data.               |
+| **`@mindfiredigital/adac-schema`**       | Validation Layer.               | Formally defines the ADAC specification using JSON Schema.                      |
+| **`@mindfiredigital/adac-layout-elk`**   | Professional Layout.            | Advanced graph positioning using `elkjs` algorithms.                            |
+| **`@mindfiredigital/adac-layout-dagre`** | Simple Layout.                  | Lightweight alternative for hierarchical graph layouts.                         |
+| **`@mindfiredigital/adac-icons-aws`**    | Assets.                         | Repository of over 1,600 AWS icons and tools to manage them.                    |
+| **`@mindfiredigital/adac-web`**          | Frontend.                       | React-based visual editor with drag-and-drop and real-time preview.             |
+| **`@mindfiredigital/adac-web-server`**   | API.                            | Express server that exposes diagram generation as a service.                    |
 
-- **Runtime**: Node.js (v20+ recommended)
-- **Package Manager**: [pnpm](https://pnpm.io/)
-- **Frontend**: React, Vite, TailwindCSS, React Flow (in `packages/web`)
-- **CLI**: Commander.js (in `packages/diagram`)
-- **Graph Layouts**: `elkjs` (default), `dagre`
+---
 
-## 🚀 Setup & Installation
+## 🚀 Local Setup
 
 ### Prerequisites
 
-- [Node.js](https://nodejs.org/) (v20 or newer)
-- [pnpm](https://pnpm.io/) (Install via `npm install -g pnpm`)
+- **Node.js**: v20 or newer.
+- **pnpm**: v9 or newer (`npm install -g pnpm`).
 
-### Installation
+### Installation Steps
 
-1. Clone the repository.
-2. Install dependencies from the root directory:
+1.  **Clone the Repository**:
+    ```bash
+    git clone https://github.com/mindfiredigital/adac-tools.git
+    cd adac-tools
+    ```
+2.  **Install All Dependencies**:
+    ```bash
+    pnpm install
+    ```
+3.  **Bootstrap Packages**:
+    Compile the entire workspace to ensure all internal modules are linked:
+    ```bash
+    pnpm run build
+    ```
 
-```bash
-pnpm install
+---
+
+## 🛠 Usage & Package Deep Dive
+
+### 1. The `adac` CLI (`@mindfiredigital/adac-diagram`)
+
+The CLI is the primary way to use ADAC programmatically.
+
+- **Generate a Diagram**:
+  ```bash
+  pnpm cli diagram my-infra.yaml -o output.svg
+  ```
+- **Force Schema Validation**:
+  ```bash
+  pnpm cli diagram my-infra.yaml --validate
+  ```
+- **Schema Validation Only**:
+  ```bash
+  pnpm cli validate my-infra.yaml
+  ```
+
+### 2. Core Engine (`@mindfiredigital/adac-core`)
+
+Use this package if you are building your own application that needs to generate diagrams.
+
+```typescript
+import { generateDiagramSvg } from '@mindfiredigital/adac-core';
+
+const { svg } = await generateDiagramSvg(yamlFileContent, 'elk');
 ```
 
-3. Build all packages:
+### 3. Web UI (`@mindfiredigital/adac-web`)
+
+To run the visual editor:
 
 ```bash
-pnpm run build
+cd packages/web
+pnpm dev
 ```
 
-This will compile TypeScript code across all packages.
+---
 
-### Running Tests
+## 📦 Dependencies & Architecture Patterns
 
-To verify that all packages are working correctly, run the test suite:
+### Critical Patterns
 
-```bash
-pnpm test
-```
+- **Zero-Dependency Releases**: When `core` or `diagram` are built, they bundle all internal workspace dependencies (like `parser` and `layout`). This ensures that users installing via npm don't need to worry about internal mono-repo layout.
+- **Embedded Assets**: Diagrams generated by ADAC embed icons directly as **Base64 URI** data. This makes the output SVG files fully portable—they will render correctly anywhere without needing access to an external image folder.
 
-This executes Jest/Vitest tests across the monorepo to ensure functionality.
+### Key Third Party Libs
 
-## 🖥️ Web Application
+- **elkjs**: High-performance graph layout engine.
+- **commander**: CLI argument parsing.
+- **commander**: React Flow (for the visual editor).
+- **ajv**: JSON Schema validation.
 
-To start the web interface in development mode:
+---
 
-1. Navigate to the web package:
-   ```bash
-   cd packages/web
-   ```
-2. Start the development server:
-   ```bash
-   pnpm dev
-   ```
-3. Open your browser and navigate to the local URL (usually `http://localhost:5173`).
+## 📜 Monorepo Scripts
 
-## 💻 CLI Usage
+| Command             | Action                                                                                                        |
+| :------------------ | :------------------------------------------------------------------------------------------------------------ |
+| `pnpm build`        | Compiles all packages in the workspace in topological order.                                                  |
+| `pnpm test`         | Runs the test suite across all packages.                                                                      |
+| `pnpm cli`          | Runs the ADAC CLI directly from the source.                                                                   |
+| `pnpm setup:icons`  | Downloads and organizes the AWS icon set.                                                                     |
+| `pnpm release:pack` | **Important**: Creates standalone `.tgz` release tarballs for `core` and `diagram` in the `releases/` folder. |
+| `pnpm format`       | Runs Prettier across the entire codebase.                                                                     |
 
-You can use the CLI to generate diagrams programmatically.
+---
 
-To run the CLI from source (after building):
+## 📑 Special Folders & Files
 
-```bash
-pnpm cli --help
-# Or directly:
-node packages/diagram/dist/cli.js --help
-```
+When cloning this repo, pay attention to:
 
-### Example Usage
+- **`/releases`**: Destination for standalone npm packages generated by `release:pack`. (Ignored by git).
+- **`/yamls`**: Contains real-world example infrastructure files (`aws.adac.yaml`, `data_pipeline.adac.yaml`) used for testing.
+- **`/scripts`**:
+  - `pack-release.js`: The automation engine for creating production builds.
+  - `generate_report.ts`: A tool that generates `report.html` to visually compare different layout engines.
+- **`pnpm-workspace.yaml`**: Defines how the packages are linked during development.
 
-Generate a diagram from a YAML file:
+---
 
-```bash
-pnpm cli diagram yamls/aws.adac.yaml -o output.svg
-```
+## 🎓 Summary of Requirements Met
 
-### Options
-
-
-- `-o, --out <path>`: Output SVG file path (default: `diagram.svg`).
-- `--layout <engine>`: Layout engine to use (`elk` or `dagre`).
-- `--validate`: Validate strict adherence to ADAC schema before generation.
-
-### Schema Validation
-
-You can validate your ADAC YAML files against the official specification without generating a diagram:
-
-```bash
-pnpm cli validate yamls/my-architecture.yaml
-```
-
-Or enforce validation during diagram generation:
-
-```bash
-pnpm cli diagram yamls/my-architecture.yaml --validate
-```
-
-## 🎨 Icons Setup
-
-If icons are missing or need updating, you can run the setup script from the root:
-
-```bash
-pnpm setup:icons
-```
+1.  **Core** is a bundleable npm package.
+2.  **Core** uses `schema` for validation and `parser` for parsing.
+3.  **Core** supports both `elk` and `dagre` layout strategies.
+4.  **CLI** is decoupled into its own package for clean command management.
+5.  **Diagram** provides both a CLI entry point and an npm module API.
+6.  **Web Server** consumes the `diagram` package as a standard npm module.

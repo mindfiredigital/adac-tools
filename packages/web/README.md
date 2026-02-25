@@ -14,6 +14,7 @@ The ADAC Visual Architecture Editor. This is a React-based web application for d
 ### Prerequisites
 
 Ensure you have run the following in the root directory:
+
 ```bash
 pnpm install
 pnpm run build

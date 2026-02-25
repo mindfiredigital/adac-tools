@@ -1,32 +1,50 @@
 {
   "name": "@mindfiredigital/adac-diagram",
-  "version": "0.0.1",
+  "version": "0.1.0",
+  "description": "Core engine and CLI for ADAC (AWS Diagram As Code) generator",
+  "author": "Yogesh Sharma",
+  "license": "ISC",
   "main": "dist/index.js",
+  "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
   "bin": {
     "adac": "dist/cli.js"
   },
   "files": [
-    "dist"
+    "dist",
+    "assets"
   ],
   "scripts": {
-    "build": "tsc",
+    "build": "tsup",
+    "prepublishOnly": "npm run build",
     "test": "echo \"No tests specified\" && exit 0"
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mindfiredigital/adac-tools.git",
+    "directory": "packages/diagram"
+  },
+  "keywords": [
+    "adac",
+    "aws",
+    "diagram",
+    "elkjs",
+    "architecture",
+    "cloud"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
   "dependencies": {
-    "@mindfiredigital/adac-layout-dagre": "workspace:*",
-    "@mindfiredigital/adac-layout-elk": "workspace:*",
-    "@mindfiredigital/adac-parser": "workspace:*",
-    "@mindfiredigital/adac-schema": "workspace:*",
-    "commander": "^14.0.3",
     "elkjs": "^0.11.0",
     "fs-extra": "^11.3.3"
   },
   "devDependencies": {
-    "@types/commander": "^2.12.5",
+    "@mindfiredigital/adac-core": "workspace:*",
+    "@mindfiredigital/adac-cli": "workspace:*",
     "@types/fs-extra": "^11.0.4",
     "@types/node": "^25.2.3",
+    "tsup": "^8.3.5",
     "vitest": "^4.0.18"
-  },
-  "license": "ISC"
+  }
 }
