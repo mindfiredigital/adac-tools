@@ -63,19 +63,19 @@ export class CustomLayoutEngine {
       };
     }
 
-    // 1️⃣ Detect & break cycles
+    // 1. Detect & break cycles
     const cycles = detectCycles(this.graph);
     if (cycles.length > 0) {
       breakCycles(this.graph, cycles);
     }
 
-    // 2️⃣ Assign ranks
+    // 2. Assign ranks
     const ranks = assignRanks(this.graph);
 
-    // 3️⃣ Order nodes
+    // 3. Order nodes
     const ordering = orderNodes(this.graph, ranks);
 
-    // 4️⃣ Assign coordinates
+    // 4. Assign coordinates
     const positions = assignCoordinates(
       this.graph,
       ranks,
@@ -83,10 +83,10 @@ export class CustomLayoutEngine {
       this.options
     );
 
-    // 5️⃣ Route edges
+    // 5. Route edges
     const edgePaths = routeEdges(this.graph, positions, this.options);
 
-    // 6️⃣ Calculate bounds
+    // 6. Calculate bounds
     const bounds = this.calculateBounds(positions);
 
     return {
