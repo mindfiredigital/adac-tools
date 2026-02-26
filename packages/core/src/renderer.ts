@@ -193,21 +193,10 @@ export async function renderSvg(
       node.labels && node.labels.length > 0 ? node.labels[0].text : '';
 
     const escapeXml = (unsafe: string) => {
-      return unsafe.replace(/[<>&'"]/g, (c) => {
-        switch (c) {
-          case '<':
-            return '&lt;';
-          case '>':
-            return '&gt;';
-          case '&':
-            return '&amp;';
-          case "'":
-            return '&apos;';
-          case '"':
-            return '&quot;';
-        }
-        return c;
-      });
+      const escapeMap: Record<string, string> = {
+        '<': '&lt;', '>': '&gt;', '&': '&amp;', "'": '&apos;', '"': '&quot;'
+      };
+      return unsafe.replace(/[<>&'"]/g, (c) => escapeMap[c]);
     };
 
     const renderLabel = (
