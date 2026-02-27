@@ -202,7 +202,7 @@ export function buildElkGraph(adac: AdacConfig): ElkNode {
   };
 
   const getServiceType = (service: AdacService): string => {
-    return service.subtype || service.type || 'unknown';
+    return service.service || service.subtype || service.type || 'unknown';
   };
 
   const detectIconForApp = (app: AdacApplication) => {
