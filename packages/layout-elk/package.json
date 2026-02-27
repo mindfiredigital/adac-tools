@@ -4,7 +4,7 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "build": "tsc && node scripts/copy-assets.js",
+    "build": "tsc",
     "test": "echo \"No tests specified\" && exit 0"
   },
   "files": [

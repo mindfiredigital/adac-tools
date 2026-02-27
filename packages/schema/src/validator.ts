@@ -1,11 +1,16 @@
+import Ajv from 'ajv/dist/2020.js';
+import addFormats from 'ajv-formats';
+import schema from './adac.schema.json' with { type: 'json' };
+import { AdacConfig } from './types.js';
 
-import Ajv from "ajv/dist/2020.js";
-import addFormats from "ajv-formats";
-import schema from "./adac.schema.json" with { type: "json" };
-import { AdacConfig } from "./types.js";
-
-const ajv = new (Ajv as any)({ allErrors: true, strict: false });
-(addFormats as any)(ajv);
+/* eslint-disable @typescript-eslint/no-explicit-any */
+const AjvConstructor = Ajv as unknown as {
+  new (options?: Record<string, unknown>): any;
+};
+const ajv = new AjvConstructor({ allErrors: true, strict: false });
+const addFormatsFunc = addFormats as unknown as (a: any) => void;
+/* eslint-enable @typescript-eslint/no-explicit-any */
+addFormatsFunc(ajv);
 
 const validate = ajv.compile(schema);
 
@@ -16,15 +21,23 @@ export interface ValidationResult {
 
 export function validateAdacConfig(config: unknown): ValidationResult {
   const valid = validate(config);
-  
+
   const errors: string[] = [];
-  
+
   if (!valid) {
-    errors.push(...(validate.errors?.map((err: any) => `${err.instancePath} ${err.message}`) || ["Unknown schema error"]));
+    const ajvErrors = (validate.errors || []) as {
+      instancePath: string;
+      message?: string;
+    }[];
+    errors.push(
+      ...(ajvErrors.map(
+        (err) => `${err.instancePath} ${err.message || 'Invalid value'}`
+      ) || ['Unknown schema error'])
+    );
   }
 
   // Ensure instance IDs are unique across the entire configuration
-  if (config && typeof config === "object") {
+  if (config && typeof config === 'object') {
     const typedConfig = config as AdacConfig;
     const allIds = new Set<string>();
 
@@ -44,7 +57,10 @@ export function validateAdacConfig(config: unknown): ValidationResult {
     typedConfig.infrastructure?.clouds?.forEach((cloud, cloudIndex) => {
       checkId(cloud.id, `/infrastructure/clouds/${cloudIndex}`);
       cloud.services?.forEach((service, serviceIndex) => {
-        checkId(service.id, `/infrastructure/clouds/${cloudIndex}/services/${serviceIndex}`);
+        checkId(
+          service.id,
+          `/infrastructure/clouds/${cloudIndex}/services/${serviceIndex}`
+        );
       });
     });
 

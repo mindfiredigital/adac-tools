@@ -10,15 +10,14 @@
   "scripts": {
     "build": "pnpm -r build",
     "test": "pnpm -r test",
-    "build:legacy": "tsc",
-    "start:legacy": "node dist/src/server.js",
     "lint": "eslint . --ext .ts,.tsx",
     "lint:fix": "eslint . --ext .ts,.tsx --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "prepare": "husky",
     "cli": "node packages/diagram/dist/cli.js",
-    "setup:icons": "pnpm --filter @mindfiredigital/adac-icons-aws run setup-icons"
+    "setup:icons": "pnpm --filter @mindfiredigital/adac-icons-aws run setup-icons",
+    "release:pack": "node scripts/pack-release.js"
   },
   "keywords": [
     "adac",
