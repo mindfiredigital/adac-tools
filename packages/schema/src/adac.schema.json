@@ -4,7 +4,11 @@
   "title": "ADAC (Architecture Diagram as Code) v0.1",
   "description": "Minimal schema for describing cloud infrastructure architectures with comprehensive AWS service coverage",
   "type": "object",
-  "required": ["version", "metadata", "infrastructure"],
+  "required": [
+    "version",
+    "metadata",
+    "infrastructure"
+  ],
   "additionalProperties": false,
   "properties": {
     "version": {
@@ -23,7 +27,9 @@
     },
     "infrastructure": {
       "type": "object",
-      "required": ["clouds"],
+      "required": [
+        "clouds"
+      ],
       "properties": {
         "clouds": {
           "type": "array",
@@ -47,14 +53,20 @@
     },
     "layout": {
       "type": "string",
-      "enum": ["elk", "dagre"],
+      "enum": [
+        "elk",
+        "dagre"
+      ],
       "description": "Layout engine for the diagram"
     }
   },
   "$defs": {
     "metadata": {
       "type": "object",
-      "required": ["name", "created"],
+      "required": [
+        "name",
+        "created"
+      ],
       "additionalProperties": false,
       "properties": {
         "name": {
@@ -100,7 +112,13 @@
         },
         "environment": {
           "type": "string",
-          "enum": ["development", "staging", "production", "test", "demo"],
+          "enum": [
+            "development",
+            "staging",
+            "production",
+            "test",
+            "demo"
+          ],
           "description": "Environment type"
         },
         "adac_version": {
@@ -110,7 +128,11 @@
     },
     "application": {
       "type": "object",
-      "required": ["id", "name", "type"],
+      "required": [
+        "id",
+        "name",
+        "type"
+      ],
       "additionalProperties": false,
       "properties": {
         "id": {
@@ -184,7 +206,11 @@
     },
     "cloud": {
       "type": "object",
-      "required": ["id", "provider", "region"],
+      "required": [
+        "id",
+        "provider",
+        "region"
+      ],
       "additionalProperties": false,
       "properties": {
         "id": {
@@ -198,7 +224,8 @@
         },
         "region": {
           "type": "string",
-          "description": "Region or cluster identifier"
+          "description": "Region or cluster identifier",
+          "pattern": "^[a-z]{2}-[a-z0-9-]+-[0-9]$"
         },
         "account_id": {
           "type": "string",
@@ -233,7 +260,9 @@
     },
     "aws_service": {
       "type": "object",
-      "required": ["id"],
+      "required": [
+        "id"
+      ],
       "additionalProperties": true,
       "properties": {
         "id": {
@@ -418,7 +447,15 @@
             },
             "storage_type": {
               "type": "string",
-              "enum": ["gp3", "gp2", "io2", "io1", "st1", "sc1", "standard"],
+              "enum": [
+                "gp3",
+                "gp2",
+                "io2",
+                "io1",
+                "st1",
+                "sc1",
+                "standard"
+              ],
               "description": "EBS volume type"
             },
             "multi_az": {
@@ -549,7 +586,12 @@
     },
     "connection": {
       "type": "object",
-      "required": ["id", "from", "to", "type"],
+      "required": [
+        "id",
+        "from",
+        "to",
+        "type"
+      ],
       "additionalProperties": false,
       "properties": {
         "id": {
@@ -667,7 +709,10 @@
             },
             "tls_version": {
               "type": "string",
-              "enum": ["TLS1.2", "TLS1.3"],
+              "enum": [
+                "TLS1.2",
+                "TLS1.3"
+              ],
               "description": "TLS version"
             },
             "authentication_required": {
@@ -694,7 +739,14 @@
           "description": "Compliance requirements",
           "items": {
             "type": "string",
-            "enum": ["PCI-DSS", "HIPAA", "GDPR", "SOC2", "ISO27001", "FedRAMP"]
+            "enum": [
+              "PCI-DSS",
+              "HIPAA",
+              "GDPR",
+              "SOC2",
+              "ISO27001",
+              "FedRAMP"
+            ]
           }
         }
       }
@@ -737,7 +789,13 @@
         },
         "currency": {
           "type": "string",
-          "enum": ["USD", "EUR", "GBP", "JPY", "INR"],
+          "enum": [
+            "USD",
+            "EUR",
+            "GBP",
+            "JPY",
+            "INR"
+          ],
           "default": "USD",
           "description": "Currency"
         },
@@ -772,7 +830,13 @@
         },
         "currency": {
           "type": "string",
-          "enum": ["USD", "EUR", "GBP", "JPY", "INR"],
+          "enum": [
+            "USD",
+            "EUR",
+            "GBP",
+            "JPY",
+            "INR"
+          ],
           "default": "USD"
         },
         "by_service": {

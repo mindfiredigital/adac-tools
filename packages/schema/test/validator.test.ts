@@ -139,4 +139,49 @@ describe('Adac Schema Validator', () => {
     expect(result.valid).toBe(false);
     expect(result.errors?.some((e) => e.includes('type'))).toBe(true);
   });
+  it('should fail validation when IDs are not unique', () => {
+    const duplicateIdConfig = {
+      version: '0.1',
+      metadata: {
+        name: 'Test Architecture',
+        created: '2023-10-27',
+      },
+      applications: [
+        {
+          id: 'duplicate-id',
+          name: 'My App',
+          services: [],
+        },
+      ],
+      infrastructure: {
+        clouds: [
+          {
+            id: 'duplicate-id',
+            provider: 'aws',
+            region: 'us-east-1',
+            services: [],
+          },
+        ],
+      },
+    };
+    const result = validateAdacConfig(duplicateIdConfig);
+    expect(result.valid).toBe(false);
+    expect(result.errors?.some((e) => e.includes('not unique'))).toBe(true);
+  });
+
+  it('should handle null or non-object config gracefully', () => {
+    const result = validateAdacConfig(null);
+    expect(result.valid).toBe(false);
+  });
+
+  it('should check unique IDs and tolerate missing IDs without error', () => {
+    const configWithoutIds = {
+      version: '0.1',
+      metadata: { name: 'Test Architecture', created: '2023-10-27' },
+      infrastructure: { clouds: [{ provider: 'aws', region: 'us-east-1', services: [] }] }
+    };
+    const result = validateAdacConfig(configWithoutIds);
+    expect(result.valid).toBe(false); // Schema might require id, but checkId should not throw or add 'not unique' error
+    expect(result.errors?.some((e) => e.includes('not unique'))).toBe(false);
+  });
 });

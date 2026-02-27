@@ -1,0 +1,8 @@
+{
+    "Amazon EC2": "aws-icons/ec2.svg",
+    "Amazon Elastic Compute Cloud (Amazon EC2)": "aws-icons/ec2_alias.svg",
+    "React": "aws-icons/react.svg",
+    "Java": "aws-icons/java.svg",
+    "User": "aws-icons/user.svg",
+    "Database": "aws-icons/db.svg"
+}
