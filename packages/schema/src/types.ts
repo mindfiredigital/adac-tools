@@ -34,6 +34,7 @@ export interface AdacService {
   configuration?: Record<string, unknown>;
   cost?: Record<string, unknown>;
   monitoring?: Record<string, unknown>;
+  compliance?: string[];
   tags?: Record<string, string>;
   availability_zones?: string[];
   security_groups?: string[];

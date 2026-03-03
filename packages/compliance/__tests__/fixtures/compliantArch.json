@@ -1,0 +1,32 @@
+{
+  "version": "0.1",
+  "metadata": {
+    "name": "Compliant Arch",
+    "created": "2026-02-26"
+  },
+  "infrastructure": {
+    "clouds": [
+      {
+        "id": "cloud-1",
+        "provider": "aws",
+        "region": "us-east-1",
+        "services": [
+          {
+            "id": "db-1",
+            "service": "rds",
+            "name": "My Secure DB",
+            "compliance": ["pci-dss", "soc2"],
+            "config": {
+              "encrypted": true,
+              "publiclyAccessible": false,
+              "backupRetentionPeriod": 7
+            },
+            "monitoring": {
+              "enabled": true
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

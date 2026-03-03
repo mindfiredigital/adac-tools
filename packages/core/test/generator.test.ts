@@ -44,7 +44,9 @@ infrastructure:
   it('should validate schema when requested', async () => {
     const result = await generateDiagramSvg(validYaml, undefined, true);
     expect(result.svg).toContain('<svg');
-    expect(result.logs.some(l => l.includes('Schema validation passed'))).toBe(true);
+    expect(
+      result.logs.some((l) => l.includes('Schema validation passed'))
+    ).toBe(true);
   });
 
   it('should fail on invalid schema when validation is enabled', async () => {
@@ -56,15 +58,21 @@ metadata:
 infrastructure:
   clouds: []
 `;
-    await expect(generateDiagramSvg(invalidYaml, undefined, true)).rejects.toThrow();
+    await expect(
+      generateDiagramSvg(invalidYaml, undefined, true)
+    ).rejects.toThrow();
   });
 
   it('should format error without errors array when validation is enabled', async () => {
     // Spy on validateAdacConfig to return a falsy valid but undefined errors
     const schema = await import('@mindfiredigital/adac-schema');
-    const spy = vi.spyOn(schema, 'validateAdacConfig').mockReturnValueOnce({ valid: false });
+    const spy = vi
+      .spyOn(schema, 'validateAdacConfig')
+      .mockReturnValueOnce({ valid: false });
     const invalidYaml = `version: "0.1"\nmetadata:\n  name: "Invalid"\n  created: "2023-11-01"\ninfrastructure:\n  clouds: []`;
-    await expect(generateDiagramSvg(invalidYaml, undefined, true)).rejects.toThrow(/Schema validation failed/);
+    await expect(
+      generateDiagramSvg(invalidYaml, undefined, true)
+    ).rejects.toThrow(/Schema validation failed/);
     spy.mockRestore();
   });
 
@@ -87,10 +95,11 @@ describe('ADAC Core Renderer', () => {
           width: 100,
           height: 100,
           labels: [{ text: 'Node 1' }],
-          properties: { type: 'service' }
-        }
-      ]
+          properties: { type: 'service' },
+        },
+      ],
     };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const svg = await renderSvg(graph as any, 'elk');
     expect(svg).toContain('<svg');
     expect(svg).toContain('Node 1');
@@ -106,13 +115,14 @@ describe('ADAC Core Renderer', () => {
           width: 100,
           height: 100,
           labels: [{ text: 'Node 1' }],
-          properties: { type: 'service' }
-        }
+          properties: { type: 'service' },
+        },
       ],
       edges: [
-        { id: 'edge-dagre', sources: ['n1'], targets: ['n1'], sections: [] }
-      ]
+        { id: 'edge-dagre', sources: ['n1'], targets: ['n1'], sections: [] },
+      ],
     };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const svg = await renderSvg(graph as any, 'dagre');
     expect(svg).toContain('<svg');
     expect(svg).toContain('Node 1');
@@ -135,19 +145,21 @@ describe('ADAC Core Renderer', () => {
               width: 50,
               height: 50,
               labels: [{ text: 'Nested' }],
-              properties: { type: 'service' }
-            }
-          ]
-        }
-      ]
+              properties: { type: 'service' },
+            },
+          ],
+        },
+      ],
     };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const svg = await renderSvg(graph as any, 'elk');
     expect(svg).toContain('aws-container');
     expect(svg).toContain('Nested');
   });
 
   it('should render icons if iconPath is provided', async () => {
-    const iconPath = 'd:/adac-tools/packages/icons-aws/assets/aws-icons/image1001.jpg';
+    const iconPath =
+      'd:/adac-tools/packages/icons-aws/assets/aws-icons/image1001.jpg';
     const graph = {
       id: 'root',
       properties: { type: 'container' },
@@ -157,23 +169,29 @@ describe('ADAC Core Renderer', () => {
           width: 100,
           height: 100,
           labels: [{ text: 'Icon Node' }],
-          properties: { type: 'service', iconPath }
-        }
-      ]
+          properties: { type: 'service', iconPath },
+        },
+      ],
     };
 
     // spy and mock fs to pretend jpg exists and can be read
     const existSpy = vi.spyOn(fs, 'existsSync').mockReturnValue(true);
-    const readSpy = vi.spyOn(fs, 'readFileSync').mockReturnValue(Buffer.from('binary-data'));
+    const readSpy = vi
+      .spyOn(fs, 'readFileSync')
+      .mockReturnValue(Buffer.from('binary-data'));
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const svg = await renderSvg(graph as any, 'elk');
     expect(svg).toContain('data:image/jpeg;base64');
-    
+
     // now make it throw to catch 95-96
-    readSpy.mockImplementationOnce(() => { throw new Error('EACCES'); });
+    readSpy.mockImplementationOnce(() => {
+      throw new Error('EACCES');
+    });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const svgErr = await renderSvg(graph as any, 'elk');
     expect(svgErr).not.toContain('data:image/jpeg;base64');
-    
+
     existSpy.mockRestore();
     readSpy.mockRestore();
   });
@@ -184,7 +202,7 @@ describe('ADAC Core Renderer', () => {
       properties: { type: 'container' },
       children: [
         { id: 'n1', width: 50, height: 50, x: 0, y: 0 },
-        { id: 'n2', width: 50, height: 50, x: 200, y: 0 }
+        { id: 'n2', width: 50, height: 50, x: 200, y: 0 },
       ],
       edges: [
         {
@@ -195,12 +213,13 @@ describe('ADAC Core Renderer', () => {
             {
               id: 's1',
               startPoint: { x: 50, y: 25 },
-              endPoint: { x: 200, y: 25 }
-            }
-          ]
-        }
-      ]
+              endPoint: { x: 200, y: 25 },
+            },
+          ],
+        },
+      ],
     };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const svg = await renderSvg(graph as any, 'elk');
     expect(svg).toContain('class="aws-edge"');
     expect(svg).toContain('<path d="M');
@@ -211,16 +230,52 @@ describe('ADAC Core Renderer', () => {
       id: 'root',
       properties: { type: 'container' },
       children: [
-        { id: 'n1', width: 50, height: 50, x: 0, y: 0, labels: [{ text: '<&> "escape\'' }], properties: { type: 'service' } },
-        { id: 'n2', width: 50, height: 50, x: 100, y: 100, labels: [{ text: 'This is a very long text indeed' }], properties: { type: 'service' } },
-        { id: 'c1', width: 100, height: 100, properties: { type: 'container', iconPath: 'dummy.png' }, children: [
-          { id: 'c1-stub', properties: { iconPath: 'dummy.png' } } // trigger hasChildWithSameIcon
-        ]},
-        { id: 'c2', width: 100, height: 100, properties: { type: 'container', iconPath: 'dummy.png' }, children: [
-          { id: 'c2-child', properties: { iconPath: 'other.png' } } // trigger container iconPath rendering
-        ]},
+        {
+          id: 'n1',
+          width: 50,
+          height: 50,
+          x: 0,
+          y: 0,
+          labels: [{ text: '<&> "escape\'' }],
+          properties: { type: 'service' },
+        },
+        {
+          id: 'n2',
+          width: 50,
+          height: 50,
+          x: 100,
+          y: 100,
+          labels: [{ text: 'This is a very long text indeed' }],
+          properties: { type: 'service' },
+        },
+        {
+          id: 'c1',
+          width: 100,
+          height: 100,
+          properties: { type: 'container', iconPath: 'dummy.png' },
+          children: [
+            { id: 'c1-stub', properties: { iconPath: 'dummy.png' } }, // trigger hasChildWithSameIcon
+          ],
+        },
+        {
+          id: 'c2',
+          width: 100,
+          height: 100,
+          properties: { type: 'container', iconPath: 'dummy.png' },
+          children: [
+            { id: 'c2-child', properties: { iconPath: 'other.png' } }, // trigger container iconPath rendering
+          ],
+        },
         // node without id to hit fallback on lines 136-137
-        { width: 50, height: 50, properties: { type: 'service' }, edges: [{ id: 'e-noid', sources: ['n1'], targets: ['n1'], sections: [] }] } as any
+        {
+          width: 50,
+          height: 50,
+          properties: { type: 'service' },
+          edges: [
+            { id: 'e-noid', sources: ['n1'], targets: ['n1'], sections: [] },
+          ],
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        } as any,
       ],
       edges: [
         {
@@ -228,32 +283,40 @@ describe('ADAC Core Renderer', () => {
           sources: ['n1'],
           targets: ['n1'],
           sections: [
-            { id: 's1', startPoint: { x: 50, y: 25 }, endPoint: { x: 200, y: 25 }, bendPoints: [{ x: 100, y: 25 }] }
-          ]
+            {
+              id: 's1',
+              startPoint: { x: 50, y: 25 },
+              endPoint: { x: 200, y: 25 },
+              bendPoints: [{ x: 100, y: 25 }],
+            },
+          ],
         },
         {
           id: 'e2', // missing sections
           sources: ['n1'],
           targets: ['n1'],
-          sections: []
+          sections: [],
         },
         {
           id: 'e3', // no sections property
           sources: ['n1'],
-          targets: ['n1']
-        }
-      ]
+          targets: ['n1'],
+        },
+      ],
     };
-    
-    const readSpy = vi.spyOn(fs, 'readFileSync').mockReturnValue(Buffer.from('binary-data'));
+
+    const readSpy = vi
+      .spyOn(fs, 'readFileSync')
+      .mockReturnValue(Buffer.from('binary-data'));
     const existSpy = vi.spyOn(fs, 'existsSync').mockReturnValue(true);
-    
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const svg = await renderSvg(graph as any, 'dagre');
     expect(svg).toContain('aws-edge');
     expect(svg).toContain('M 50 25 L 100 25 L 200 25'); // bend point logic SVG
     expect(svg).toContain('&lt;&amp;&gt; &quot;escape&apos;'); // escapeXml
     expect(svg).toContain('long text indeed'); // split lines
-    
+
     readSpy.mockRestore();
     existSpy.mockRestore();
   });
