@@ -178,7 +178,9 @@ describe('Adac Schema Validator', () => {
     const configWithoutIds = {
       version: '0.1',
       metadata: { name: 'Test Architecture', created: '2023-10-27' },
-      infrastructure: { clouds: [{ provider: 'aws', region: 'us-east-1', services: [] }] }
+      infrastructure: {
+        clouds: [{ provider: 'aws', region: 'us-east-1', services: [] }],
+      },
     };
     const result = validateAdacConfig(configWithoutIds);
     expect(result.valid).toBe(false); // Schema might require id, but checkId should not throw or add 'not unique' error
