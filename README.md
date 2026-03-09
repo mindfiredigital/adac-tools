@@ -18,6 +18,8 @@ The project is managed as a **pnpm monorepo**, ensuring modularity and clean sep
 | **`@mindfiredigital/adac-layout-elk`**   | Professional Layout.            | Advanced graph positioning using `elkjs` algorithms.                            |
 | **`@mindfiredigital/adac-layout-dagre`** | Simple Layout.                  | Lightweight alternative for hierarchical graph layouts.                         |
 | **`@mindfiredigital/adac-icons-aws`**    | Assets.                         | Repository of over 1,600 AWS icons and tools to manage them.                    |
+| **`@mindfiredigital/adac-compliance`**   | Validation & Security.          | Evaluates architecture against security frameworks (PCI-DSS, SOC2, HIPAA, etc). |
+| **`@mindfiredigital/adac-cost`**         | Analysis Tool.                  | Evaluates cloud architecture to provide structural cost breakdowns.             |
 | **`@mindfiredigital/adac-web`**          | Frontend.                       | React-based visual editor with drag-and-drop and real-time preview.             |
 | **`@mindfiredigital/adac-web-server`**   | API.                            | Express server that exposes diagram generation as a service.                    |
 
@@ -59,7 +61,7 @@ The CLI is the primary way to use ADAC programmatically.
   ```bash
   pnpm cli diagram my-infra.yaml -o output.svg
   ```
-- **Force Schema Validation**:
+  _(Note: If your YAML services declare `compliance:` requirements, they will automatically be checked and reflected in the SVG tooltips.)_
   ```bash
   pnpm cli diagram my-infra.yaml --validate
   ```
@@ -75,7 +77,8 @@ Use this package if you are building your own application that needs to generate
 ```typescript
 import { generateDiagramSvg } from '@mindfiredigital/adac-core';
 
-const { svg } = await generateDiagramSvg(yamlFileContent, 'elk');
+// Automatically validates compliance for any services declaring it in the YAML
+const { svg, logs } = await generateDiagramSvg(yamlFileContent, 'elk', false);
 ```
 
 ### 3. Web UI (`@mindfiredigital/adac-web`)

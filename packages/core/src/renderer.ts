@@ -25,7 +25,11 @@ const CSS_STYLES = `
 
 export async function renderSvg(
   graph: ElkNode,
-  layoutEngine: 'elk' | 'dagre' = 'elk'
+  layoutEngine: 'elk' | 'dagre' = 'elk',
+  complianceTooltipMap?: Record<
+    string,
+    { frameworks: string[]; violations: string[] }
+  >
 ): Promise<string> {
   // Create ELK instance. We use 'any' cast only for the constructor if types are tricky,
   // but let's try to be cleaner.
@@ -194,7 +198,11 @@ export async function renderSvg(
 
     const escapeXml = (unsafe: string) => {
       const escapeMap: Record<string, string> = {
-        '<': '&lt;', '>': '&gt;', '&': '&amp;', "'": '&apos;', '"': '&quot;'
+        '<': '&lt;',
+        '>': '&gt;',
+        '&': '&amp;',
+        "'": '&apos;',
+        '"': '&quot;',
       };
       return unsafe.replace(/[<>&'"]/g, (c) => escapeMap[c]);
     };
@@ -219,6 +227,33 @@ export async function renderSvg(
     };
 
     output += `<g transform="translate(${nodeX}, ${nodeY})">`;
+
+    let tooltipTitle = '';
+    const nodeId = (props as { id?: string }).id || node.id || '';
+
+    // Apply compliance tooltip to any node that appears in the map.
+    // Only skip pure layout containers (vpc, az, subnet) — they are never services.
+    const isLayoutContainer =
+      props.type === 'container' &&
+      (props.cssClass === 'aws-vpc' ||
+        props.cssClass === 'aws-az' ||
+        (typeof props.cssClass === 'string' &&
+          props.cssClass.includes('aws-subnet')));
+
+    if (complianceTooltipMap && !isLayoutContainer) {
+      const entry = complianceTooltipMap[nodeId];
+      if (entry) {
+        if (entry.violations.length > 0) {
+          tooltipTitle = `⚠ Compliance Violations (${entry.frameworks.join(', ')}): ${entry.violations.join(' | ')}`;
+        } else {
+          tooltipTitle = `✅ Compliant with: ${entry.frameworks.join(', ')}`;
+        }
+      }
+    }
+
+    if (tooltipTitle) {
+      output += `<title>${escapeXml(tooltipTitle)}</title>`;
+    }
 
     if (props.type === 'container') {
       let rectClass = 'aws-container';

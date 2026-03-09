@@ -44,4 +44,5 @@ await generateDiagram(
   'elk',
   true // validate
 );
+// Note: Compliance is handled automatically if 'compliance' is defined in the YAML services.
 ```
