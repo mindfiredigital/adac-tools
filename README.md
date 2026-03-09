@@ -129,7 +129,7 @@ When cloning this repo, pay attention to:
 - **`/yamls`**: Contains real-world example infrastructure files (`aws.adac.yaml`, `data_pipeline.adac.yaml`) used for testing.
 - **`/scripts`**:
   - `pack-release.js`: The automation engine for creating production builds.
-  - `generate_report.ts`: A tool that generates `report.html` to visually compare different layout engines.
+  - `generate-report.ts`: A tool that generates `report.html` to visually compare different layout engines.
 - **`pnpm-workspace.yaml`**: Defines how the packages are linked during development.
 
 ---

@@ -1,4 +1,4 @@
 export * from './remediation';
 export * from './violation';
-export * from './complianceRule';
-export * from './complianceResult';
+export * from './compliance-rule';
+export * from './compliance-result';

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { ComplianceChecker } from '../src/complianceChecker';
+import { ComplianceChecker } from '../src/compliance-checker';
 import compliantArchBase from './fixtures/compliantArch.json';
 import nonCompliantArchBase from './fixtures/nonCompliantArch.json';
 import { AdacConfig } from '@mindfiredigital/adac-schema';
