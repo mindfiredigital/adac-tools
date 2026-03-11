@@ -1,6 +1,6 @@
 import { AdacConfig } from '@mindfiredigital/adac-schema';
 import { RuleEvaluator, ServiceComplianceMap } from './evaluator';
-import { RemediationEngine } from './remediation/remediationEngine';
+import { RemediationEngine } from './remediation/remediation-engine';
 import { ComplianceResult } from './types';
 
 export class ComplianceChecker {

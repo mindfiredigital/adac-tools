@@ -51,6 +51,7 @@
     "@vercel/node": "^5.5.22",
     "@vitest/coverage-v8": "^4.0.18",
     "eslint": "^8.57.1",
+    "eslint-plugin-unicorn": "51.0.1",
     "husky": "^9.1.7",
     "prettier": "^3.7.4",
     "typescript": "^5.9.3",

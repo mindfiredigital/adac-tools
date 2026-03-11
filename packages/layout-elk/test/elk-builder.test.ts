@@ -1,7 +1,7 @@
 import { describe, it, expect, vitest } from 'vitest';
-import { buildElkGraph } from '../src/elkBuilder.js';
-import { AdacConfig } from '@mindfiredigital/adac-schema';
+import { buildElkGraph } from '../src/elk-builder.js';
 import fs from 'fs';
+import { AdacConfig } from '@mindfiredigital/adac-schema';
 
 describe('ELK Builder', () => {
   it('should build an empty ELK graph from an empty AdacConfig', () => {
@@ -259,9 +259,13 @@ describe('ELK Builder', () => {
       ],
       infrastructure: { clouds: [] },
       connections: [
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        { id: 'invalid-conn', from: undefined, to: undefined } as any, // hit missing from/to
-        { id: 'valid-conn', from: 'app-react', to: 'app-java' },
+        {
+          id: 'invalid-conn',
+          from: undefined as unknown as string,
+          to: undefined as unknown as string,
+          type: 'https',
+        }, // hit missing from/to
+        { id: 'valid-conn', from: 'app-react', to: 'app-java', type: 'https' },
       ],
     };
     buildElkGraph(config);

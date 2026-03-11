@@ -17,7 +17,7 @@ import React, { useRef, useCallback, useState } from 'react';
 import jsYaml from 'js-yaml';
 import { Download, FileCode, Loader, ArrowLeft } from 'lucide-react';
 import '@xyflow/react/dist/style.css';
-import CustomNode from './CustomNode';
+import CustomNode from './custom-node';
 
 const nodeTypes = {
   customNode: CustomNode,

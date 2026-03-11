@@ -1,2 +1,2 @@
 export * from './types.js';
-export * from './elkBuilder.js';
+export * from './elk-builder.js';
