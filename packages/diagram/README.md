@@ -22,7 +22,8 @@ adac diagram architecture.yaml -o output.svg
 From the root of the monorepo:
 
 ```bash
-pnpm cli diagram yamls/aws.adac.yaml -o test.svg
+pnpm cli diagram yamls/aws.adac.yaml -o test_aws.svg
+pnpm cli diagram yamls/gcp.adac.yaml -o test_gcp.svg
 ```
 
 ### Options
@@ -39,10 +40,10 @@ pnpm cli diagram yamls/aws.adac.yaml -o test.svg
 import { generateDiagram } from '@mindfiredigital/adac-diagram';
 
 await generateDiagram(
-  'input.yaml',
+  'input.yaml', // ADAC yaml containing aws or gcp provider specs
   'output.svg',
   'elk',
   true // validate
 );
-// Note: Compliance is handled automatically if 'compliance' is defined in the YAML services.
+// Note: Icon sets, styles, and compliance checks automatically adapt to the provider (AWS/GCP) listed in the YAML.
 ```

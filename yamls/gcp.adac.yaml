@@ -1,0 +1,324 @@
+version: '0.1'
+
+metadata:
+  name: 'GCP Web Application Architecture'
+  author: 'ADAC Team'
+  description: >
+    A production GCP web application with Cloud Run, Cloud SQL, Cloud Storage,
+    Pub/Sub, BigQuery analytics, and monitoring — demonstrating GCP-native
+    architecture patterns.
+  created: '2026-03-09'
+  environment: production
+
+applications:
+  - id: 'web-frontend'
+    name: 'React Web App'
+    type: 'frontend'
+    technology: 'React'
+    owner: 'frontend-team'
+    description: 'Customer-facing React SPA served via Cloud CDN'
+
+  - id: 'api-backend'
+    name: 'REST API'
+    type: 'backend'
+    technology: 'Python FastAPI'
+    owner: 'backend-team'
+    description: 'Core business logic REST API'
+
+  - id: 'worker-service'
+    name: 'Background Worker'
+    type: 'worker'
+    technology: 'Python'
+    owner: 'backend-team'
+    description: 'Async task processor consuming Pub/Sub messages'
+
+  - id: 'db-app'
+    name: 'PostgreSQL DB'
+    type: 'database'
+    technology: 'PostgreSQL'
+    owner: 'data-team'
+
+infrastructure:
+  clouds:
+    - id: 'gcp-primary'
+      provider: 'gcp'
+      region: 'us-central1'
+      project_id: 'my-project-123456'
+      tier: 'primary'
+      services:
+
+        # ── VPC Network ─────────────────────────────────────────────
+        - id: 'main-vpc'
+          service: 'virtual-private-cloud'
+          name: 'main-vpc'
+          description: 'Primary VPC network for all workloads'
+          config:
+            cidr: '10.0.0.0/16'
+            auto_create_subnetworks: false
+
+        # ── Subnetworks ──────────────────────────────────────────────
+        - id: 'app-subnet'
+          service: 'subnet'
+          name: 'app-subnet'
+          description: 'Application tier subnet'
+          config:
+            vpc: 'main-vpc'
+            cidr: '10.0.1.0/24'
+            region: 'us-central1'
+
+        - id: 'data-subnet'
+          service: 'subnet'
+          name: 'data-subnet'
+          description: 'Data tier subnet (private)'
+          config:
+            vpc: 'main-vpc'
+            cidr: '10.0.2.0/24'
+            region: 'us-central1'
+
+        # ── Networking ──────────────────────────────────────────────
+        - id: 'cloud-lb'
+          service: 'cloud-load-balancing'
+          name: 'Global Load Balancer'
+          description: 'HTTPS load balancer with Cloud Armor WAF'
+          config:
+            type: 'HTTPS'
+            global: true
+
+        - id: 'cloud-cdn-1'
+          service: 'cloud-cdn'
+          name: 'Cloud CDN'
+          description: 'Content delivery for static assets'
+          config:
+            backend: 'cloud-storage-assets'
+
+        - id: 'cloud-armor-policy'
+          service: 'cloud-armor'
+          name: 'WAF Policy'
+          description: 'DDoS protection and WAF rules'
+          compliance:
+            - pci-dss
+
+        - id: 'cloud-nat-gw'
+          service: 'cloud-nat'
+          name: 'Cloud NAT'
+          description: 'Outbound internet access for private VMs'
+          config:
+            vpc: 'main-vpc'
+
+        # ── Compute — Cloud Run ─────────────────────────────────────
+        - id: 'cloud-run-api'
+          service: 'cloud-run'
+          name: 'API Cloud Run Service'
+          description: 'Containerised FastAPI backend on Cloud Run'
+          runs: ['api-backend']
+          config:
+            subnets: ['app-subnet']
+            min_instances: 1
+            max_instances: 20
+            cpu: 2
+            memory_mb: 1024
+
+        - id: 'cloud-run-worker'
+          service: 'cloud-run'
+          name: 'Worker Cloud Run Job'
+          description: 'Background worker triggered by Pub/Sub push'
+          runs: ['worker-service']
+          config:
+            subnets: ['app-subnet']
+            min_instances: 0
+            max_instances: 10
+
+        # ── Cloud Storage ───────────────────────────────────────────
+        - id: 'cloud-storage-assets'
+          service: 'cloud-storage'
+          name: 'Static Assets Bucket'
+          description: 'CSS, JS, images served through Cloud CDN'
+          compliance:
+            - pci-dss
+          config:
+            storage_class: STANDARD
+            location: us-central1
+            versioning: true
+            encryption_enabled: true
+
+        - id: 'cloud-storage-uploads'
+          service: 'cloud-storage'
+          name: 'User Uploads Bucket'
+          description: 'Raw file uploads from users'
+          config:
+            storage_class: NEARLINE
+            location: us-central1
+            lifecycle:
+              - transition_days: 90
+                storage_class: COLDLINE
+
+        # ── Database — Cloud SQL ────────────────────────────────────
+        - id: 'cloud-sql-pg'
+          service: 'cloud-sql'
+          name: 'Cloud SQL PostgreSQL'
+          description: 'Primary relational DB for application data'
+          runs: ['db-app']
+          compliance:
+            - pci-dss
+            - hipaa
+            - soc2
+          config:
+            subnets: ['data-subnet']
+            database_version: POSTGRES_15
+            tier: db-custom-4-16384
+            high_availability: true
+            backup_enabled: true
+            backup_retention_days: 7
+            encryption_enabled: true
+            public_ip_enabled: false
+
+        # ── Caching — Memorystore ───────────────────────────────────
+        - id: 'memorystore-redis'
+          service: 'memorystore'
+          name: 'Redis Cache'
+          description: 'Session store and API response cache'
+          config:
+            subnets: ['app-subnet']
+            tier: STANDARD_HA
+            memory_size_gb: 4
+            redis_version: REDIS_7_0
+
+        # ── Messaging — Pub/Sub ─────────────────────────────────────
+        - id: 'pubsub-jobs'
+          service: 'pubsub'
+          name: 'Job Queue Topic'
+          description: 'Async job dispatch for background worker'
+          config:
+            message_retention_days: 7
+
+        - id: 'pubsub-events'
+          service: 'pubsub'
+          name: 'Event Bus Topic'
+          description: 'Domain events for audit and analytics'
+
+        # ── Analytics — BigQuery ────────────────────────────────────
+        - id: 'bigquery-analytics'
+          service: 'bigquery'
+          name: 'Analytics Dataset'
+          description: 'DWH for product and business analytics'
+          config:
+            location: US
+            default_table_expiration_days: 365
+
+        # ── CI/CD ───────────────────────────────────────────────────
+        - id: 'artifact-reg'
+          service: 'artifact-registry'
+          name: 'Container Registry'
+          description: 'Docker image registry for Cloud Run deployments'
+          config:
+            format: DOCKER
+            location: us-central1
+
+        - id: 'cloud-build-ci'
+          service: 'cloud-build'
+          name: 'Cloud Build CI'
+          description: 'CI pipeline: test → build → push → deploy'
+
+        # ── Security ────────────────────────────────────────────────
+        - id: 'gcp-secret-manager'
+          service: 'secret-manager'
+          name: 'Secret Manager'
+          description: 'DB credentials, API keys, TLS certs'
+          compliance:
+            - pci-dss
+            - hipaa
+
+        - id: 'gcp-kms'
+          service: 'cloud-kms'
+          name: 'Cloud KMS'
+          description: 'Envelope encryption keys for data at rest'
+          compliance:
+            - pci-dss
+            - hipaa
+
+        - id: 'gcp-iam'
+          service: 'cloud-iam'
+          name: 'Cloud IAM'
+          description: 'Identity and access management for all services'
+
+        # ── Monitoring ──────────────────────────────────────────────
+        - id: 'cloud-monitoring-ws'
+          service: 'cloud-monitoring'
+          name: 'Cloud Monitoring'
+          description: 'Metrics, dashboards, and alerting'
+
+        - id: 'cloud-logging-bucket'
+          service: 'cloud-logging'
+          name: 'Cloud Logging'
+          description: 'Centralized log aggregation and audit logs'
+
+connections:
+  - id: 'user-to-lb'
+    from: 'internet-users'
+    to: 'cloud-lb'
+    type: 'api-call'
+    protocol: 'HTTPS'
+
+  - id: 'lb-to-cdn'
+    from: 'cloud-lb'
+    to: 'cloud-cdn-1'
+    type: 'api-call'
+    protocol: 'HTTPS'
+
+  - id: 'lb-to-api'
+    from: 'cloud-lb'
+    to: 'cloud-run-api'
+    type: 'api-call'
+    protocol: 'HTTPS'
+
+  - id: 'cdn-to-storage'
+    from: 'cloud-cdn-1'
+    to: 'cloud-storage-assets'
+    type: 'file-download'
+
+  - id: 'api-to-sql'
+    from: 'api-backend'
+    to: 'cloud-sql-pg'
+    type: 'database-query'
+    protocol: 'PostgreSQL'
+
+  - id: 'api-to-redis'
+    from: 'api-backend'
+    to: 'memorystore-redis'
+    type: 'cache-read'
+    protocol: 'Redis'
+
+  - id: 'api-to-pubsub'
+    from: 'api-backend'
+    to: 'pubsub-jobs'
+    type: 'message-publish'
+
+  - id: 'pubsub-to-worker'
+    from: 'pubsub-jobs'
+    to: 'cloud-run-worker'
+    type: 'message-consume'
+
+  - id: 'worker-to-storage'
+    from: 'worker-service'
+    to: 'cloud-storage-uploads'
+    type: 'file-upload'
+
+  - id: 'worker-to-bigquery'
+    from: 'worker-service'
+    to: 'bigquery-analytics'
+    type: 'stream-write'
+
+  - id: 'api-to-secrets'
+    from: 'api-backend'
+    to: 'gcp-secret-manager'
+    type: 'api-call'
+
+  - id: 'build-to-registry'
+    from: 'cloud-build-ci'
+    to: 'artifact-reg'
+    type: 'file-upload'
+
+  - id: 'registry-to-api'
+    from: 'artifact-reg'
+    to: 'cloud-run-api'
+    type: 'api-call'

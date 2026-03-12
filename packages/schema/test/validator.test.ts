@@ -86,8 +86,10 @@ describe('Adac Schema Validator', () => {
     expect(result.errors?.some((e) => e.includes('instance_type'))).toBe(true);
   });
 
-  it('should fail validation for invalid region', () => {
-    const invalidRegionConfig = {
+  it('should support GCP region format and reject invalid cloud id', () => {
+    // Region is now a free-form string to support AWS (us-east-1), GCP (us-central1), Azure, etc.
+    // Test that a GCP-format region passes validation
+    const gcpRegionConfig = {
       version: '0.1',
       metadata: {
         name: 'Test Architecture',
@@ -96,17 +98,38 @@ describe('Adac Schema Validator', () => {
       infrastructure: {
         clouds: [
           {
-            id: 'aws-main',
-            provider: 'aws',
-            region: 'invalid-region', // Invalid region
+            id: 'gcp-main',
+            provider: 'gcp',
+            region: 'us-central1', // GCP region format (no trailing digit)
             services: [],
           },
         ],
       },
     };
-    const result = validateAdacConfig(invalidRegionConfig);
-    expect(result.valid).toBe(false);
-    expect(result.errors?.some((e) => e.includes('region'))).toBe(true);
+    const gcpResult = validateAdacConfig(gcpRegionConfig);
+    expect(gcpResult.valid).toBe(true);
+
+    // Test that an invalid cloud id (uppercase) still fails
+    const invalidIdConfig = {
+      version: '0.1',
+      metadata: {
+        name: 'Test Architecture',
+        created: '2023-10-27',
+      },
+      infrastructure: {
+        clouds: [
+          {
+            id: 'INVALID_ID', // Cloud id must be lowercase [a-z0-9-]
+            provider: 'aws',
+            region: 'us-east-1',
+            services: [],
+          },
+        ],
+      },
+    };
+    const invalidResult = validateAdacConfig(invalidIdConfig);
+    expect(invalidResult.valid).toBe(false);
+    expect(invalidResult.errors?.some((e) => e.includes('id'))).toBe(true);
   });
 
   it('should fail validation for invalid connection type', () => {
