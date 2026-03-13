@@ -6,6 +6,20 @@ import {
   ValidationResult,
 } from '@mindfiredigital/adac-schema';
 
+export interface CostBreakdown {
+  compute: number;
+  database: number;
+  storage: number;
+  networking: number;
+  total: number;
+  period: 'hourly' | 'daily' | 'monthly' | 'yearly';
+  perService?: Record<string, number>;
+}
+
+export interface AdacConfigWithCosts extends AdacConfig {
+  costs?: CostBreakdown;
+}
+
 export class AdacParseError extends Error {
   constructor(
     message: string,
@@ -23,7 +37,7 @@ export interface ParseOptions {
 export function parseAdacFromContent(
   content: string,
   options: ParseOptions = { validate: true }
-): AdacConfig {
+): AdacConfigWithCosts {
   let parsed: unknown;
 
   try {
@@ -47,7 +61,7 @@ export function parseAdacFromContent(
 export function parseAdac(
   filePath: string,
   options: ParseOptions = { validate: true }
-): AdacConfig {
+): AdacConfigWithCosts {
   if (!fs.existsSync(filePath)) {
     throw new AdacParseError(`File not found: ${filePath}`);
   }

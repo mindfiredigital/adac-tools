@@ -9,11 +9,11 @@
   },
   "license": "ISC",
   "dependencies": {
-    "js-yaml": "^4.1.1"
+    "js-yaml": "^4.1.1",
+    "@mindfiredigital/adac-parser": "workspace:*"
   },
   "devDependencies": {
     "@types/js-yaml": "^4.0.9",
-    "@aws-sdk/client-pricing": "^3.1008.0",
-    "vitest": "^4.0.18"
+    "@aws-sdk/client-pricing": "^3.1008.0"
   }
 }

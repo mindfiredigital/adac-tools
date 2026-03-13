@@ -1,40 +1,58 @@
 import { Command } from 'commander';
 import path from 'path';
 
-export type CostPeriod = 'hourly' | 'daily' | 'monthly' | 'yearly';
-export type PricingModel = 'on_demand' | 'reserved';
+type CostPeriod = 'hourly' | 'daily' | 'monthly' | 'yearly';
+type PricingModel = 'on_demand' | 'reserved';
 
-export type CostBreakdown = {
+interface CostBreakdown {
   compute: number;
   database: number;
   storage: number;
   networking: number;
   total: number;
   period: CostPeriod;
-};
+}
 
-export type CLIOptions = {
+export interface CLIOptions {
   generateDiagram: (
     input: string,
     output: string,
     layoutOverride?: 'elk' | 'dagre',
     validate?: boolean,
-    costData?: Record<string, number>,
-    period?: CostPeriod,
-    pricingModel?: PricingModel
+    includeCost?: boolean,
+    pricingModel?: PricingModel,
+    period?: CostPeriod
   ) => Promise<void>;
-  calculateCostFromYaml?: (
-    input: string,
-    period?: CostPeriod,
-    pricingModel?: PricingModel
-  ) => CostBreakdown;
+  calculateCostFromYaml?: (input: string) => CostBreakdown;
   parseAdac: (input: string, options?: Record<string, unknown>) => unknown;
   validateAdacConfig: (config: unknown) => {
     valid: boolean;
     errors?: string[];
   };
   version: string;
-};
+}
+
+function printCostBreakdown(cost: CostBreakdown) {
+  const formatCurrency = (value: number) => `$${value.toFixed(2)}`;
+  const pct = (value: number) =>
+    cost.total > 0 ? Math.round((value / cost.total) * 100) : 0;
+
+  console.log(
+    `💰 Estimated ${cost.period.charAt(0).toUpperCase() + cost.period.slice(1)} Cost: ${formatCurrency(cost.total)}`
+  );
+  console.log(
+    `├─ Compute: ${formatCurrency(cost.compute)} (${pct(cost.compute)}%)`
+  );
+  console.log(
+    `├─ Database: ${formatCurrency(cost.database)} (${pct(cost.database)}%)`
+  );
+  console.log(
+    `├─ Storage: ${formatCurrency(cost.storage)} (${pct(cost.storage)}%)`
+  );
+  console.log(
+    `└─ Networking: ${formatCurrency(cost.networking)} (${pct(cost.networking)}%)`
+  );
+}
 
 function printCostBreakdown(cost: CostBreakdown) {
   const formatCurrency = (value: number) => `$${value.toFixed(2)}`;
@@ -95,11 +113,7 @@ export function runCLI(options: CLIOptions) {
                 'Cost calculation is not available in this CLI build.'
               );
             }
-            const cost = options.calculateCostFromYaml(
-              inputPath,
-              opts.period,
-              opts.pricing as PricingModel
-            );
+            const cost = options.calculateCostFromYaml(inputPath);
             printCostBreakdown(cost);
           } catch (err) {
             const msg = err instanceof Error ? err.message : String(err);
@@ -122,9 +136,9 @@ export function runCLI(options: CLIOptions) {
           outputPath,
           layout,
           Boolean(opts.validate),
-          undefined,
-          opts.period as CostPeriod,
-          opts.pricing as PricingModel
+          Boolean(opts.cost),
+          opts.pricing,
+          opts.period
         );
       } catch (error: unknown) {
         const message = error instanceof Error ? error.message : String(error);
@@ -136,17 +150,7 @@ export function runCLI(options: CLIOptions) {
   program
     .command('cost <file>')
     .description('Calculate and print cost breakdown from ADAC YAML file')
-    .option(
-      '--pricing <model>',
-      'Pricing model (on_demand or reserved)',
-      'on_demand'
-    )
-    .option(
-      '--period <period>',
-      'Cost period (hourly, daily, monthly, yearly)',
-      'monthly'
-    )
-    .action(async (file, opts) => {
+    .action(async (file) => {
       try {
         const inputPath = path.resolve(process.cwd(), file);
         if (!options.calculateCostFromYaml) {
@@ -155,11 +159,7 @@ export function runCLI(options: CLIOptions) {
           );
         }
 
-        const cost = options.calculateCostFromYaml(
-          inputPath,
-          opts.period,
-          opts.pricing as PricingModel
-        );
+        const cost = options.calculateCostFromYaml(inputPath);
         printCostBreakdown(cost);
       } catch (error: unknown) {
         const message = error instanceof Error ? error.message : String(error);
