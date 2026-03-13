@@ -14,7 +14,10 @@ export interface GenerationResult {
 export async function generateDiagramSvg(
   inputContent: string,
   layoutOverride?: 'elk' | 'dagre',
-  validate: boolean = false
+  validate: boolean = false,
+  includeCost: boolean = false,
+  pricingModel: 'on_demand' | 'reserved' = 'on_demand',
+  period: 'hourly' | 'daily' | 'monthly' | 'yearly' = 'monthly'
 ): Promise<GenerationResult> {
   const logs: string[] = [];
   const start = Date.now();
@@ -24,8 +27,12 @@ export async function generateDiagramSvg(
   try {
     log('Starting diagram generation.');
     log('Parsing ADAC content...');
-    const adac = parseAdacFromContent(inputContent);
-
+    const adac = parseAdacFromContent(inputContent, {
+      validate: false,
+      includeCost,
+      pricingModel,
+      costPeriod: period,
+    });
     if (validate) {
       log('Validating ADAC schema...');
       const validation = validateAdacConfig(adac);
@@ -90,8 +97,16 @@ export async function generateDiagramSvg(
     }
 
     log('Rendering SVG (Computing Layout & Styles)...');
-    const svg = await renderSvg(graph, engine, complianceTooltipMap);
+    const svg = await renderSvg(
+      graph,
+      engine,
+      complianceTooltipMap,
+      adac.costs?.perService as Record<string, number> | undefined,
+      period
+    );
     log('SVG Rendering complete.');
+
+    // Removed cost summary injection
 
     const duration = Date.now() - start;
     log(`Total generation time: ${duration}ms`);
@@ -109,11 +124,21 @@ export async function generateDiagram(
   input: string,
   output: string,
   layoutOverride?: 'elk' | 'dagre',
-  validate: boolean = false
+  validate: boolean = false,
+  includeCost: boolean = false,
+  pricingModel: 'on_demand' | 'reserved' = 'on_demand',
+  period: 'hourly' | 'daily' | 'monthly' | 'yearly' = 'monthly'
 ): Promise<void> {
   const raw = await fs.readFile(input, 'utf8');
-  const { svg } = await generateDiagramSvg(raw, layoutOverride, validate);
+  const { svg } = await generateDiagramSvg(
+    raw,
+    layoutOverride,
+    validate,
+    includeCost,
+    pricingModel,
+    period
+  );
 
   await fs.outputFile(output, svg);
-  console.log(`✅ Diagram generated: ${output}`);
+  console.log(`Diagram generated: ${output}`);
 }

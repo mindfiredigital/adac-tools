@@ -1,12 +1,16 @@
 import { Command } from 'commander';
 import path from 'path';
+import { aggregateCostFromYaml } from '@mindfiredigital/adac-cost';
 
 export interface CLIOptions {
   generateDiagram: (
     input: string,
     output: string,
     layoutOverride?: 'elk' | 'dagre',
-    validate?: boolean
+    validate?: boolean,
+    includeCost?: boolean,
+    pricingModel?: 'on_demand' | 'reserved',
+    period?: 'hourly' | 'daily' | 'monthly' | 'yearly'
   ) => Promise<void>;
   parseAdac: (input: string, options?: Record<string, unknown>) => unknown;
   validateAdacConfig: (config: unknown) => {
@@ -30,12 +34,34 @@ export function runCLI(options: CLIOptions) {
     .option('-l, --layout <type>', 'Layout engine (elk or dagre)', 'elk')
     .option('-o, --output <path>', 'Output SVG file path')
     .option('--validate', 'Validate schema before generating')
+    .option('--cost', 'Print cost breakdown and generate diagram')
+    .option(
+      '--pricing <model>',
+      'Pricing model (on_demand or reserved)',
+      'on_demand'
+    )
+    .option(
+      '--period <period>',
+      'Cost period (hourly, daily, monthly, yearly)',
+      'monthly'
+    )
+
     .action(async (file, opts) => {
       try {
         const inputPath = path.resolve(process.cwd(), file);
+
+        if (opts.cost) {
+          try {
+            aggregateCostFromYaml(inputPath);
+          } catch (err) {
+            const msg = err instanceof Error ? err.message : String(err);
+            console.error('Error calculating cost:', msg);
+          }
+        }
+
         const layout = opts.layout as 'elk' | 'dagre';
 
-        let outputPath = opts.output;
+        let outputPath: string = opts.output;
         if (!outputPath) {
           const parsed = path.parse(inputPath);
           outputPath = path.join(parsed.dir, `${parsed.name}.svg`);
@@ -47,7 +73,10 @@ export function runCLI(options: CLIOptions) {
           inputPath,
           outputPath,
           layout,
-          opts.validate
+          Boolean(opts.validate),
+          Boolean(opts.cost),
+          opts.pricing,
+          opts.period
         );
       } catch (error: unknown) {
         const message = error instanceof Error ? error.message : String(error);
