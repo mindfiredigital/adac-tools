@@ -83,7 +83,9 @@ export async function renderSvg(
   complianceTooltipMap?: Record<
     string,
     { frameworks: string[]; violations: string[] }
-  >
+  >,
+  perServiceCosts?: Record<string, number>,
+  period: 'hourly' | 'daily' | 'monthly' | 'yearly' = 'monthly'
 ): Promise<string> {
   // Create ELK instance. We use 'any' cast only for the constructor if types are tricky,
   // but let's try to be cleaner.
@@ -190,10 +192,8 @@ export async function renderSvg(
 
         if (containerId && nodeAbsPos.has(containerId)) {
           containerOffset = nodeAbsPos.get(containerId)!;
-        } else {
-          if (nodeAbsPos.has(node.id)) {
-            containerOffset = nodeAbsPos.get(node.id)!;
-          }
+        } else if (nodeAbsPos.has(node.id)) {
+          containerOffset = nodeAbsPos.get(node.id)!;
         }
 
         const globalEdge: ElkEdge = JSON.parse(JSON.stringify(edge));
@@ -239,6 +239,20 @@ export async function renderSvg(
     }
   });
 
+  const resolveNodeCost = (nodeId: string): number | undefined => {
+    if (!perServiceCosts) return undefined;
+
+    if (perServiceCosts[nodeId] !== undefined) {
+      return perServiceCosts[nodeId];
+    }
+
+    const match = Object.entries(perServiceCosts).find(
+      ([k]) => nodeId === k || nodeId.endsWith(k) || k.endsWith(nodeId)
+    );
+
+    return match?.[1];
+  };
+
   const renderNode = (node: ElkNode): string => {
     let output = '';
     const nodeX = node.x || 0;
@@ -249,6 +263,10 @@ export async function renderSvg(
     const props = node.properties || {};
     const label =
       node.labels && node.labels.length > 0 ? node.labels[0].text : '';
+
+    const cost = resolveNodeCost(node.id);
+    const costLabel =
+      cost !== undefined ? `💰 ${cost.toFixed(2)}/${period}` : '';
 
     const escapeXml = (unsafe: string) => {
       const escapeMap: Record<string, string> = {
@@ -310,8 +328,13 @@ export async function renderSvg(
       }
     }
 
+    let complianceLine = '';
     if (tooltipTitle) {
-      output += `<title>${escapeXml(tooltipTitle)}</title>`;
+      complianceLine = escapeXml(tooltipTitle);
+    }
+    const costLine = costLabel ? escapeXml(costLabel) : '';
+    if (complianceLine || costLine) {
+      output += `<title>${[complianceLine, costLine].filter(Boolean).join('\n')}</title>`;
     }
 
     if (props.type === 'container') {

@@ -5,7 +5,15 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc",
-    "test": "echo \"No tests specified\" && exit 0"
+    "test": "vitest run"
   },
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "js-yaml": "^4.1.1"
+  },
+  "devDependencies": {
+    "@types/js-yaml": "^4.0.9",
+    "@aws-sdk/client-pricing": "^3.1008.0",
+    "vitest": "^4.0.18"
+  }
 }

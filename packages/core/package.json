@@ -16,7 +16,6 @@
   },
   "dependencies": {
     "@mindfiredigital/adac-compliance": "workspace:*",
-    "@mindfiredigital/adac-cost": "workspace:*",
     "elkjs": "^0.11.0"
   },
   "devDependencies": {

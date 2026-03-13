@@ -1,0 +1,48 @@
+{
+  "last_updated": "2026-02-27",
+  "currency": "USD",
+
+  "ec2": {
+    "t3.medium": { "on_demand": 0.0416, "reserved": 0.025 },
+    "t3.micro": { "on_demand": 0.0104, "reserved": 0.006 }
+  },
+
+  "ecs": {
+    "fargate_vcpu": { "on_demand": 0.04048, "reserved": 0.03 },
+    "fargate_memory": { "on_demand": 0.004445, "reserved": 0.003 }
+  },
+
+  "rds": {
+    "db.t3.micro": { "on_demand": 0.017, "reserved": 0.01 }
+  },
+
+  "s3": {
+    "standard": { "on_demand": 0.023, "reserved": 0.017 },
+    "infrequent_access": { "on_demand": 0.0125, "reserved": 0.009 }
+  },
+
+  "ebs": {
+    "gp3": { "on_demand": 0.08, "reserved": 0.05 },
+    "io1": { "on_demand": 0.125, "reserved": 0.09 }
+  },
+
+  "alb": {
+    "hourly": { "on_demand": 0.0225, "reserved": 0.018 },
+    "lcu": { "on_demand": 0.008, "reserved": 0.006 }
+  },
+
+  "data_transfer": {
+    "internet_out": { "on_demand": 0.09, "reserved": 0.06 }
+  },
+
+  "lambda": {
+    "request": { "on_demand": 0.2, "reserved": 0.15 },
+    "compute": { "on_demand": 0.00001667, "reserved": 0.000013 }
+  },
+
+  "dynamodb": {
+    "read": { "on_demand": 0.25, "reserved": 0.2 },
+    "write": { "on_demand": 1.25, "reserved": 1.0 },
+    "storage": 0.25
+  }
+}
