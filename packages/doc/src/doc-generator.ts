@@ -1,6 +1,7 @@
 import Handlebars from 'handlebars';
 import { AdacConfig, AdacService, AdacConnection } from '@mindfiredigital/adac-schema';
 import { DocOptions, DocOutput, DocFile } from './types/index.js';
+import { ComplianceChecker } from '@mindfiredigital/adac-compliance';
 import {
   ArchitectureTemplate,
   ServiceCatalogTemplate,
@@ -109,7 +110,19 @@ export class DocumentationGenerator {
 
   private async generateComplianceReport(model: AdacConfig): Promise<DocFile> {
     const template = Handlebars.compile(ComplianceTemplate);
-    const content = template({});
+    
+    let complianceResults = { results: [], remediationPlan: [] };
+    try {
+      const checker = new ComplianceChecker();
+      complianceResults = checker.checkCompliance(model) as any;
+    } catch (e) {
+      console.warn('Failed to check compliance', e);
+    }
+
+    const content = template({ 
+      results: complianceResults.results,
+      remediationPlan: complianceResults.remediationPlan
+    });
 
     return {
       name: 'compliance.md',

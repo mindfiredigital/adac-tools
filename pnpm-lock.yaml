@@ -204,6 +204,9 @@ importers:
 
   packages/doc:
     dependencies:
+      '@mindfiredigital/adac-compliance':
+        specifier: workspace:*
+        version: link:../compliance
       '@mindfiredigital/adac-parser':
         specifier: workspace:*
         version: link:../parser
