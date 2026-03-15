@@ -8,10 +8,7 @@ export const requireLoggingRule: ComplianceRule = {
   severity: 'medium',
   evaluate(service) {
     if (
-      service.service === 'alb' ||
-      service.service === 'api-gateway' ||
-      service.service === 's3' ||
-      service.service === 'cloudfront'
+      ['alb', 'api-gateway', 's3', 'cloudfront', 'cloud-load-balancing', 'cloud-storage', 'gcs', 'cloud-cdn'].includes(service.service)
     ) {
       const config = (service.config || service.configuration) as Record<
         string,

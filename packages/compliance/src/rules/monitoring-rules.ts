@@ -10,9 +10,7 @@ export const requireMonitoringRule: ComplianceRule = {
   evaluate(service) {
     // Checking if a service has a monitoring configuration attached.
     if (
-      service.service === 'ec2' ||
-      service.service === 'rds' ||
-      service.service === 'ecs'
+      ['ec2', 'rds', 'ecs', 'compute-engine', 'gce', 'cloud-sql', 'cloudsql', 'gke', 'cloud-run'].includes(service.service)
     ) {
       const monitoring = service.monitoring as Record<string, unknown>;
       if (!monitoring || !monitoring.enabled) {

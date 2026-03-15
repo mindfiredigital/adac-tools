@@ -8,9 +8,7 @@ export const requirePrivateSubnetsRule: ComplianceRule = {
   severity: 'critical',
   evaluate(service) {
     if (
-      service.service === 'rds' ||
-      service.service === 'dynamodb' ||
-      service.service === 'databases'
+      ['rds', 'dynamodb', 'databases', 'cloud-sql', 'cloudsql', 'cloud-spanner', 'firestore', 'bigtable'].includes(service.service)
     ) {
       const config = (service.config || service.configuration) as Record<
         string,
@@ -18,7 +16,8 @@ export const requirePrivateSubnetsRule: ComplianceRule = {
       >;
       if (
         config?.publiclyAccessible === true ||
-        config?.subnetType === 'public'
+        config?.subnetType === 'public' ||
+        config?.public_ip_enabled === true
       ) {
         return {
           id: 'net-01',

@@ -7,7 +7,11 @@ export const requireStorageEncryptionRule: ComplianceRule = {
   description: 'All data at rest must be encrypted',
   severity: 'high',
   evaluate(service) {
-    if (service.service === 's3' || service.service === 'rds') {
+    if (
+      ['s3', 'rds', 'gcs', 'cloud-storage', 'cloud-sql', 'cloudsql', 'bigquery', 'cloud-spanner', 'firestore', 'bigtable'].includes(
+        service.service
+      )
+    ) {
       const config = (service.config || service.configuration) as Record<
         string,
         unknown
@@ -15,7 +19,8 @@ export const requireStorageEncryptionRule: ComplianceRule = {
       if (
         !config?.encrypted &&
         !config?.sseAlgorithm &&
-        !config?.storageEncrypted
+        !config?.storageEncrypted &&
+        !config?.encryption_enabled
       ) {
         return {
           id: 'enc-01',
