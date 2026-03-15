@@ -13,6 +13,7 @@
   },
   "devDependencies": {
     "@mindfiredigital/adac-core": "workspace:*",
+    "@mindfiredigital/adac-cost": "workspace:*",
     "tsup": "^8.3.5",
     "typescript": "^5.9.3",
     "fs-extra": "^11.3.3",
