@@ -1,6 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
-  <rect width="64" height="64" rx="8" fill="#34A853" opacity="0.12"/>
-  <rect x="2" y="2" width="60" height="60" rx="6" fill="none" stroke="#34A853" stroke-width="2.5"/>
-  <text x="32" y="40" font-family="Google Sans, Roboto, Arial, sans-serif" font-size="19"
-        font-weight="700" text-anchor="middle" fill="#34A853">ST</text>
-</svg>

@@ -1,0 +1,128 @@
+version: '0.1'
+
+metadata:
+  name: 'AWS Serverless E-Commerce'
+  author: 'ADAC Team'
+  description: 'A fully serverless, event-driven e-commerce platform.'
+  created: '2026-03-10'
+  environment: production
+
+applications:
+  - id: 'storefront-ui'
+    name: 'E-Comm SPA'
+    type: 'frontend'
+    technology: 'React'
+  
+  - id: 'order-service'
+    name: 'Order API'
+    type: 'backend'
+    technology: 'Node.js'
+  
+  - id: 'payment-processor'
+    name: 'Payment Task'
+    type: 'worker'
+    technology: 'Python'
+
+infrastructure:
+  clouds:
+    - id: 'aws-primary'
+      provider: 'aws'
+      region: 'us-east-1'
+      tier: 'primary'
+      services:
+        - id: 'cloudfront-dist'
+          service: 'cloudfront'
+          name: 'CloudFront CDN'
+        
+        - id: 'waf-edge'
+          service: 'waf'
+          name: 'AWS WAF'
+        
+        - id: 's3-bucket-ui'
+          service: 's3'
+          name: 'S3 UI Hosting'
+          runs: ['storefront-ui']
+        
+        - id: 'cognito-auth'
+          service: 'cognito'
+          name: 'Cognito Auth'
+
+        - id: 'api-gateway'
+          service: 'api-gateway-rest'
+          name: 'API Gateway'
+
+        - id: 'lambda-orders'
+          service: 'lambda'
+          name: 'Orders Lambda'
+          runs: ['order-service']
+
+        - id: 'dynamodb-orders'
+          service: 'dynamodb'
+          name: 'Orders Table'
+
+        - id: 'eventbridge'
+          service: 'eventbridge'
+          name: 'Event Bus'
+
+        - id: 'sqs-queue'
+          service: 'sqs'
+          name: 'Payments Queue'
+
+        - id: 'step-functions'
+          service: 'step-functions'
+          name: 'Payment Workflow'
+          runs: ['payment-processor']
+        
+        - id: 'sns-topic'
+          service: 'sns'
+          name: 'Notifications Topic'
+
+        - id: 'iam-roles'
+          service: 'iam'
+          name: 'IAM Roles'
+
+connections:
+  - id: 'user-to-cdn'
+    from: 'User'
+    to: 'cloudfront-dist'
+    type: 'api-call'
+  - id: 'cdn-to-waf'
+    from: 'cloudfront-dist'
+    to: 'waf-edge'
+    type: 'api-call'
+  - id: 'cdn-to-s3'
+    from: 'cloudfront-dist'
+    to: 's3-bucket-ui'
+    type: 'file-download'
+  - id: 'ui-to-cognito'
+    from: 'storefront-ui'
+    to: 'cognito-auth'
+    type: 'authentication'
+  - id: 'ui-to-api'
+    from: 'storefront-ui'
+    to: 'api-gateway'
+    type: 'api-call'
+  - id: 'api-to-lambda'
+    from: 'api-gateway'
+    to: 'lambda-orders'
+    type: 'api-call'
+  - id: 'lambda-to-ddb'
+    from: 'lambda-orders'
+    to: 'dynamodb-orders'
+    type: 'database-query'
+  - id: 'lambda-to-eb'
+    from: 'lambda-orders'
+    to: 'eventbridge'
+    type: 'message-publish'
+  - id: 'eb-to-sqs'
+    from: 'eventbridge'
+    to: 'sqs-queue'
+    type: 'message-publish'
+  - id: 'sqs-to-sf'
+    from: 'sqs-queue'
+    to: 'step-functions'
+    type: 'message-consume'
+  - id: 'sf-to-sns'
+    from: 'payment-processor'
+    to: 'sns-topic'
+    type: 'message-publish'

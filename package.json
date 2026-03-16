@@ -17,7 +17,7 @@
     "format:check": "prettier --check .",
     "prepare": "husky",
     "cli": "node packages/diagram/dist/cli.js",
-    "setup:icons": "pnpm --filter @mindfiredigital/adac-icons-aws run setup-icons",
+    "setup:icons": "pnpm --filter @mindfiredigital/adac-icons-aws run setup-icons && pnpm --filter @mindfiredigital/adac-icons-gcp run setup-icons",
     "release:pack": "node scripts/pack-release.js"
   },
   "keywords": [

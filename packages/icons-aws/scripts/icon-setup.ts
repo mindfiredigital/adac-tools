@@ -140,8 +140,8 @@ async function main() {
   console.log('Generated icon-map.json');
 
   // Cleanup zips
-  // await fs.remove(mainZipPath);
-  // await fs.remove(pptxPath);
+  await fs.remove(mainZipPath);
+  await fs.remove(pptxPath);
   console.log('Done.');
 }
 

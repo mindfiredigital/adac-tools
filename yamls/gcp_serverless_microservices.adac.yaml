@@ -1,0 +1,144 @@
+version: '0.1'
+
+metadata:
+  name: 'GCP Serverless Microservices'
+  author: 'ADAC Team'
+  description: 'A modern serverless microservices architecture on GCP.'
+  created: '2026-03-10'
+  environment: staging
+
+applications:
+  - id: 'app-engine-frontend'
+    name: 'Main Website'
+    type: 'frontend'
+
+  - id: 'func-thumbnail'
+    name: 'Thumbnail Generator'
+    type: 'worker'
+
+  - id: 'app-billing'
+    name: 'Billing API'
+    type: 'backend'
+
+infrastructure:
+  clouds:
+    - id: 'gcp-secondary'
+      provider: 'gcp'
+      region: 'europe-west1'
+      services:
+        - id: 'app-engine-svc'
+          service: 'app-engine'
+          name: 'App Engine Standard'
+          runs: ['app-engine-frontend']
+
+        - id: 'cloud-functions-svc'
+          service: 'cloud-functions'
+          name: 'Image processing'
+          runs: ['func-thumbnail']
+
+        - id: 'cloud-run-billing'
+          service: 'cloud-run'
+          name: 'Billing Service'
+          runs: ['app-billing']
+
+        - id: 'api-gateway'
+          service: 'cloud-load-balancing'
+          name: 'API Gateway L7'
+
+        - id: 'eventarc-bus'
+          service: 'eventarc'
+          name: 'Eventarc Triggers'
+
+        - id: 'cloud-tasks-queue'
+          service: 'cloud-tasks'
+          name: 'Async Tasks'
+
+        - id: 'cloud-scheduler-cron'
+          service: 'cloud-scheduler'
+          name: 'Daily Invoice Cron'
+
+        - id: 'alloydb-cluster'
+          service: 'alloydb'
+          name: 'AlloyDB Primary'
+
+        - id: 'spanner-global'
+          service: 'cloud-spanner'
+          name: 'Spanner Global Scale'
+
+        - id: 'cloud-nat-outbound'
+          service: 'cloud-nat'
+          name: 'Outbound NAT'
+
+        - id: 'cloud-armor-sec'
+          service: 'cloud-armor'
+          name: 'Cloud Armor Sec'
+
+        - id: 'memorystore-ha'
+          service: 'memorystore'
+          name: 'Redis HA'
+
+connections:
+  - id: 'user-to-lb'
+    from: 'Client'
+    to: 'api-gateway'
+    type: 'api-call'
+
+  - id: 'waf-to-lb'
+    from: 'cloud-armor-sec'
+    to: 'api-gateway'
+    type: 'api-call'
+
+  - id: 'lb-to-gae'
+    from: 'api-gateway'
+    to: 'app-engine-svc'
+    type: 'api-call'
+
+  - id: 'lb-to-cloudrun'
+    from: 'api-gateway'
+    to: 'cloud-run-billing'
+    type: 'api-call'
+
+  - id: 'scheduler-to-billing'
+    from: 'cloud-scheduler-cron'
+    to: 'cloud-run-billing'
+    type: 'api-call'
+
+  - id: 'backend-to-eventarc'
+    from: 'cloud-run-billing'
+    to: 'eventarc-bus'
+    type: 'message-publish'
+
+  - id: 'eventarc-to-functions'
+    from: 'eventarc-bus'
+    to: 'cloud-functions-svc'
+    type: 'message-consume'
+
+  - id: 'gae-to-tasks'
+    from: 'app-engine-svc'
+    to: 'cloud-tasks-queue'
+    type: 'api-call'
+
+  - id: 'tasks-to-cloudrun'
+    from: 'cloud-tasks-queue'
+    to: 'cloud-run-billing'
+    type: 'message-consume'
+
+  - id: 'cr-to-spanner'
+    from: 'cloud-run-billing'
+    to: 'spanner-global'
+    type: 'database-query'
+
+  - id: 'cr-to-alloydb'
+    from: 'cloud-run-billing'
+    to: 'alloydb-cluster'
+    type: 'database-query'
+
+  - id: 'gae-to-redis'
+    from: 'app-engine-svc'
+    to: 'memorystore-ha'
+    type: 'cache-read'
+
+  - id: 'cr-to-nat'
+    from: 'cloud-run-billing'
+    to: 'cloud-nat-outbound'
+    type: 'api-call'
