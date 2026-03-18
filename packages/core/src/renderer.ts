@@ -85,8 +85,6 @@ export async function renderSvg(
     { frameworks: string[]; violations: string[] }
   >
 ): Promise<string> {
-  // Create ELK instance. We use 'any' cast only for the constructor if types are tricky,
-  // but let's try to be cleaner.
   const elk = new (ELK as unknown as {
     new (): { layout: (graph: ElkNode) => Promise<ElkNode> };
   })();
@@ -348,7 +346,7 @@ export async function renderSvg(
     } else {
       const iconUri = getIconDataUri({ path: props.iconPath });
       const iy = 10;
-      const textY = 65;
+      const textY = 75;
 
       output += `<rect width="${nodeW}" height="${nodeH}" fill="white" stroke="none" />`;
 

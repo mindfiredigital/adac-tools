@@ -1,0 +1,319 @@
+# GCP Service Mapping
+# This file maps ADAC service keys to GCP Product Names, Categories and Colors
+# Used by icon-setup.ts to download/map icons or generate placeholders
+
+# Compute
+compute-engine:
+  name: "Compute Engine"
+  category: "Compute"
+  color: "#4285F4"
+cloud-run:
+  name: "Cloud Run"
+  category: "Serverless Computing"
+  color: "#4285F4"
+gke:
+  name: "Kubernetes Engine"
+  category: "Containers"
+  color: "#4285F4"
+google-kubernetes-engine:
+  name: "Kubernetes Engine"
+  category: "Containers"
+  color: "#4285F4"
+cloud-functions:
+  name: "Cloud Functions"
+  category: "Serverless Computing"
+  color: "#4285F4"
+app-engine:
+  name: "App Engine"
+  category: "Serverless Computing"
+  color: "#4285F4"
+batch:
+  name: "Batch"
+  category: "Compute"
+  color: "#4285F4"
+cloud-run-functions:
+  name: "Cloud Run Functions"
+  category: "Serverless Computing"
+  color: "#4285F4"
+
+# Databases
+cloud-sql:
+  name: "Cloud SQL"
+  category: "Databases"
+  color: "#4285F4"
+cloud-spanner:
+  name: "Cloud Spanner"
+  category: "Databases"
+  color: "#4285F4"
+firestore:
+  name: "Firestore"
+  category: "Databases"
+  color: "#FBBC04"
+bigtable:
+  name: "Bigtable"
+  category: "Databases"
+  color: "#4285F4"
+mongodb-atlas:
+  name: "MongoDB Atlas"
+  category: "Databases"
+  color: "#00684A"
+datastore:
+  name: "Datastore"
+  category: "Databases"
+  color: "#FBBC04"
+memorystore:
+  name: "Memorystore"
+  category: "Databases"
+  color: "#4285F4"
+alloydb:
+  name: "AlloyDB"
+  category: "Databases"
+  color: "#4285F4"
+database-migration-service:
+  name: "Database Migration Service"
+  category: "Migration"
+  color: "#4285F4"
+
+# Storage
+cloud-storage:
+  name: "Cloud Storage"
+  category: "Storage"
+  color: "#4285F4"
+persistent-disk:
+  name: "Persistent Disk"
+  category: "Storage"
+  color: "#4285F4"
+filestore:
+  name: "Filestore"
+  category: "Storage"
+  color: "#4285F4"
+
+# Networking
+virtual-private-cloud:
+  name: "Virtual Private Cloud"
+  category: "Networking"
+  color: "#4285F4"
+vpc:
+  name: "Virtual Private Cloud"
+  category: "Networking"
+  color: "#4285F4"
+cloud-load-balancing:
+  name: "Cloud Load Balancing"
+  category: "Networking"
+  color: "#4285F4"
+cloud-dns:
+  name: "Cloud DNS"
+  category: "Networking"
+  color: "#4285F4"
+cloud-cdn:
+  name: "Cloud CDN"
+  category: "Networking"
+  color: "#4285F4"
+cloud-armor:
+  name: "Cloud Armor"
+  category: "Networking"
+  color: "#EA4335"
+cloud-nat:
+  name: "Cloud NAT"
+  category: "Networking"
+  color: "#4285F4"
+cloud-interconnect:
+  name: "Cloud Interconnect"
+  category: "Networking"
+  color: "#4285F4"
+cloud-vpn:
+  name: "Cloud VPN"
+  category: "Networking"
+  color: "#4285F4"
+traffic-director:
+  name: "Traffic Director"
+  category: "Networking"
+  color: "#4285F4"
+network-connectivity-center:
+  name: "Network Connectivity Center"
+  category: "Networking"
+  color: "#4285F4"
+
+# Messaging / Pub-Sub
+pubsub:
+  name: "Pub/Sub"
+  category: "Integration Services"
+  color: "#4285F4"
+cloud-pub-sub:
+  name: "Pub/Sub"
+  category: "Integration Services"
+  color: "#4285F4"
+eventarc:
+  name: "Eventarc"
+  category: "Integration Services"
+  color: "#4285F4"
+cloud-tasks:
+  name: "Cloud Tasks"
+  category: "Integration Services"
+  color: "#4285F4"
+cloud-scheduler:
+  name: "Cloud Scheduler"
+  category: "Management Tools"
+  color: "#4285F4"
+
+# Data & Analytics
+bigquery:
+  name: "BigQuery"
+  category: "Data Analytics"
+  color: "#4285F4"
+dataflow:
+  name: "Dataflow"
+  category: "Data Analytics"
+  color: "#4285F4"
+dataproc:
+  name: "Dataproc"
+  category: "Data Analytics"
+  color: "#4285F4"
+cloud-composer:
+  name: "Cloud Composer"
+  category: "Data Analytics"
+  color: "#4285F4"
+data-catalog:
+  name: "Data Catalog"
+  category: "Data Analytics"
+  color: "#4285F4"
+looker:
+  name: "Looker"
+  category: "Business Intelligence"
+  color: "#4285F4"
+looker-studio:
+  name: "Looker Studio"
+  category: "Business Intelligence"
+  color: "#4285F4"
+
+# AI & ML
+vertex-ai:
+  name: "Vertex AI"
+  category: "AI _ Machine Learning"
+  color: "#4285F4"
+ai-platform:
+  name: "AI Platform"
+  category: "AI _ Machine Learning"
+  color: "#4285F4"
+cloud-natural-language-api:
+  name: "Natural Language API"
+  category: "AI _ Machine Learning"
+  color: "#34A853"
+cloud-vision-api:
+  name: "Vision API"
+  category: "AI _ Machine Learning"
+  color: "#34A853"
+cloud-speech-to-text:
+  name: "Speech-to-Text"
+  category: "AI _ Machine Learning"
+  color: "#34A853"
+cloud-translate:
+  name: "Translation API"
+  category: "AI _ Machine Learning"
+  color: "#34A853"
+dialogflow:
+  name: "Dialogflow"
+  category: "Agents"
+  color: "#FF6D00"
+document-ai:
+  name: "Document AI"
+  category: "AI _ Machine Learning"
+  color: "#4285F4"
+recommendations-ai:
+  name: "Recommendations AI"
+  category: "AI _ Machine Learning"
+  color: "#4285F4"
+
+# Security & Identity
+cloud-iam:
+  name: "Cloud IAM"
+  category: "Security Identity"
+  color: "#EA4335"
+identity-aware-proxy:
+  name: "Identity-Aware Proxy"
+  category: "Security Identity"
+  color: "#EA4335"
+cloud-kms:
+  name: "Cloud KMS"
+  category: "Security Identity"
+  color: "#EA4335"
+secret-manager:
+  name: "Secret Manager"
+  category: "Security Identity"
+  color: "#EA4335"
+security-command-center:
+  name: "Security Command Center"
+  category: "Security Identity"
+  color: "#EA4335"
+certificate-authority-service:
+  name: "Certificate Authority Service"
+  category: "Security Identity"
+  color: "#EA4335"
+
+# Operations / Monitoring
+cloud-monitoring:
+  name: "Cloud Monitoring"
+  category: "Operations"
+  color: "#34A853"
+cloud-logging:
+  name: "Cloud Logging"
+  category: "Operations"
+  color: "#34A853"
+cloud-trace:
+  name: "Cloud Trace"
+  category: "Operations"
+  color: "#34A853"
+cloud-profiler:
+  name: "Cloud Profiler"
+  category: "Operations"
+  color: "#34A853"
+error-reporting:
+  name: "Error Reporting"
+  category: "Operations"
+  color: "#EA4335"
+
+# DevOps / CI-CD
+cloud-build:
+  name: "Cloud Build"
+  category: "DevOps"
+  color: "#4285F4"
+artifact-registry:
+  name: "Artifact Registry"
+  category: "Developer Tools"
+  color: "#4285F4"
+cloud-deploy:
+  name: "Cloud Deploy"
+  category: "DevOps"
+  color: "#4285F4"
+cloud-source-repositories:
+  name: "Cloud Source Repositories"
+  category: "Developer Tools"
+  color: "#4285F4"
+
+# Containers
+container-registry:
+  name: "Container Registry"
+  category: "Containers"
+  color: "#4285F4"
+kubernetes-engine:
+  name: "Kubernetes Engine"
+  category: "Containers"
+  color: "#4285F4"
+
+# Network topology containers
+subnet:
+  name: "Subnetwork"
+  category: "Networking"
+  color: "#4285F4"
+region:
+  name: "Region"
+  category: "Hybrid & Multicloud"
+  color: "#34A853"
+zone:
+  name: "Zone"
+  category: "Hybrid & Multicloud"
+  color: "#4285F4"
+project:
+  name: "Project"
+  category: "Hybrid & Multicloud"
+  color: "#4285F4"

@@ -12,23 +12,25 @@ import fs from 'fs';
 let ICON_MAP: Record<string, string> = {};
 
 try {
-  const distMapping = path.join(__dirname, 'mappings', 'icon-map.json');
-  const srcMapping = path.resolve(
-    __dirname,
-    '..',
-    'src',
-    'mappings',
-    'icon-map.json'
-  );
+  const awsMapPaths = [
+    // Two directories up from dist is packages: packages/layout-elk/dist -> packages
+    path.resolve(__dirname, '..', '..', 'icons-aws', 'mappings', 'icon-map.json'),
+    // Relative to process cwd
+    path.resolve(process.cwd(), 'packages', 'icons-aws', 'mappings', 'icon-map.json'),
+    path.resolve(process.cwd(), 'icons-aws', 'mappings', 'icon-map.json'),
+  ];
 
-  if (fs.existsSync(distMapping)) {
-    ICON_MAP = JSON.parse(fs.readFileSync(distMapping, 'utf8'));
-  } else if (fs.existsSync(srcMapping)) {
-    ICON_MAP = JSON.parse(fs.readFileSync(srcMapping, 'utf8'));
-  } else {
-    console.warn(
-      `Warning: Could not find icon-map.json at ${distMapping} or ${srcMapping}`
-    );
+  let foundMap = false;
+  for (const p of awsMapPaths) {
+    if (fs.existsSync(p)) {
+      ICON_MAP = JSON.parse(fs.readFileSync(p, 'utf8'));
+      foundMap = true;
+      break;
+    }
+  }
+
+  if (!foundMap) {
+    console.warn('Warning: Could not find AWS icon-map.json in expected locations');
   }
 } catch (e) {
   console.error('Failed to load icon-map.json', e);
@@ -39,9 +41,8 @@ let GCP_ICON_MAP: Record<string, string> = {};
 
 try {
   const gcpMapPaths = [
-    // Next to this compiled file (dist/)
-    path.resolve(__dirname, '..', '..', '..', 'icons-gcp', 'mappings', 'icon-map.json'),
-    path.resolve(__dirname, '..', '..', '..', '..', 'packages', 'icons-gcp', 'mappings', 'icon-map.json'),
+    // Two directories up from dist is packages
+    path.resolve(__dirname, '..', '..', 'icons-gcp', 'mappings', 'icon-map.json'),
     // Relative to process cwd
     path.resolve(process.cwd(), 'packages', 'icons-gcp', 'mappings', 'icon-map.json'),
     path.resolve(process.cwd(), 'icons-gcp', 'mappings', 'icon-map.json'),
@@ -155,6 +156,16 @@ const ALIASES: Record<string, string> = {
   codebuild: 'AWS CodeBuild',
   codecommit: 'AWS CodeCommit',
   codedeploy: 'AWS CodeDeploy',
+  cognito: 'Amazon Cognito',
+  'api-gateway-rest': 'Amazon API Gateway',
+  'api-gateway-http': 'Amazon API Gateway',
+  eventbridge: 'Amazon EventBridge',
+  'step-functions': 'AWS Step Functions',
+  'kinesis-streams': 'Amazon Kinesis Data Streams',
+  emr: 'Amazon EMR',
+  quicksight: 'Amazon QuickSight',
+  sagemaker: 'Amazon SageMaker',
+  macie: 'Amazon Macie',
 };
 
 // GCP aliases: short/common names → canonical GCP icon-map keys
@@ -225,6 +236,8 @@ const GCP_ALIASES: Record<string, string> = {
   region: 'Region',
   zone: 'Zone',
   project: 'Project',
+  database: 'Firestore', // Map generic database to a service that uses Databases category icon
+  storage: 'Cloud Storage',
 };
 
 export function buildElkGraph(adac: AdacConfig): ElkNode {
@@ -281,10 +294,10 @@ export function buildElkGraph(adac: AdacConfig): ElkNode {
 
     // 5. Fallback for generics
     if (lowerKey.includes('database') || lowerKey.includes('db'))
-      return resolveAwsAssetPath(ICON_MAP['Database']);
-    if (lowerKey.includes('user')) return resolveAwsAssetPath(ICON_MAP['User']);
+      return resolveAwsAssetPath(ICON_MAP['AWS::RDS']);
+    if (lowerKey.includes('user')) return resolveAwsAssetPath(ICON_MAP['AWS::IAM::User']);
     if (lowerKey.includes('client'))
-      return resolveAwsAssetPath(ICON_MAP['Client']);
+      return resolveAwsAssetPath(ICON_MAP['AWS::IAM::User']);
 
     return undefined;
   };
@@ -324,11 +337,10 @@ export function buildElkGraph(adac: AdacConfig): ElkNode {
 
     const searchPaths = [
       path.resolve(__dirname, 'assets', relativePath),
-      path.resolve(__dirname, '..', 'assets', relativePath),
-      path.resolve(__dirname, '..', '..', 'assets', relativePath),
+      path.resolve(__dirname, '..', '..', 'icons-aws', 'assets', relativePath),
+      path.resolve(process.cwd(), 'packages', 'icons-aws', 'assets', relativePath),
+      path.resolve(process.cwd(), 'icons-aws', 'assets', relativePath),
       path.resolve(process.cwd(), 'assets', relativePath),
-      path.resolve(__dirname, '..', '..', '..', 'icons-aws', 'assets', relativePath),
-      path.resolve(__dirname, '..', '..', '..', '..', 'packages', 'icons-aws', 'assets', relativePath),
     ];
 
     for (const p of searchPaths) {
@@ -344,9 +356,9 @@ export function buildElkGraph(adac: AdacConfig): ElkNode {
     if (!relativePath) return undefined;
 
     const searchPaths = [
-      path.resolve(__dirname, '..', '..', '..', 'icons-gcp', 'assets', relativePath),
-      path.resolve(__dirname, '..', '..', '..', '..', 'packages', 'icons-gcp', 'assets', relativePath),
+      path.resolve(__dirname, '..', '..', 'icons-gcp', 'assets', relativePath),
       path.resolve(process.cwd(), 'packages', 'icons-gcp', 'assets', relativePath),
+      path.resolve(process.cwd(), 'icons-gcp', 'assets', relativePath),
       path.resolve(process.cwd(), 'assets', relativePath),
     ];
 
@@ -407,7 +419,7 @@ export function buildElkGraph(adac: AdacConfig): ElkNode {
     const node: ElkNode = {
       id: app.id,
       width: 80,
-      height: 80,
+      height: 100,
       labels: [{ text: app.name }],
       properties: {
         type: 'app',
@@ -418,8 +430,7 @@ export function buildElkGraph(adac: AdacConfig): ElkNode {
     nodesMap.set(app.id, node);
   });
 
-  // 1.5 Create Nodes for Logical Groups (AI Suggested)
-  // We scan everything to find unique group names
+  // 1.5 Create Nodes for Logical Groups
   const logicalGroups = new Set<string>();
   const collectGroup = (obj: AdacApplication | AdacService) => {
     if (obj.ai_tags?.group) logicalGroups.add(obj.ai_tags.group);
@@ -449,9 +460,6 @@ export function buildElkGraph(adac: AdacConfig): ElkNode {
       },
     };
     nodesMap.set(groupId, node);
-    // These are top-level by default unless nested?
-    // Let's assume logical groups are top-level concepts in this view (or inside VPC? No, usually cross-cutting or app layer)
-    // We add them to rootChildren later if they have no parent.
   });
 
   // 2. Create Nodes for Infrastructure Services (Pass 1)
@@ -461,7 +469,7 @@ export function buildElkGraph(adac: AdacConfig): ElkNode {
 
     (cloud.services || []).forEach((service: AdacService) => {
       let width = 80;
-      let height = 80;
+      let height = 100;
       let style: { type: string; style: string; cssClass?: string } =
         cloudStyles.service;
 
@@ -579,15 +587,6 @@ export function buildElkGraph(adac: AdacConfig): ElkNode {
   // Place Apps
   (adac.applications || []).forEach((app: AdacApplication) => {
     if (placedNodeIds.has(app.id)) return;
-    // Apps often placed by 'runs' in Services. If NOT placed by service, put in Logical Group.
-    // Getting app Node
-    const node = nodesMap.get(app.id);
-    if (node) {
-      // We do this check AFTER services claim them?
-      // No, services claim in their loop. We need to do a post-pass or let services loop run first.
-      // Let's defer app placement logic to end of infra loop?
-    }
-    // Actually, let's wait until infra loop finishes claiming 'runs'.
   });
 
   // Process Services to assign Logic Parents
@@ -607,9 +606,7 @@ export function buildElkGraph(adac: AdacConfig): ElkNode {
           const azId = `${vpcId}-${az}`;
 
           if (!nodesMap.has(azId)) {
-            // Create Implicit AZ Node in nodesMap... (Same as before)
-            // [Code for AZ creation skipped for brevity, reused existing logic if block kept]
-            // Wait, I am replacing the block, must include it.
+            // Create Implicit AZ Node in nodesMap
             const azNode: ElkNode = {
               id: azId,
               width: 300,
@@ -724,7 +721,7 @@ export function buildElkGraph(adac: AdacConfig): ElkNode {
   (adac.infrastructure?.clouds || []).forEach((cloud: AdacCloud) => {
     (cloud.services || []).forEach((service: AdacService) => {
       if (!placedNodeIds.has(service.id)) {
-        // Try logical group first (AI)
+        // Try logical group first
         if (tryPlaceInLogicalGroup(nodesMap.get(service.id)!, service.ai_tags))
           return;
 

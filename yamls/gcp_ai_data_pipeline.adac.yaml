@@ -1,0 +1,123 @@
+version: '0.1'
+
+metadata:
+  name: 'GCP AI Data Pipeline'
+  author: 'ADAC Team'
+  description: 'A comprehensive data & AI pipeline using native GCP services.'
+  created: '2026-03-10'
+  environment: production
+
+applications:
+  - id: 'dataflow-job'
+    name: 'Streaming ETL'
+    type: 'worker'
+    technology: 'Apache Beam'
+
+  - id: 'ml-training'
+    name: 'Model Trainer'
+    type: 'worker'
+    technology: 'TensorFlow'
+
+  - id: 'dashboard-ui'
+    name: 'Looker View'
+    type: 'frontend'
+
+infrastructure:
+  clouds:
+    - id: 'gcp-primary'
+      provider: 'gcp'
+      region: 'us-east4'
+      services:
+        - id: 'cloud-iot'
+          service: 'cloud-run'
+          name: 'IoT Gateway'
+
+        - id: 'pubsub-stream'
+          service: 'pubsub'
+          name: 'Ingestion Topic'
+
+        - id: 'dataflow-streaming'
+          service: 'dataflow'
+          name: 'Dataflow Pipeline'
+          runs: ['dataflow-job']
+
+        - id: 'cloud-storage-lake'
+          service: 'cloud-storage'
+          name: 'Data Lake GCS'
+
+        - id: 'bigtable-nosql'
+          service: 'bigtable'
+          name: 'Fast Access NoSQL'
+
+        - id: 'bigquery-dwh'
+          service: 'bigquery'
+          name: 'Enterprise DWH'
+
+        - id: 'dataproc-cluster'
+          service: 'dataproc'
+          name: 'Hadoop/Spark Cluster'
+
+        - id: 'cloud-composer-orchestrator'
+          service: 'cloud-composer'
+          name: 'Airflow DAG Scheduler'
+
+        - id: 'vertex-ai-training'
+          service: 'vertex-ai'
+          name: 'Vertex AI Training'
+          runs: ['ml-training']
+
+        - id: 'looker-bi'
+          service: 'looker'
+          name: 'Looker Dashboard'
+          runs: ['dashboard-ui']
+
+connections:
+  - id: 'iot-to-pubsub'
+    from: 'cloud-iot'
+    to: 'pubsub-stream'
+    type: 'message-publish'
+
+  - id: 'pubsub-to-dataflow'
+    from: 'pubsub-stream'
+    to: 'dataflow-streaming'
+    type: 'message-consume'
+
+  - id: 'dataflow-to-gcs'
+    from: 'dataflow-streaming'
+    to: 'cloud-storage-lake'
+    type: 'stream-write'
+
+  - id: 'dataflow-to-bt'
+    from: 'dataflow-streaming'
+    to: 'bigtable-nosql'
+    type: 'database-query'
+
+  - id: 'gcs-to-dataproc'
+    from: 'cloud-storage-lake'
+    to: 'dataproc-cluster'
+    type: 'file-download'
+
+  - id: 'dataproc-to-bq'
+    from: 'dataproc-cluster'
+    to: 'bigquery-dwh'
+    type: 'database-query'
+
+  - id: 'composer-to-all'
+    from: 'cloud-composer-orchestrator'
+    to: 'dataproc-cluster'
+    type: 'api-call'
+
+  - id: 'composer-to-df'
+    from: 'cloud-composer-orchestrator'
+    to: 'dataflow-streaming'
+    type: 'api-call'
+
+  - id: 'bq-to-vertex'
+    from: 'bigquery-dwh'
+    to: 'vertex-ai-training'
+    type: 'database-query'
+
+  - id: 'bq-to-looker'
+    from: 'bigquery-dwh'
+    to: 'looker-bi'
+    type: 'api-call'

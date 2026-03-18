@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "setup:icons": "node -e \"const fs=require('fs');const path=require('path');const src=path.resolve(__dirname,'../icons-aws/assets/Architecture-Service-Icons_07312025');const dest=path.resolve(__dirname,'public/assets/Architecture-Service-Icons_07312025');if(!fs.existsSync(dest)&&fs.existsSync(src)){fs.cpSync(src,dest,{recursive:true});console.log('Icons copied successfully');}else if(fs.existsSync(dest)){console.log('Icons already present');}else{console.warn('Warning: icons-aws assets not found at',src);}\"",
+    "setup:icons": "node -e \"const fs=require('fs');const path=require('path');const copy=(s,d,n)=>{const src=path.resolve(__dirname,s);const dest=path.resolve(__dirname,d);if(!fs.existsSync(dest)&&fs.existsSync(src)){fs.cpSync(src,dest,{recursive:true});console.log(n+' icons copied successfully');}else if(fs.existsSync(dest)){console.log(n+' icons already present');}else{console.warn('Warning: '+n+' assets not found at',src);}};copy('../icons-aws/assets/Architecture-Service-Icons_07312025','public/assets/Architecture-Service-Icons_07312025','AWS');copy('../icons-gcp/assets/gcp-icons','public/assets/gcp-icons','GCP');\"",
     "predev": "npm run setup:icons",
     "dev": "vite",
     "build": "tsc -b && vite build",

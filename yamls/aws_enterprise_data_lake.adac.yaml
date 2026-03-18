@@ -1,0 +1,135 @@
+version: '0.1'
+
+metadata:
+  name: 'AWS Enterprise Data Lake'
+  author: 'ADAC Team'
+  description: 'A large scale data ingestion and analytics pipeline on AWS.'
+  created: '2026-03-10'
+  environment: production
+
+applications:
+  - id: 'etl-job'
+    name: 'Spark ETL'
+    type: 'worker'
+    technology: 'Apache Spark'
+    
+  - id: 'bi-dashboard'
+    name: 'Executive BI'
+    type: 'frontend'
+    technology: 'QuickSight'
+
+  - id: 'data-scientist-nb'
+    name: 'SageMaker NB'
+    type: 'worker'
+    technology: 'Jupyter'
+
+infrastructure:
+  clouds:
+    - id: 'aws-primary'
+      provider: 'aws'
+      region: 'us-west-2'
+      services:
+        - id: 'kinesis-data-stream'
+          service: 'kinesis-streams'
+          name: 'Clickstream Data'
+        
+        - id: 's3-raw-zone'
+          service: 's3'
+          name: 'Raw S3 Bucket'
+
+        - id: 'aws-glue-crawler'
+          service: 'glue'
+          name: 'Glue Data Catalog'
+        
+        - id: 'emr-cluster'
+          service: 'emr'
+          name: 'EMR Cluster'
+          runs: ['etl-job']
+
+        - id: 's3-processed-zone'
+          service: 's3'
+          name: 'Curated S3 Bucket'
+        
+        - id: 'athena-query'
+          service: 'athena'
+          name: 'Athena Query Editor'
+        
+        - id: 'redshift-dwh'
+          service: 'redshift'
+          name: 'Redshift DWH'
+
+        - id: 'quicksight-bi'
+          service: 'quicksight'
+          name: 'QuickSight'
+          runs: ['bi-dashboard']
+
+        - id: 'sagemaker-studio'
+          service: 'sagemaker'
+          name: 'SageMaker Studio'
+          runs: ['data-scientist-nb']
+
+        - id: 'macie-sec'
+          service: 'macie'
+          name: 'Macie PII Scan'
+        
+        - id: 'kms-encryption'
+          service: 'kms'
+          name: 'AWS KMS Key'
+        
+        - id: 'lake-formation'
+          service: 'data-pipeline'
+          name: 'Lake Formation'
+
+connections:
+  - id: 'api-to-kinesis'
+    from: 'Client'
+    to: 'kinesis-data-stream'
+    type: 'api-call'
+  - id: 'kinesis-to-s3'
+    from: 'kinesis-data-stream'
+    to: 's3-raw-zone'
+    type: 'stream-write'
+  - id: 's3-to-glue'
+    from: 's3-raw-zone'
+    to: 'aws-glue-crawler'
+    type: 'file-download'
+  - id: 's3raw-to-emr'
+    from: 's3-raw-zone'
+    to: 'emr-cluster'
+    type: 'file-download'
+  - id: 'emr-to-s3proc'
+    from: 'emr-cluster'
+    to: 's3-processed-zone'
+    type: 'file-upload'
+  - id: 'glue-to-s3proc'
+    from: 'aws-glue-crawler'
+    to: 's3-processed-zone'
+    type: 'file-download'
+  - id: 's3proc-to-athena'
+    from: 's3-processed-zone'
+    to: 'athena-query'
+    type: 'database-query'
+  - id: 's3proc-to-redshift'
+    from: 's3-processed-zone'
+    to: 'redshift-dwh'
+    type: 'database-query'
+  - id: 'dwh-to-bi'
+    from: 'redshift-dwh'
+    to: 'quicksight-bi'
+    type: 'api-call'
+  - id: 'athena-to-sagemaker'
+    from: 'athena-query'
+    to: 'sagemaker-studio'
+    type: 'api-call'
+  - id: 's3-to-macie'
+    from: 's3-processed-zone'
+    to: 'macie-sec'
+    type: 'api-call'
+  - id: 'kms-to-s3'
+    from: 'kms-encryption'
+    to: 's3-processed-zone'
+    type: 'api-call'
+  - id: 'lakeformation-to-s3'
+    from: 'lake-formation'
+    to: 's3-processed-zone'
+    type: 'api-call'

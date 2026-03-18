@@ -11,7 +11,7 @@
   "scripts": {
     "build": "tsc",
     "test": "echo \"No tests specified\" && exit 0",
-    "setup-icons": "node scripts/icon-setup.js"
+    "setup-icons": "npx ts-node scripts/icon-setup.ts"
   },
   "devDependencies": {
     "axios": "^1.6.2",

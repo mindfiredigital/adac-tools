@@ -16,11 +16,13 @@ import fs from 'fs-extra';
 import path from 'path';
 import axios from 'axios';
 import AdmZip from 'adm-zip';
+import yaml from 'js-yaml';
 
 const ASSETS_DIR = path.join(__dirname, '..', 'assets');
 const ICONS_DIR = path.join(ASSETS_DIR, 'gcp-icons');
 const MAPPINGS_DIR = path.join(__dirname, '..', 'mappings');
 const ICON_MAP_FILE = path.join(MAPPINGS_DIR, 'icon-map.json');
+const SERVICES_CONFIG_FILE = path.join(MAPPINGS_DIR, 'services.yaml');
 
 /**
  * Official GCP icon pack download URL.
@@ -99,143 +101,21 @@ function generatePlaceholderSvg(serviceName: string, color: string): string {
  * This mapping is derived from the official Google Cloud icon library.
  * Icon filenames follow the pattern: <ProductName>_color_<size>dp.svg
  */
-const GCP_SERVICE_ICON_NAMES: Record<string, { name: string; color: string }> =
-  {
-    // Compute
-    'compute-engine': {
-      name: 'Compute Engine',
-      color: '#4285F4',
-    },
-    'cloud-run': { name: 'Cloud Run', color: '#4285F4' },
-    'gke': { name: 'Kubernetes Engine', color: '#4285F4' },
-    'google-kubernetes-engine': {
-      name: 'Kubernetes Engine',
-      color: '#4285F4',
-    },
-    'cloud-functions': { name: 'Cloud Functions', color: '#4285F4' },
-    'app-engine': { name: 'App Engine', color: '#4285F4' },
-    'batch': { name: 'Batch', color: '#4285F4' },
-    'cloud-run-functions': { name: 'Cloud Run Functions', color: '#4285F4' },
-
-    // Databases
-    'cloud-sql': { name: 'Cloud SQL', color: '#4285F4' },
-    'cloud-spanner': { name: 'Cloud Spanner', color: '#4285F4' },
-    'firestore': { name: 'Firestore', color: '#FBBC04' },
-    'bigtable': { name: 'Bigtable', color: '#4285F4' },
-    'mongodb-atlas': { name: 'MongoDB Atlas', color: '#00684A' },
-    'datastore': { name: 'Datastore', color: '#FBBC04' },
-    'memorystore': { name: 'Memorystore', color: '#4285F4' },
-    'alloydb': { name: 'AlloyDB', color: '#4285F4' },
-    'database-migration-service': {
-      name: 'Database Migration Service',
-      color: '#4285F4',
-    },
-
-    // Storage
-    'cloud-storage': { name: 'Cloud Storage', color: '#4285F4' },
-    'persistent-disk': { name: 'Persistent Disk', color: '#4285F4' },
-    'filestore': { name: 'Filestore', color: '#4285F4' },
-
-    // Networking
-    'virtual-private-cloud': {
-      name: 'Virtual Private Cloud',
-      color: '#4285F4',
-    },
-    'vpc': { name: 'Virtual Private Cloud', color: '#4285F4' },
-    'cloud-load-balancing': {
-      name: 'Cloud Load Balancing',
-      color: '#4285F4',
-    },
-    'cloud-dns': { name: 'Cloud DNS', color: '#4285F4' },
-    'cloud-cdn': { name: 'Cloud CDN', color: '#4285F4' },
-    'cloud-armor': { name: 'Cloud Armor', color: '#EA4335' },
-    'cloud-nat': { name: 'Cloud NAT', color: '#4285F4' },
-    'cloud-interconnect': { name: 'Cloud Interconnect', color: '#4285F4' },
-    'cloud-vpn': { name: 'Cloud VPN', color: '#4285F4' },
-    'traffic-director': { name: 'Traffic Director', color: '#4285F4' },
-    'network-connectivity-center': {
-      name: 'Network Connectivity Center',
-      color: '#4285F4',
-    },
-
-    // Messaging / Pub-Sub
-    'pubsub': { name: 'Pub/Sub', color: '#4285F4' },
-    'cloud-pub-sub': { name: 'Pub/Sub', color: '#4285F4' },
-    'eventarc': { name: 'Eventarc', color: '#4285F4' },
-    'cloud-tasks': { name: 'Cloud Tasks', color: '#4285F4' },
-    'cloud-scheduler': { name: 'Cloud Scheduler', color: '#4285F4' },
-
-    // Data & Analytics
-    'bigquery': { name: 'BigQuery', color: '#4285F4' },
-    'dataflow': { name: 'Dataflow', color: '#4285F4' },
-    'dataproc': { name: 'Dataproc', color: '#4285F4' },
-    'cloud-composer': { name: 'Cloud Composer', color: '#4285F4' },
-    'data-catalog': { name: 'Data Catalog', color: '#4285F4' },
-    'looker': { name: 'Looker', color: '#4285F4' },
-    'looker-studio': { name: 'Looker Studio', color: '#4285F4' },
-
-    // AI & ML
-    'vertex-ai': { name: 'Vertex AI', color: '#4285F4' },
-    'ai-platform': { name: 'AI Platform', color: '#4285F4' },
-    'cloud-natural-language-api': {
-      name: 'Natural Language API',
-      color: '#34A853',
-    },
-    'cloud-vision-api': { name: 'Vision API', color: '#34A853' },
-    'cloud-speech-to-text': { name: 'Speech-to-Text', color: '#34A853' },
-    'cloud-translate': { name: 'Translation API', color: '#34A853' },
-    'dialogflow': { name: 'Dialogflow', color: '#FF6D00' },
-    'document-ai': { name: 'Document AI', color: '#4285F4' },
-    'recommendations-ai': { name: 'Recommendations AI', color: '#4285F4' },
-
-    // Security & Identity
-    'cloud-iam': { name: 'Cloud IAM', color: '#EA4335' },
-    'identity-aware-proxy': { name: 'Identity-Aware Proxy', color: '#EA4335' },
-    'cloud-kms': { name: 'Cloud KMS', color: '#EA4335' },
-    'secret-manager': { name: 'Secret Manager', color: '#EA4335' },
-    'security-command-center': {
-      name: 'Security Command Center',
-      color: '#EA4335',
-    },
-    'certificate-authority-service': {
-      name: 'Certificate Authority Service',
-      color: '#EA4335',
-    },
-    'cloud-armor': { name: 'Cloud Armor', color: '#EA4335' },
-
-    // Operations / Monitoring
-    'cloud-monitoring': { name: 'Cloud Monitoring', color: '#34A853' },
-    'cloud-logging': { name: 'Cloud Logging', color: '#34A853' },
-    'cloud-trace': { name: 'Cloud Trace', color: '#34A853' },
-    'cloud-profiler': { name: 'Cloud Profiler', color: '#34A853' },
-    'error-reporting': { name: 'Error Reporting', color: '#EA4335' },
-
-    // DevOps / CI-CD
-    'cloud-build': { name: 'Cloud Build', color: '#4285F4' },
-    'artifact-registry': { name: 'Artifact Registry', color: '#4285F4' },
-    'cloud-deploy': { name: 'Cloud Deploy', color: '#4285F4' },
-    'cloud-source-repositories': {
-      name: 'Cloud Source Repositories',
-      color: '#4285F4',
-    },
-
-    // Containers
-    'container-registry': { name: 'Container Registry', color: '#4285F4' },
-    'kubernetes-engine': { name: 'Kubernetes Engine', color: '#4285F4' },
-
-    // Network topology containers
-    'subnet': { name: 'Subnetwork', color: '#4285F4' },
-    'region': { name: 'Region', color: '#34A853' },
-    'zone': { name: 'Zone', color: '#4285F4' },
-    'project': { name: 'Project', color: '#4285F4' },
-  };
 
 async function main() {
   await fs.ensureDir(ASSETS_DIR);
   await fs.ensureDir(ICONS_DIR);
+  await fs.emptyDir(ICONS_DIR); // Clear old icons/placeholders
   await fs.ensureDir(MAPPINGS_DIR);
 
   console.log('🚀 Setting up GCP icons...');
+
+  if (!fs.existsSync(SERVICES_CONFIG_FILE)) {
+    throw new Error(`GCP Services mapping file not found at: ${SERVICES_CONFIG_FILE}`);
+  }
+
+  const configContent = await fs.readFile(SERVICES_CONFIG_FILE, 'utf8');
+  const serviceMappings = yaml.load(configContent) as Record<string, { name: string; category?: string; color: string }>;
 
   let downloadSucceeded = false;
   let extractedCount = 0;
@@ -244,33 +124,40 @@ async function main() {
   const zipPath = path.join(ASSETS_DIR, 'gcp-icons.zip');
 
   const downloadUrls = [
-    // Official Google Cloud icon download (stable URL from cloud.google.comions page)
-    'https://storage.googleapis.com/cloud-training/T-INFRA-B/v1.0/icon_set.zip',
+    'https://services.google.com/fh/files/misc/category-icons.zip',
+    'https://services.google.com/fh/files/misc/core-products-icons.zip',
   ];
 
   for (const url of downloadUrls) {
     try {
       await downloadFile(url, zipPath);
-      console.log('📦 Extracting GCP icon ZIP...');
+      console.log(`📦 Extracting ${path.basename(url)}...`);
 
       const zip = new AdmZip(zipPath);
       const entries = zip.getEntries();
+      let zipExtractedCount = 0;
 
       for (const entry of entries) {
         const name = entry.entryName;
+        // Only extract SVG files
         if (
           !entry.isDirectory &&
-          (name.endsWith('.svg') || name.endsWith('.png'))
+          name.endsWith('.svg')
         ) {
+          // Flatten: remove directories from the path
           const fileName = path.basename(name);
-          await fs.writeFile(path.join(ICONS_DIR, fileName), entry.getData());
+          const destPath = path.join(ICONS_DIR, fileName);
+          // Always extract/overwrite to ensure the latest version (like core icons) is used
+          await fs.writeFile(destPath, entry.getData());
+          zipExtractedCount++;
           extractedCount++;
         }
       }
 
-      console.log(`✅ Extracted ${extractedCount} GCP icons from ZIP`);
+      console.log(`✅ Extracted ${zipExtractedCount} SVG icons from ${path.basename(url)}`);
       downloadSucceeded = true;
-      break;
+      // Cleanup the zip after extraction
+      await fs.remove(zipPath);
     } catch (e: unknown) {
       const errMsg = e instanceof Error ? e.message : String(e);
       console.warn(`⚠️  Download failed from ${url}: ${errMsg}`);
@@ -292,7 +179,7 @@ async function main() {
   // Map each service key to its local SVG icon path (relative to assets/)
   const iconMap: Record<string, string> = {};
 
-  for (const [serviceKey, info] of Object.entries(GCP_SERVICE_ICON_NAMES)) {
+  for (const [serviceKey, info] of Object.entries(serviceMappings)) {
     // Try to find the downloaded icon file matching the service name
     const safeName = info.name
       .replace(/[^a-zA-Z0-9\s]/g, '')
@@ -300,12 +187,15 @@ async function main() {
       .replace(/\s+/g, '_');
 
     const possibleFileNames = [
-      // Common GCP icon naming conventions
-      `${info.name.toLowerCase().replace(/\s+/g, '_')}_color_64dp.svg`,
-      `${info.name.toLowerCase().replace(/[\s/]+/g, '-')}.svg`,
+      // Common GCP icon naming conventions from Core ZIP
+      `${info.name.replace(/\s+/g, '')}-512-color.svg`,
+      `${info.name.replace(/\s+/g, '')}-512-color-rgb.svg`,
+      `${info.name.replace(/\s+/g, '_')}-512-color.svg`,
+      `${safeName}-512-color.svg`,
+      `${info.name.replace(/\s+/g, '')}.svg`,
+      // Product specific variations
       `${safeName}.svg`,
-      `${safeName}_color_64dp.svg`,
-      `${safeName}_color_48px.svg`,
+      `${safeName}_64dp.svg`,
     ];
 
     let foundFile: string | null = null;
@@ -316,7 +206,25 @@ async function main() {
       }
     }
 
-    // Also try case-insensitive search in extracted files
+    // 2. Try to find by category icon if defined
+    if (!foundFile && info.category) {
+      const category = info.category;
+      const categoryFilenames = [
+        `${category.replace(/[^a-zA-Z0-9]/g, '')}-512-color.svg`,
+        `${category.replace(/ /g, '_')}-512-color.svg`,
+        `${category}-512-color.svg`,
+        `Networking-512-color-rgb.svg`, // Networking exception
+      ];
+
+      for (const fname of categoryFilenames) {
+        if (fs.existsSync(path.join(ICONS_DIR, fname))) {
+          foundFile = fname;
+          break;
+        }
+      }
+    }
+
+    // 3. Also try case-insensitive search in extracted files for product name
     if (!foundFile && downloadSucceeded) {
       try {
         const files = await fs.readdir(ICONS_DIR);
