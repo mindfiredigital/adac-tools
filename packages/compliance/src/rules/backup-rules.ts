@@ -7,15 +7,31 @@ export const requireBackupRule: ComplianceRule = {
   description: 'Stateful services must have automated backups enabled.',
   severity: 'high',
   evaluate(service) {
-    if (['rds', 'dynamodb', 'cloud-sql', 'cloudsql', 'cloud-spanner', 'firestore', 'bigtable'].includes(service.service)) {
+    if (
+      [
+        'rds',
+        'dynamodb',
+        'cloud-sql',
+        'cloudsql',
+        'cloud-spanner',
+        'firestore',
+        'bigtable',
+      ].includes(service.service)
+    ) {
       const config = (service.config || service.configuration) as Record<
         string,
         unknown
       >;
-      const retention = config?.backupRetentionPeriod ?? config?.backup_retention_days;
-      const enabled = config?.backup_enabled ?? (retention !== undefined && (retention as number) > 0);
+      const retention =
+        config?.backupRetentionPeriod ?? config?.backup_retention_days;
+      const enabled =
+        config?.backup_enabled ??
+        (retention !== undefined && (retention as number) > 0);
 
-      if (!enabled || (retention !== undefined && (retention as number) === 0)) {
+      if (
+        !enabled ||
+        (retention !== undefined && (retention as number) === 0)
+      ) {
         return {
           id: 'bck-01',
           resourceId: service.id,

@@ -14,9 +14,22 @@ let ICON_MAP: Record<string, string> = {};
 try {
   const awsMapPaths = [
     // Two directories up from dist is packages: packages/layout-elk/dist -> packages
-    path.resolve(__dirname, '..', '..', 'icons-aws', 'mappings', 'icon-map.json'),
+    path.resolve(
+      __dirname,
+      '..',
+      '..',
+      'icons-aws',
+      'mappings',
+      'icon-map.json'
+    ),
     // Relative to process cwd
-    path.resolve(process.cwd(), 'packages', 'icons-aws', 'mappings', 'icon-map.json'),
+    path.resolve(
+      process.cwd(),
+      'packages',
+      'icons-aws',
+      'mappings',
+      'icon-map.json'
+    ),
     path.resolve(process.cwd(), 'icons-aws', 'mappings', 'icon-map.json'),
   ];
 
@@ -30,7 +43,9 @@ try {
   }
 
   if (!foundMap) {
-    console.warn('Warning: Could not find AWS icon-map.json in expected locations');
+    console.warn(
+      'Warning: Could not find AWS icon-map.json in expected locations'
+    );
   }
 } catch (e) {
   console.error('Failed to load icon-map.json', e);
@@ -42,9 +57,22 @@ let GCP_ICON_MAP: Record<string, string> = {};
 try {
   const gcpMapPaths = [
     // Two directories up from dist is packages
-    path.resolve(__dirname, '..', '..', 'icons-gcp', 'mappings', 'icon-map.json'),
+    path.resolve(
+      __dirname,
+      '..',
+      '..',
+      'icons-gcp',
+      'mappings',
+      'icon-map.json'
+    ),
     // Relative to process cwd
-    path.resolve(process.cwd(), 'packages', 'icons-gcp', 'mappings', 'icon-map.json'),
+    path.resolve(
+      process.cwd(),
+      'packages',
+      'icons-gcp',
+      'mappings',
+      'icon-map.json'
+    ),
     path.resolve(process.cwd(), 'icons-gcp', 'mappings', 'icon-map.json'),
   ];
 
@@ -56,7 +84,9 @@ try {
   }
 
   if (Object.keys(GCP_ICON_MAP).length === 0) {
-    console.warn('Warning: Could not find GCP icon-map.json. Run: pnpm --filter @mindfiredigital/adac-icons-gcp setup-icons');
+    console.warn(
+      'Warning: Could not find GCP icon-map.json. Run: pnpm --filter @mindfiredigital/adac-icons-gcp setup-icons'
+    );
   }
 } catch (e) {
   console.error('Failed to load GCP icon-map.json', e);
@@ -295,7 +325,8 @@ export function buildElkGraph(adac: AdacConfig): ElkNode {
     // 5. Fallback for generics
     if (lowerKey.includes('database') || lowerKey.includes('db'))
       return resolveAwsAssetPath(ICON_MAP['AWS::RDS']);
-    if (lowerKey.includes('user')) return resolveAwsAssetPath(ICON_MAP['AWS::IAM::User']);
+    if (lowerKey.includes('user'))
+      return resolveAwsAssetPath(ICON_MAP['AWS::IAM::User']);
     if (lowerKey.includes('client'))
       return resolveAwsAssetPath(ICON_MAP['AWS::IAM::User']);
 
@@ -318,7 +349,9 @@ export function buildElkGraph(adac: AdacConfig): ElkNode {
 
     // 3. Normalized lookup
     if (GCP_NORMALIZED_MAP.has(lowerKey)) {
-      return resolveGcpAssetPath(GCP_ICON_MAP[GCP_NORMALIZED_MAP.get(lowerKey)!]);
+      return resolveGcpAssetPath(
+        GCP_ICON_MAP[GCP_NORMALIZED_MAP.get(lowerKey)!]
+      );
     }
 
     // 4. Fuzzy / partial match
@@ -338,7 +371,13 @@ export function buildElkGraph(adac: AdacConfig): ElkNode {
     const searchPaths = [
       path.resolve(__dirname, 'assets', relativePath),
       path.resolve(__dirname, '..', '..', 'icons-aws', 'assets', relativePath),
-      path.resolve(process.cwd(), 'packages', 'icons-aws', 'assets', relativePath),
+      path.resolve(
+        process.cwd(),
+        'packages',
+        'icons-aws',
+        'assets',
+        relativePath
+      ),
       path.resolve(process.cwd(), 'icons-aws', 'assets', relativePath),
       path.resolve(process.cwd(), 'assets', relativePath),
     ];
@@ -357,7 +396,13 @@ export function buildElkGraph(adac: AdacConfig): ElkNode {
 
     const searchPaths = [
       path.resolve(__dirname, '..', '..', 'icons-gcp', 'assets', relativePath),
-      path.resolve(process.cwd(), 'packages', 'icons-gcp', 'assets', relativePath),
+      path.resolve(
+        process.cwd(),
+        'packages',
+        'icons-gcp',
+        'assets',
+        relativePath
+      ),
       path.resolve(process.cwd(), 'icons-gcp', 'assets', relativePath),
       path.resolve(process.cwd(), 'assets', relativePath),
     ];
@@ -372,7 +417,9 @@ export function buildElkGraph(adac: AdacConfig): ElkNode {
 
   // Backwards-compat helper (picks the right resolver based on current context)
   const resolveAssetPath = (relativePath?: string) => {
-    return isGcp ? resolveGcpAssetPath(relativePath) : resolveAwsAssetPath(relativePath);
+    return isGcp
+      ? resolveGcpAssetPath(relativePath)
+      : resolveAwsAssetPath(relativePath);
   };
   void resolveAssetPath; // suppress unused warning
 
@@ -500,7 +547,13 @@ export function buildElkGraph(adac: AdacConfig): ElkNode {
           style = GCP_STYLES.region;
         } else if (
           runsApps ||
-          ['gke', 'google-kubernetes-engine', 'cloud-run', 'compute-engine', 'app-engine'].includes(typeKey)
+          [
+            'gke',
+            'google-kubernetes-engine',
+            'cloud-run',
+            'compute-engine',
+            'app-engine',
+          ].includes(typeKey)
         ) {
           width = 300;
           height = 250;
@@ -528,7 +581,9 @@ export function buildElkGraph(adac: AdacConfig): ElkNode {
       }
 
       // Icon Resolution strategy — use GCP map for GCP clouds, AWS map otherwise
-      let iconPath = gcpCloud ? getGcpIconPath(typeKey) : getAwsIconPath(typeKey);
+      let iconPath = gcpCloud
+        ? getGcpIconPath(typeKey)
+        : getAwsIconPath(typeKey);
       if (service.ai_tags?.icon) {
         const aiIcon = gcpCloud
           ? getGcpIconPath(service.ai_tags.icon)
@@ -781,7 +836,8 @@ export function buildElkGraph(adac: AdacConfig): ElkNode {
 
         if (isGcp) {
           // GCP implicit node icons
-          if (lowerId.includes('user') || lowerId.includes('internet')) icon = getGcpIconPath('project');
+          if (lowerId.includes('user') || lowerId.includes('internet'))
+            icon = getGcpIconPath('project');
           else if (lowerId.includes('client')) icon = getGcpIconPath('project');
           else icon = getGcpIconPath('cloud-load-balancing');
         } else {
@@ -789,8 +845,10 @@ export function buildElkGraph(adac: AdacConfig): ElkNode {
           icon = getAwsIconPath('Internet');
           if (lowerId.includes('user')) icon = getAwsIconPath('User');
           else if (lowerId.includes('client')) icon = getAwsIconPath('Client');
-          else if (lowerId.includes('frontend')) icon = getAwsIconPath('Application');
-          else if (lowerId.includes('backend')) icon = getAwsIconPath('Compute');
+          else if (lowerId.includes('frontend'))
+            icon = getAwsIconPath('Application');
+          else if (lowerId.includes('backend'))
+            icon = getAwsIconPath('Compute');
         }
 
         const implicitNode: ElkNode = {

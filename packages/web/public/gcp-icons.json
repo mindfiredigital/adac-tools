@@ -1,0 +1,83 @@
+[
+  {
+    "category": "Compute",
+    "icons": [
+      {
+        "name": "Compute Engine",
+        "path": "/assets/gcp-icons/ComputeEngine-512-color-rgb.svg"
+      },
+      {
+        "name": "Cloud Run",
+        "path": "/assets/gcp-icons/CloudRun-512-color-rgb.svg"
+      },
+      {
+        "name": "GKE",
+        "path": "/assets/gcp-icons/GKE-512-color.svg"
+      },
+      {
+        "name": "Cloud Functions",
+        "path": "/assets/gcp-icons/ServerlessComputing-512-color.svg"
+      }
+    ]
+  },
+  {
+    "category": "Storage & Database",
+    "icons": [
+      {
+        "name": "Cloud Storage",
+        "path": "/assets/gcp-icons/Cloud_Storage-512-color.svg"
+      },
+      {
+        "name": "Cloud SQL",
+        "path": "/assets/gcp-icons/CloudSQL-512-color.svg"
+      },
+      {
+        "name": "Cloud Spanner",
+        "path": "/assets/gcp-icons/CloudSpanner-512-color.svg"
+      },
+      {
+        "name": "BigQuery",
+        "path": "/assets/gcp-icons/BigQuery-512-color.svg"
+      },
+      {
+        "name": "AlloyDB",
+        "path": "/assets/gcp-icons/AlloyDB-512-color.svg"
+      }
+    ]
+  },
+  {
+    "category": "Networking",
+    "icons": [
+      {
+        "name": "VPC",
+        "path": "/assets/gcp-icons/Networking-512-color-rgb.svg"
+      }
+    ]
+  },
+  {
+    "category": "AI & ML",
+    "icons": [
+      {
+        "name": "Vertex AI",
+        "path": "/assets/gcp-icons/VertexAI-512-color.svg"
+      },
+      {
+        "name": "AI Machine Learning",
+        "path": "/assets/gcp-icons/AIMachineLearning-512-color.svg"
+      }
+    ]
+  },
+  {
+    "category": "Tools",
+    "icons": [
+      {
+        "name": "DevOps",
+        "path": "/assets/gcp-icons/DevOps-512-color.svg"
+      },
+      {
+        "name": "Cloud Build",
+        "path": "/assets/gcp-icons/DevOps-512-color.svg"
+      }
+    ]
+  }
+]
