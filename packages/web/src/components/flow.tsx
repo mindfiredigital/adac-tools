@@ -15,19 +15,20 @@ import {
 } from '@xyflow/react';
 import React, { useRef, useCallback, useState } from 'react';
 import jsYaml from 'js-yaml';
-import { Download, FileCode, Loader, ArrowLeft } from 'lucide-react';
+import { Download, FileCode, Loader, ArrowLeft, Trash2 } from 'lucide-react';
 import '@xyflow/react/dist/style.css';
 import CustomNode from './custom-node';
+import type { Provider } from '../app';
 
 const nodeTypes = {
   customNode: CustomNode,
 };
 
-let id = 0;
-const getId = () => `n-${id++}-${Date.now()}`;
+let idCounter = 0;
+const getId = () => `node-${idCounter++}`;
 
 // Helper to convert React Flow state to ADAC YAML
-const generateYaml = (nodes: Node[], edges: Edge[]) => {
+const generateYaml = (nodes: Node[], edges: Edge[], provider: Provider) => {
   // Basic structure based on test_dagre.yaml
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const yamlObj: any = {
@@ -41,9 +42,9 @@ const generateYaml = (nodes: Node[], edges: Edge[]) => {
     infrastructure: {
       clouds: [
         {
-          id: 'aws-production',
-          provider: 'aws',
-          region: 'us-east-1',
+          id: `${provider}-production`,
+          provider: provider,
+          region: provider === 'aws' ? 'us-east-1' : 'us-central1',
           services: [], // To be populated
         },
       ],
@@ -52,22 +53,9 @@ const generateYaml = (nodes: Node[], edges: Edge[]) => {
   };
 
   // Map Nodes to Services
-  // We assume all nodes dropped are services for now
   nodes.forEach((node) => {
-    // We need to resolve the local icon path back to something the server or CLI understands if needed
-    // For now, let's keep the path as is, or strip the web specific parts
-    // The server expects "path" to exist on FS.
-    // Frontend path: /assets/Architecture-Service-Icons_07312025/Arch_Analytics/48/Amazon-Athena_48.png
-    // Server path: src/assets/Architecture-Service-Icons_07312025/Arch_Analytics/48/Amazon-Athena_48.png
-    // We can reconstruct the relative path.
-
     let iconPath = node.data.icon as string;
     if (iconPath && iconPath.startsWith('/assets/')) {
-      // Convert to relative path expected by server (CLI usually runs from root)
-      // If CLI runs from root: public/assets/... or src/assets/...
-      // The renderer checks fs.existsSync(path).
-      // If we run `npm start` (server), `process.cwd()` is usually project root.
-      // So `packages/web/public/assets/...` should work.
       iconPath = 'packages/web/public' + iconPath;
     }
 
@@ -75,25 +63,56 @@ const generateYaml = (nodes: Node[], edges: Edge[]) => {
     const getServiceType = (label: string, path: string) => {
       const l = (label || '').toLowerCase();
       const p = (path || '').toLowerCase();
-      if (l.includes('athena') || p.includes('athena')) return 'athena';
-      if (l.includes('s3') || p.includes('s3')) return 's3';
-      if (l.includes('lambda') || p.includes('lambda')) return 'lambda';
-      if (l.includes('ec2') || p.includes('ec2')) return 'ec2';
-      if (l.includes('rds') || p.includes('rds')) return 'rds-mysql';
-      if (l.includes('dynamodb') || p.includes('dynamodb')) return 'dynamodb';
-      if (l.includes('eventbridge') || p.includes('eventbridge'))
-        return 'eventbridge';
-      if (l.includes('sqs') || p.includes('sqs')) return 'sqs';
-      if (l.includes('sns') || p.includes('sns')) return 'sns';
-      if (l.includes('iam') || p.includes('iam')) return 'iam';
-      if (l.includes('vpc') || p.includes('vpc')) return 'vpc';
-      if (l.includes('api gateway') || p.includes('api-gateway'))
-        return 'api-gateway-rest';
-      if (l.includes('cloudfront') || p.includes('cloudfront'))
-        return 'cloudfront';
-      if (l.includes('route 53') || p.includes('route53')) return 'route53';
-      if (l.includes('fargate') || p.includes('fargate')) return 'ecs-fargate';
-      return 'ec2'; // Default valid service
+
+      if (provider === 'aws') {
+        if (l.includes('athena') || p.includes('athena')) return 'athena';
+        if (l.includes('s3') || p.includes('s3')) return 's3';
+        if (l.includes('lambda') || p.includes('lambda')) return 'lambda';
+        if (l.includes('ec2') || p.includes('ec2')) return 'ec2';
+        if (l.includes('rds') || p.includes('rds')) return 'rds-mysql';
+        if (l.includes('dynamodb') || p.includes('dynamodb')) return 'dynamodb';
+        if (l.includes('eventbridge') || p.includes('eventbridge'))
+          return 'eventbridge';
+        if (l.includes('sqs') || p.includes('sqs')) return 'sqs';
+        if (l.includes('sns') || p.includes('sns')) return 'sns';
+        if (l.includes('iam') || p.includes('iam')) return 'iam';
+        if (l.includes('vpc') || p.includes('vpc')) return 'vpc';
+        if (l.includes('api gateway') || p.includes('api-gateway'))
+          return 'api-gateway-rest';
+        if (l.includes('cloudfront') || p.includes('cloudfront'))
+          return 'cloudfront';
+        if (l.includes('route 53') || p.includes('route53')) return 'route53';
+        if (l.includes('fargate') || p.includes('fargate'))
+          return 'ecs-fargate';
+        if (l.includes('glue') || p.includes('glue')) return 'glue';
+        if (l.includes('emr') || p.includes('emr')) return 'emr';
+        if (l.includes('cognito') || p.includes('cognito')) return 'cognito';
+        return 'ec2';
+      } else {
+        // GCP Mappings
+        if (l.includes('compute engine') || p.includes('computeengine'))
+          return 'compute-engine';
+        if (l.includes('cloud run') || p.includes('cloudrun'))
+          return 'cloud-run';
+        if (l.includes('gke') || p.includes('gke') || l.includes('kubernetes'))
+          return 'gke';
+        if (l.includes('cloud storage') || p.includes('storage'))
+          return 'cloud-storage';
+        if (l.includes('bigquery') || p.includes('bigquery')) return 'bigquery';
+        if (l.includes('cloud sql') || p.includes('cloudsql'))
+          return 'cloud-sql';
+        if (l.includes('vpc') || p.includes('networking')) return 'vpc';
+        if (l.includes('functions') || p.includes('functions'))
+          return 'cloud-functions';
+        if (l.includes('spanner') || p.includes('spanner'))
+          return 'cloud-spanner';
+        if (l.includes('bigtable') || p.includes('bigtable')) return 'bigtable';
+        if (l.includes('alloydb') || p.includes('alloydb')) return 'alloydb';
+        if (l.includes('vertex') || p.includes('vertex')) return 'vertex-ai';
+        if (l.includes('pubsub') || p.includes('pub-sub')) return 'pubsub';
+        if (l.includes('build') || p.includes('build')) return 'cloud-build';
+        return 'compute-engine';
+      }
     };
 
     const service = {
@@ -103,10 +122,12 @@ const generateYaml = (nodes: Node[], edges: Edge[]) => {
         node.data.icon as string
       ),
       name: node.data.label as string,
-
       description: 'UI Node',
-      properties: {
-        iconPath: iconPath,
+      configuration: {
+        instance_type: 't3.medium', // Default for validation
+      },
+      visual: {
+        icon: iconPath,
       },
     };
     yamlObj.infrastructure.clouds[0].services.push(service);
@@ -115,7 +136,7 @@ const generateYaml = (nodes: Node[], edges: Edge[]) => {
   // Map Edges to Connections
   edges.forEach((edge, idx) => {
     const conn = {
-      id: `conn-${idx}`,
+      id: edge.id || `conn-${idx}`,
       from: edge.source,
       to: edge.target,
       type: 'generic-link',
@@ -129,13 +150,14 @@ const generateYaml = (nodes: Node[], edges: Edge[]) => {
 
 interface EditorProps {
   onBack: () => void;
+  provider: Provider;
 }
 
-const Flow = ({ onBack }: EditorProps) => {
+const Flow = ({ onBack, provider }: EditorProps) => {
   const reactFlowWrapper = useRef(null);
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
-  const { screenToFlowPosition } = useReactFlow();
+  const { screenToFlowPosition, deleteElements } = useReactFlow();
 
   const [generating, setGenerating] = useState(false);
 
@@ -146,12 +168,15 @@ const Flow = ({ onBack }: EditorProps) => {
           {
             ...params,
             animated: true,
-            style: { stroke: '#ec7211', strokeWidth: 2 },
+            style: {
+              stroke: provider === 'aws' ? '#ec7211' : '#4285F4',
+              strokeWidth: 2,
+            },
           },
           eds
         )
       ),
-    [setEdges]
+    [setEdges, provider]
   );
 
   const onDragOver = useCallback((event: React.DragEvent) => {
@@ -180,7 +205,7 @@ const Flow = ({ onBack }: EditorProps) => {
         id: getId(),
         type,
         position,
-        data: { label: label || 'New Node', icon: icon },
+        data: { label: label || 'New Node', icon: icon, provider: provider },
       };
 
       setNodes((nds) => nds.concat(newNode));
@@ -189,8 +214,8 @@ const Flow = ({ onBack }: EditorProps) => {
   );
 
   const handleDownloadYaml = () => {
-    const yamlStr = generateYaml(nodes, edges);
-    const blob = new Blob([yamlStr], { type: 'text/yaml' });
+    const yamlStr = generateYaml(nodes, edges, provider);
+    const blob = new Blob([yamlStr], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -198,13 +223,13 @@ const Flow = ({ onBack }: EditorProps) => {
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    setTimeout(() => URL.revokeObjectURL(url), 100);
   };
 
   const handleGenerateDiagram = async () => {
     setGenerating(true);
     try {
-      const yamlStr = generateYaml(nodes, edges);
+      const yamlStr = generateYaml(nodes, edges, provider);
       const response = await fetch('/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -235,6 +260,12 @@ const Flow = ({ onBack }: EditorProps) => {
     }
   };
 
+  const handleDeleteSelected = useCallback(() => {
+    const selectedNodes = nodes.filter((n) => n.selected);
+    const selectedEdges = edges.filter((e) => e.selected);
+    deleteElements({ nodes: selectedNodes, edges: selectedEdges });
+  }, [nodes, edges, deleteElements]);
+
   return (
     <div className="flex-grow h-full relative" ref={reactFlowWrapper}>
       {/* Toolbar */}
@@ -246,6 +277,16 @@ const Flow = ({ onBack }: EditorProps) => {
           <ArrowLeft size={16} /> Exit
         </button>
         <div className="w-px h-8 bg-[#444] mx-1"></div>
+
+        {(nodes.some((n) => n.selected) || edges.some((e) => e.selected)) && (
+          <button
+            onClick={handleDeleteSelected}
+            className="bg-red-500/20 hover:bg-red-500 text-red-400 hover:text-white p-2 rounded-lg border border-red-500/50 shadow-lg flex items-center gap-2 text-sm font-medium transition-all animate-in fade-in zoom-in duration-200"
+          >
+            <Trash2 size={16} /> Delete Selected
+          </button>
+        )}
+
         <button
           onClick={handleDownloadYaml}
           className="bg-[#252526] hover:bg-[#333] text-white p-2 rounded-lg border border-[#444] shadow-lg flex items-center gap-2 text-sm font-medium transition-colors"
@@ -255,7 +296,11 @@ const Flow = ({ onBack }: EditorProps) => {
         <button
           onClick={handleGenerateDiagram}
           disabled={generating}
-          className="bg-[#ec7211] hover:bg-[#d6650d] text-white p-2 rounded-lg shadow-lg flex items-center gap-2 text-sm font-bold transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+          className={`${
+            provider === 'aws'
+              ? 'bg-[#ec7211] hover:bg-[#d6650d]'
+              : 'bg-[#4285F4] hover:bg-[#3367d6]'
+          } text-white p-2 rounded-lg shadow-lg flex items-center gap-2 text-sm font-bold transition-colors disabled:opacity-70 disabled:cursor-not-allowed`}
         >
           {generating ? (
             <Loader size={16} className="animate-spin" />
@@ -277,11 +322,12 @@ const Flow = ({ onBack }: EditorProps) => {
         nodeTypes={nodeTypes}
         fitView
         className="bg-[#18181b]"
+        deleteKeyCode={['Backspace', 'Delete']}
       >
         <Controls className="bg-[#252526] border-[#333] fill-gray-400 text-gray-400" />
         <MiniMap
           className="bg-[#252526] border-[#333]"
-          nodeColor="#ec7211"
+          nodeColor={provider === 'aws' ? '#ec7211' : '#4285F4'}
           maskColor="rgba(0,0,0,0.6)"
         />
         <Background

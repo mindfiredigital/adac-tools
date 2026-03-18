@@ -7,7 +7,11 @@ export const requireLeastPrivilegeRule: ComplianceRule = {
   description: 'Avoid wildcard actions in IAM policies',
   severity: 'high',
   evaluate(service) {
-    if (['iam-role', 'iam-policy', 'cloud-iam', 'service-account'].includes(service.service)) {
+    if (
+      ['iam-role', 'iam-policy', 'cloud-iam', 'service-account'].includes(
+        service.service
+      )
+    ) {
       const config = (service.config || service.configuration) as Record<
         string,
         unknown

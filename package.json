@@ -40,6 +40,9 @@
   "devDependencies": {
     "@commitlint/cli": "^20.3.1",
     "@commitlint/config-conventional": "^20.3.1",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
     "@types/adm-zip": "^0.5.7",
     "@types/dagre": "^0.7.53",
     "@types/express": "^5.0.6",
@@ -49,10 +52,13 @@
     "@typescript-eslint/eslint-plugin": "^8.53.0",
     "@typescript-eslint/parser": "^8.53.0",
     "@vercel/node": "^5.5.22",
+    "@vitejs/plugin-react": "^5.1.4",
     "@vitest/coverage-v8": "^4.0.18",
+    "@vitest/ui": "^4.1.0",
     "eslint": "^8.57.1",
     "eslint-plugin-unicorn": "51.0.1",
     "husky": "^9.1.7",
+    "jsdom": "^29.0.0",
     "prettier": "^3.7.4",
     "typescript": "^5.9.3",
     "vitest": "^4.0.18"
