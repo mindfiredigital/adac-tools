@@ -18,7 +18,10 @@
     "prepare": "husky",
     "cli": "node packages/diagram/dist/cli.js",
     "setup:icons": "pnpm --filter @mindfiredigital/adac-icons-aws run setup-icons && pnpm --filter @mindfiredigital/adac-icons-gcp run setup-icons",
-    "release:pack": "node scripts/pack-release.js"
+    "release:pack": "node scripts/pack-release.js",
+    "release:publish": "node scripts/publish-packages.mjs",
+    "release:publish:dry-run": "node scripts/publish-packages.mjs --dry-run",
+    "release:setup": "node scripts/setup-publish-config.mjs"
   },
   "keywords": [
     "adac",

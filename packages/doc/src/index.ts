@@ -6,6 +6,13 @@ export {
   ServiceCatalogTemplate,
   ConnectionMatrixTemplate,
   CostReportTemplate,
-  ComplianceTemplate
+  ComplianceTemplate,
 } from './templates/index.js';
-export type { DocOptions, DocFormat, DocSection, DocOutput, DocFile, DocMetadata } from './types/index.js';
+export type {
+  DocOptions,
+  DocFormat,
+  DocSection,
+  DocOutput,
+  DocFile,
+  DocMetadata,
+} from './types/index.js';

@@ -1,11 +1,32 @@
 {
   "name": "@mindfiredigital/adac-cost",
   "version": "0.0.1",
+  "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
   "scripts": {
-    "build": "tsc",
-    "test": "echo \"No tests specified\" && exit 0"
+    "build": "tsup src/index.ts --format esm,cjs --dts",
+    "test": "vitest run"
   },
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "@mindfiredigital/adac-schema": "workspace:*"
+  },
+  "devDependencies": {
+    "vitest": "^4.0.18",
+    "tsup": "^8.0.0",
+    "typescript": "^5.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mindfiredigital/adac-tools.git",
+    "directory": "packages/cost"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://npm.pkg.github.com"
+  }
 }

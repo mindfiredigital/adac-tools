@@ -13,11 +13,26 @@ import {
   BackgroundVariant,
   type Node,
 } from '@xyflow/react';
-import React, { useRef, useCallback, useState } from 'react';
+import React, { useRef, useCallback, useState, useMemo } from 'react';
 import jsYaml from 'js-yaml';
-import { Download, FileCode, Loader, ArrowLeft } from 'lucide-react';
+import {
+  Download,
+  FileCode,
+  Loader,
+  ArrowLeft,
+  Trash2,
+  DollarSign,
+  Shield,
+} from 'lucide-react';
 import '@xyflow/react/dist/style.css';
 import CustomNode from './custom-node';
+import { NodeConfigDrawer, type NodeConfigData } from './node-config-drawer';
+import {
+  CostCompliancePanel,
+  type CostItem,
+  type ComplianceCheckResponse,
+} from './cost-compliance-panel';
+import type { Provider } from '../app';
 
 const nodeTypes = {
   customNode: CustomNode,
@@ -26,9 +41,65 @@ const nodeTypes = {
 let id = 0;
 const getId = () => `n-${id++}-${Date.now()}`;
 
+/**
+ * Map label/icon to a valid ADAC service type.
+ */
+const getServiceType = (
+  label: string,
+  path: string,
+  provider: Provider
+): string => {
+  const l = (label || '').toLowerCase();
+  const p = (path || '').toLowerCase();
+
+  if (provider === 'aws') {
+    if (l.includes('athena') || p.includes('athena')) return 'athena';
+    if (l.includes('s3') || p.includes('s3')) return 's3';
+    if (l.includes('lambda') || p.includes('lambda')) return 'lambda';
+    if (l.includes('ec2') || p.includes('ec2')) return 'ec2';
+    if (l.includes('rds') || p.includes('rds')) return 'rds-mysql';
+    if (l.includes('dynamodb') || p.includes('dynamodb')) return 'dynamodb';
+    if (l.includes('eventbridge') || p.includes('eventbridge'))
+      return 'eventbridge';
+    if (l.includes('sqs') || p.includes('sqs')) return 'sqs';
+    if (l.includes('sns') || p.includes('sns')) return 'sns';
+    if (l.includes('iam') || p.includes('iam')) return 'iam';
+    if (l.includes('vpc') || p.includes('vpc')) return 'vpc';
+    if (l.includes('api gateway') || p.includes('api-gateway'))
+      return 'api-gateway-rest';
+    if (l.includes('cloudfront') || p.includes('cloudfront'))
+      return 'cloudfront';
+    if (l.includes('route 53') || p.includes('route53')) return 'route53';
+    if (l.includes('fargate') || p.includes('fargate')) return 'ecs-fargate';
+    if (l.includes('glue') || p.includes('glue')) return 'glue';
+    if (l.includes('emr') || p.includes('emr')) return 'emr';
+    if (l.includes('cognito') || p.includes('cognito')) return 'cognito';
+    return 'ec2';
+  } else {
+    if (l.includes('compute engine') || p.includes('computeengine'))
+      return 'compute-engine';
+    if (l.includes('cloud run') || p.includes('cloudrun')) return 'cloud-run';
+    if (l.includes('gke') || p.includes('gke') || l.includes('kubernetes'))
+      return 'gke';
+    if (l.includes('cloud storage') || p.includes('storage'))
+      return 'cloud-storage';
+    if (l.includes('bigquery') || p.includes('bigquery')) return 'bigquery';
+    if (l.includes('cloud sql') || p.includes('cloudsql')) return 'cloud-sql';
+    if (l.includes('vpc') || p.includes('networking')) return 'vpc';
+    if (l.includes('functions') || p.includes('functions'))
+      return 'cloud-functions';
+    if (l.includes('spanner') || p.includes('spanner')) return 'cloud-spanner';
+    if (l.includes('bigtable') || p.includes('bigtable')) return 'bigtable';
+    if (l.includes('alloydb') || p.includes('alloydb')) return 'alloydb';
+    if (l.includes('vertex') || p.includes('vertex')) return 'vertex-ai';
+    if (l.includes('pubsub') || p.includes('pub-sub')) return 'pubsub';
+    if (l.includes('build') || p.includes('build')) return 'cloud-build';
+    return 'compute-engine';
+  }
+};
+
 // Helper to convert React Flow state to ADAC YAML
-const generateYaml = (nodes: Node[], edges: Edge[]) => {
-  // Basic structure based on test_dagre.yaml
+const generateYaml = (nodes: Node[], edges: Edge[], provider: Provider) => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const yamlObj: any = {
     version: '0.1',
@@ -41,76 +112,78 @@ const generateYaml = (nodes: Node[], edges: Edge[]) => {
     infrastructure: {
       clouds: [
         {
-          id: 'aws-production',
-          provider: 'aws',
-          region: 'us-east-1',
-          services: [], // To be populated
+          id: `${provider}-production`,
+          provider: provider,
+          region: provider === 'aws' ? 'us-east-1' : 'us-central1',
+          services: [],
         },
       ],
     },
     connections: [],
   };
 
-  // Map Nodes to Services
-  // We assume all nodes dropped are services for now
-  nodes.forEach((node) => {
-    // We need to resolve the local icon path back to something the server or CLI understands if needed
-    // For now, let's keep the path as is, or strip the web specific parts
-    // The server expects "path" to exist on FS.
-    // Frontend path: /assets/Architecture-Service-Icons_07312025/Arch_Analytics/48/Amazon-Athena_48.png
-    // Server path: src/assets/Architecture-Service-Icons_07312025/Arch_Analytics/48/Amazon-Athena_48.png
-    // We can reconstruct the relative path.
+  // Track total cost
+  let totalMonthlyCost = 0;
 
+  // Map Nodes to Services
+  nodes.forEach((node) => {
     let iconPath = node.data.icon as string;
     if (iconPath && iconPath.startsWith('/assets/')) {
-      // Convert to relative path expected by server (CLI usually runs from root)
-      // If CLI runs from root: public/assets/... or src/assets/...
-      // The renderer checks fs.existsSync(path).
-      // If we run `npm start` (server), `process.cwd()` is usually project root.
-      // So `packages/web/public/assets/...` should work.
       iconPath = 'packages/web/public' + iconPath;
     }
 
-    // Map label/icon to a valid ADAC service type
-    const getServiceType = (label: string, path: string) => {
-      const l = (label || '').toLowerCase();
-      const p = (path || '').toLowerCase();
-      if (l.includes('athena') || p.includes('athena')) return 'athena';
-      if (l.includes('s3') || p.includes('s3')) return 's3';
-      if (l.includes('lambda') || p.includes('lambda')) return 'lambda';
-      if (l.includes('ec2') || p.includes('ec2')) return 'ec2';
-      if (l.includes('rds') || p.includes('rds')) return 'rds-mysql';
-      if (l.includes('dynamodb') || p.includes('dynamodb')) return 'dynamodb';
-      if (l.includes('eventbridge') || p.includes('eventbridge'))
-        return 'eventbridge';
-      if (l.includes('sqs') || p.includes('sqs')) return 'sqs';
-      if (l.includes('sns') || p.includes('sns')) return 'sns';
-      if (l.includes('iam') || p.includes('iam')) return 'iam';
-      if (l.includes('vpc') || p.includes('vpc')) return 'vpc';
-      if (l.includes('api gateway') || p.includes('api-gateway'))
-        return 'api-gateway-rest';
-      if (l.includes('cloudfront') || p.includes('cloudfront'))
-        return 'cloudfront';
-      if (l.includes('route 53') || p.includes('route53')) return 'route53';
-      if (l.includes('fargate') || p.includes('fargate')) return 'ecs-fargate';
-      return 'ec2'; // Default valid service
-    };
+    const serviceType = getServiceType(
+      node.data.label as string,
+      node.data.icon as string,
+      provider
+    );
 
-    const service = {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const service: any = {
       id: node.id,
-      service: getServiceType(
-        node.data.label as string,
-        node.data.icon as string
-      ),
+      service: serviceType,
       name: node.data.label as string,
 
       description: 'UI Node',
-      properties: {
-        iconPath: iconPath,
+      configuration: {
+        instance_type: 't3.medium',
+      },
+      visual: {
+        icon: iconPath,
       },
     };
+
+    // Add cost data if configured
+    const costConfig = node.data.costConfig as
+      | { tier: string; monthlyCost: number }
+      | undefined;
+    if (costConfig?.tier) {
+      service.cost = {
+        tier: costConfig.tier,
+        monthly_estimate: costConfig.monthlyCost,
+        currency: 'USD',
+      };
+      totalMonthlyCost += costConfig.monthlyCost;
+    }
+
+    // Add compliance frameworks if configured
+    const complianceFrameworks = node.data.complianceFrameworks as
+      | string[]
+      | undefined;
+    if (complianceFrameworks && complianceFrameworks.length > 0) {
+      service.compliance = complianceFrameworks;
+    }
+
     yamlObj.infrastructure.clouds[0].services.push(service);
   });
+
+  // Add top-level cost summary if any service has cost
+  if (totalMonthlyCost > 0) {
+    yamlObj.cost = {
+      total_monthly_estimate: totalMonthlyCost,
+      currency: 'USD',
+    };
+  }
 
   // Map Edges to Connections
   edges.forEach((edge, idx) => {
@@ -129,15 +202,56 @@ const generateYaml = (nodes: Node[], edges: Edge[]) => {
 
 interface EditorProps {
   onBack: () => void;
+  provider: Provider;
 }
 
-const Flow = ({ onBack }: EditorProps) => {
+const Flow = ({ onBack, provider }: EditorProps) => {
   const reactFlowWrapper = useRef(null);
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
-  const { screenToFlowPosition } = useReactFlow();
+  const { screenToFlowPosition, deleteElements } = useReactFlow();
 
   const [generating, setGenerating] = useState(false);
+
+  // ─── Node Config Drawer State ───────────────────────────────────────────
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const [nodeConfigs, setNodeConfigs] = useState<
+    Record<string, NodeConfigData>
+  >({});
+
+  // ─── Panels State ───────────────────────────────────────────────────────
+  const [activePanel, setActivePanel] = useState<'cost' | 'compliance' | null>(
+    null
+  );
+  const [complianceResults, setComplianceResults] =
+    useState<ComplianceCheckResponse | null>(null);
+  const [isCheckingCompliance, setIsCheckingCompliance] = useState(false);
+
+  // Get the selected node
+  const selectedNode = nodes.find((n) => n.id === selectedNodeId);
+
+  // Compute cost items from nodes
+  const costItems: CostItem[] = useMemo(() => {
+    return nodes
+      .filter((n) => {
+        const cfg = n.data.costConfig as
+          | { tier: string; monthlyCost: number }
+          | undefined;
+        return cfg?.tier;
+      })
+      .map((n) => {
+        const cfg = n.data.costConfig as {
+          tier: string;
+          monthlyCost: number;
+        };
+        return {
+          nodeId: n.id,
+          label: n.data.label as string,
+          tier: cfg.tier,
+          monthlyCost: cfg.monthlyCost,
+        };
+      });
+  }, [nodes]);
 
   const onConnect = useCallback(
     (params: Connection) =>
@@ -188,8 +302,79 @@ const Flow = ({ onBack }: EditorProps) => {
     [screenToFlowPosition, setNodes]
   );
 
+  // ─── Node Click → Open Config Drawer ───────────────────────────────────
+  const onNodeDoubleClick = useCallback((_: React.MouseEvent, node: Node) => {
+    setSelectedNodeId(node.id);
+  }, []);
+
+  // ─── Save Node Config ──────────────────────────────────────────────────
+  const handleSaveNodeConfig = useCallback(
+    (nodeId: string, config: NodeConfigData) => {
+      setNodeConfigs((prev) => ({ ...prev, [nodeId]: config }));
+
+      // Update the node data so badges render
+      setNodes((nds) =>
+        nds.map((n) => {
+          if (n.id !== nodeId) return n;
+          return {
+            ...n,
+            data: {
+              ...n.data,
+              costConfig: config.cost
+                ? {
+                    tier: config.cost.tier,
+                    monthlyCost: config.cost.monthlyCost,
+                  }
+                : undefined,
+              complianceFrameworks: config.compliance || [],
+            },
+          };
+        })
+      );
+    },
+    [setNodes]
+  );
+
+  // ─── Run Compliance Check ──────────────────────────────────────────────
+  const handleRunComplianceCheck = useCallback(async () => {
+    setIsCheckingCompliance(true);
+    try {
+      const yamlStr = generateYaml(nodes, edges, provider);
+      const response = await fetch('/api/compliance-check', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: yamlStr }),
+      });
+
+      if (!response.ok) throw new Error('Compliance check failed');
+      const result: ComplianceCheckResponse = await response.json();
+      setComplianceResults(result);
+
+      // Update node compliance statuses
+      setNodes((nds) =>
+        nds.map((n) => {
+          const serviceResults = result.byService[n.id];
+          if (!serviceResults) return n;
+          const hasViolations = serviceResults.some((r) => !r.isCompliant);
+          return {
+            ...n,
+            data: {
+              ...n.data,
+              complianceStatus: hasViolations ? 'fail' : 'pass',
+            },
+          };
+        })
+      );
+    } catch (e) {
+      console.error('Compliance check error:', e);
+      alert('Failed to run compliance check. Make sure the server is running.');
+    } finally {
+      setIsCheckingCompliance(false);
+    }
+  }, [nodes, edges, provider, setNodes]);
+
   const handleDownloadYaml = () => {
-    const yamlStr = generateYaml(nodes, edges);
+    const yamlStr = generateYaml(nodes, edges, provider);
     const blob = new Blob([yamlStr], { type: 'text/yaml' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -204,7 +389,7 @@ const Flow = ({ onBack }: EditorProps) => {
   const handleGenerateDiagram = async () => {
     setGenerating(true);
     try {
-      const yamlStr = generateYaml(nodes, edges);
+      const yamlStr = generateYaml(nodes, edges, provider);
       const response = await fetch('/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -217,7 +402,6 @@ const Flow = ({ onBack }: EditorProps) => {
       if (!response.ok) throw new Error('Generation failed');
       const result = await response.json();
 
-      // Auto download
       const blob = new Blob([result.svg], { type: 'image/svg+xml' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -235,6 +419,24 @@ const Flow = ({ onBack }: EditorProps) => {
     }
   };
 
+  const handleDeleteSelected = useCallback(() => {
+    const selectedNodes = nodes.filter((n) => n.selected);
+    const selectedEdges = edges.filter((e) => e.selected);
+    deleteElements({ nodes: selectedNodes, edges: selectedEdges });
+  }, [nodes, edges, deleteElements]);
+
+  // Compute total cost for toolbar badge
+  const totalMonthlyCost = costItems.reduce(
+    (sum, item) => sum + item.monthlyCost,
+    0
+  );
+
+  // Count nodes with compliance
+  const complianceNodeCount = nodes.filter((n) => {
+    const fws = n.data.complianceFrameworks as string[] | undefined;
+    return fws && fws.length > 0;
+  }).length;
+
   return (
     <div className="flex-grow h-full relative" ref={reactFlowWrapper}>
       {/* Toolbar */}
@@ -246,6 +448,56 @@ const Flow = ({ onBack }: EditorProps) => {
           <ArrowLeft size={16} /> Exit
         </button>
         <div className="w-px h-8 bg-[#444] mx-1"></div>
+
+        {(nodes.some((n) => n.selected) || edges.some((e) => e.selected)) && (
+          <button
+            onClick={handleDeleteSelected}
+            className="bg-red-500/20 hover:bg-red-500 text-red-400 hover:text-white p-2 rounded-lg border border-red-500/50 shadow-lg flex items-center gap-2 text-sm font-medium transition-all animate-in fade-in zoom-in duration-200"
+          >
+            <Trash2 size={16} /> Delete Selected
+          </button>
+        )}
+
+        {/* Cost Button */}
+        <button
+          onClick={() => setActivePanel(activePanel === 'cost' ? null : 'cost')}
+          className={`p-2 rounded-lg border shadow-lg flex items-center gap-2 text-sm font-medium transition-all ${
+            activePanel === 'cost'
+              ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-400'
+              : 'bg-[#252526] hover:bg-[#333] border-[#444] text-white'
+          }`}
+        >
+          <DollarSign size={16} className="text-emerald-400" />
+          {totalMonthlyCost > 0 && (
+            <span className="text-emerald-400 text-xs font-bold">
+              ${totalMonthlyCost.toFixed(0)}/mo
+            </span>
+          )}
+          {totalMonthlyCost === 0 && 'Cost'}
+        </button>
+
+        {/* Compliance Button */}
+        <button
+          onClick={() =>
+            setActivePanel(activePanel === 'compliance' ? null : 'compliance')
+          }
+          className={`p-2 rounded-lg border shadow-lg flex items-center gap-2 text-sm font-medium transition-all ${
+            activePanel === 'compliance'
+              ? 'bg-blue-500/20 border-blue-500/50 text-blue-400'
+              : 'bg-[#252526] hover:bg-[#333] border-[#444] text-white'
+          }`}
+        >
+          <Shield size={16} className="text-blue-400" />
+          {complianceNodeCount > 0 && (
+            <span className="text-blue-400 text-xs font-bold">
+              {complianceNodeCount}
+            </span>
+          )}
+          {complianceNodeCount === 0 && 'Compliance'}
+        </button>
+
+        <div className="w-px h-8 bg-[#444] mx-1"></div>
+
         <button
           onClick={handleDownloadYaml}
           className="bg-[#252526] hover:bg-[#333] text-white p-2 rounded-lg border border-[#444] shadow-lg flex items-center gap-2 text-sm font-medium transition-colors"
@@ -266,6 +518,19 @@ const Flow = ({ onBack }: EditorProps) => {
         </button>
       </div>
 
+      {/* Cost / Compliance Panel */}
+      {activePanel && (
+        <CostCompliancePanel
+          mode={activePanel}
+          provider={provider}
+          costItems={costItems}
+          complianceResults={complianceResults}
+          isCheckingCompliance={isCheckingCompliance}
+          onRunComplianceCheck={handleRunComplianceCheck}
+          onClose={() => setActivePanel(null)}
+        />
+      )}
+
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -274,6 +539,7 @@ const Flow = ({ onBack }: EditorProps) => {
         onConnect={onConnect}
         onDrop={onDrop}
         onDragOver={onDragOver}
+        onNodeDoubleClick={onNodeDoubleClick}
         nodeTypes={nodeTypes}
         fitView
         className="bg-[#18181b]"
@@ -292,12 +558,32 @@ const Flow = ({ onBack }: EditorProps) => {
         />
       </ReactFlow>
 
-      {/* Drag Instruction Overlay (fades out) */}
+      {/* Node Config Drawer */}
+      {selectedNode && (
+        <NodeConfigDrawer
+          nodeId={selectedNode.id}
+          nodeLabel={selectedNode.data.label as string}
+          nodeServiceType={getServiceType(
+            selectedNode.data.label as string,
+            selectedNode.data.icon as string,
+            provider
+          )}
+          provider={provider}
+          config={nodeConfigs[selectedNode.id] || {}}
+          onSave={handleSaveNodeConfig}
+          onClose={() => setSelectedNodeId(null)}
+        />
+      )}
+
+      {/* Drag Instruction Overlay */}
       {nodes.length === 0 && (
         <div className="absolute inset-0 pointer-events-none flex items-center justify-center z-10">
           <div className="bg-black/40 backdrop-blur-sm p-6 rounded-xl border border-white/10 text-center animate-pulse">
             <p className="text-xl font-medium text-gray-300">
               Drag components here to start
+            </p>
+            <p className="text-sm text-gray-500 mt-2">
+              Double-click nodes to configure cost & compliance
             </p>
           </div>
         </div>

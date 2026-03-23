@@ -46,7 +46,6 @@ infrastructure:
       project_id: 'my-project-123456'
       tier: 'primary'
       services:
-
         # ── VPC Network ─────────────────────────────────────────────
         - id: 'main-vpc'
           service: 'virtual-private-cloud'
