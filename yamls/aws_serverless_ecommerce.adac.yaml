@@ -12,12 +12,12 @@ applications:
     name: 'E-Comm SPA'
     type: 'frontend'
     technology: 'React'
-  
+
   - id: 'order-service'
     name: 'Order API'
     type: 'backend'
     technology: 'Node.js'
-  
+
   - id: 'payment-processor'
     name: 'Payment Task'
     type: 'worker'
@@ -33,16 +33,16 @@ infrastructure:
         - id: 'cloudfront-dist'
           service: 'cloudfront'
           name: 'CloudFront CDN'
-        
+
         - id: 'waf-edge'
           service: 'waf'
           name: 'AWS WAF'
-        
+
         - id: 's3-bucket-ui'
           service: 's3'
           name: 'S3 UI Hosting'
           runs: ['storefront-ui']
-        
+
         - id: 'cognito-auth'
           service: 'cognito'
           name: 'Cognito Auth'
@@ -72,7 +72,7 @@ infrastructure:
           service: 'step-functions'
           name: 'Payment Workflow'
           runs: ['payment-processor']
-        
+
         - id: 'sns-topic'
           service: 'sns'
           name: 'Notifications Topic'
