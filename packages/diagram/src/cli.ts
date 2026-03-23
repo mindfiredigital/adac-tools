@@ -5,8 +5,14 @@ import {
   parseAdac,
   validateAdacConfig,
 } from '@mindfiredigital/adac-core';
+import {
+  aggregateCostFromYaml,
+  calculatePerServiceCosts,
+} from '@mindfiredigital/adac-cost';
+import type { CostPeriod } from '@mindfiredigital/adac-cost';
 import path from 'path';
 import { readFileSync } from 'fs';
+import { PricingModel } from '@mindfiredigital/adac-cost';
 
 // Read version from package.json
 // tsup shims __dirname for both CJS and ESM
@@ -20,7 +26,31 @@ try {
 }
 
 runCLI({
-  generateDiagram,
+  generateDiagram: async (
+    input: string,
+    output: string,
+    layoutOverride?: 'elk' | 'dagre',
+    validate?: boolean,
+    _costData?: Record<string, number>,
+    period?: string,
+    pricingModel?: PricingModel
+  ) => {
+    const adacConfig = parseAdac(input, { validate: false });
+    const perServiceCosts = calculatePerServiceCosts(
+      adacConfig,
+      period as CostPeriod,
+      pricingModel ?? 'on_demand'
+    );
+    return generateDiagram(
+      input,
+      output,
+      layoutOverride,
+      validate,
+      perServiceCosts,
+      period as CostPeriod
+    );
+  },
+  calculateCostFromYaml: aggregateCostFromYaml,
   parseAdac,
   validateAdacConfig,
   version,

@@ -25,6 +25,7 @@ export function parseAdacFromContent(
   options: ParseOptions = { validate: true }
 ): AdacConfig {
   let parsed: unknown;
+
   try {
     parsed = yaml.load(content);
   } catch (e: unknown) {
@@ -34,6 +35,7 @@ export function parseAdacFromContent(
 
   if (options.validate) {
     const validation: ValidationResult = validateAdacConfig(parsed);
+
     if (!validation.valid) {
       throw new AdacParseError('Schema validation failed', validation.errors);
     }
@@ -49,6 +51,8 @@ export function parseAdac(
   if (!fs.existsSync(filePath)) {
     throw new AdacParseError(`File not found: ${filePath}`);
   }
+
   const raw = fs.readFileSync(filePath, 'utf8');
+
   return parseAdacFromContent(raw, options);
 }

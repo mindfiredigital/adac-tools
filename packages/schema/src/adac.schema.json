@@ -808,7 +808,13 @@
         "monthly_estimate": {
           "type": "number",
           "minimum": 0,
-          "description": "Estimated monthly cost in USD"
+          "description": "Estimated cost for the selected period in USD"
+        },
+        "period": {
+          "type": "string",
+          "enum": ["monthly", "yearly", "weekly", "daily"],
+          "default": "monthly",
+          "description": "The period for which the cost estimate applies"
         },
         "currency": {
           "type": "string",
@@ -849,7 +855,13 @@
         "total_monthly": {
           "type": "number",
           "minimum": 0,
-          "description": "Total monthly cost"
+          "description": "Total cost for the selected period"
+        },
+        "period": {
+          "type": "string",
+          "enum": ["monthly", "yearly", "weekly", "daily"],
+          "default": "monthly",
+          "description": "The period for which the cost summary applies"
         },
         "currency": {
           "type": "string",
