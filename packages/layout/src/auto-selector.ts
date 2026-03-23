@@ -1,6 +1,3 @@
-// Placeholder complexity analysis
-// For now: always return false (use custom)
-
 export interface AdacModel {
   infrastructure?: {
     clouds?: {
