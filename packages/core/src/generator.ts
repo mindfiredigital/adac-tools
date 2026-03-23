@@ -5,6 +5,8 @@ import { validateAdacConfig } from '@mindfiredigital/adac-schema';
 import { ComplianceChecker } from '@mindfiredigital/adac-compliance';
 import { renderSvg } from './renderer.js';
 
+type CostPeriod = 'hourly' | 'daily' | 'monthly' | 'yearly';
+
 export interface GenerationResult {
   svg: string;
   logs: string[];
@@ -14,7 +16,9 @@ export interface GenerationResult {
 export async function generateDiagramSvg(
   inputContent: string,
   layoutOverride?: 'elk' | 'dagre',
-  validate: boolean = false
+  validate: boolean = false,
+  costData?: Record<string, number>,
+  period: CostPeriod = 'monthly'
 ): Promise<GenerationResult> {
   const logs: string[] = [];
   const start = Date.now();
@@ -24,8 +28,9 @@ export async function generateDiagramSvg(
   try {
     log('Starting diagram generation.');
     log('Parsing ADAC content...');
-    const adac = parseAdacFromContent(inputContent);
-
+    const adac = parseAdacFromContent(inputContent, {
+      validate: false,
+    });
     if (validate) {
       log('Validating ADAC schema...');
       const validation = validateAdacConfig(adac);
@@ -89,9 +94,19 @@ export async function generateDiagramSvg(
       );
     }
 
+    const perServiceCosts = costData;
+
     log('Rendering SVG (Computing Layout & Styles)...');
-    const svg = await renderSvg(graph, engine, complianceTooltipMap);
+    const svg = await renderSvg(
+      graph,
+      engine,
+      complianceTooltipMap,
+      perServiceCosts,
+      period
+    );
     log('SVG Rendering complete.');
+
+    // Removed cost summary injection
 
     const duration = Date.now() - start;
     log(`Total generation time: ${duration}ms`);
@@ -109,11 +124,19 @@ export async function generateDiagram(
   input: string,
   output: string,
   layoutOverride?: 'elk' | 'dagre',
-  validate: boolean = false
+  validate: boolean = false,
+  costData?: Record<string, number>,
+  period: CostPeriod = 'monthly'
 ): Promise<void> {
   const raw = await fs.readFile(input, 'utf8');
-  const { svg } = await generateDiagramSvg(raw, layoutOverride, validate);
+  const { svg } = await generateDiagramSvg(
+    raw,
+    layoutOverride,
+    validate,
+    costData,
+    period
+  );
 
   await fs.outputFile(output, svg);
-  console.log(`✅ Diagram generated: ${output}`);
+  console.log(`Diagram generated: ${output}`);
 }
