@@ -1,5 +1,5 @@
 import Handlebars from 'handlebars';
-import { AdacConfig, AdacService, AdacConnection } from '@mindfiredigital/adac-schema';
+import { AdacConfig } from '@mindfiredigital/adac-schema';
 import { DocOptions, DocOutput, DocFile } from './types/index.js';
 import { ComplianceChecker } from '@mindfiredigital/adac-compliance';
 import {
