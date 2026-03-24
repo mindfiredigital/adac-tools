@@ -1,5 +1,5 @@
 import Handlebars from 'handlebars';
-import { AdacConfig, AdacService, AdacConnection } from '@mindfiredigital/adac-schema';
+import { AdacConfig } from '@mindfiredigital/adac-schema';
 import { DocOptions, DocOutput, DocFile } from './types/index.js';
 import { ComplianceChecker } from '@mindfiredigital/adac-compliance';
 import {
@@ -7,7 +7,7 @@ import {
   ServiceCatalogTemplate,
   ConnectionMatrixTemplate,
   CostReportTemplate,
-  ComplianceTemplate
+  ComplianceTemplate,
 } from './templates/index.js';
 
 export class DocumentationGenerator {
@@ -16,19 +16,27 @@ export class DocumentationGenerator {
   constructor(options: DocOptions = {}) {
     this.options = {
       format: options.format || 'markdown',
-      sections: options.sections || ['overview', 'architecture', 'services', 'connections'],
+      sections: options.sections || [
+        'overview',
+        'architecture',
+        'services',
+        'connections',
+      ],
       includeMetadata: options.includeMetadata ?? true,
       includeCost: options.includeCost ?? true,
       includeCompliance: options.includeCompliance ?? true,
       template: options.template,
-      outputDir: options.outputDir || './docs'
+      outputDir: options.outputDir || './docs',
     };
   }
 
   async generate(model: AdacConfig): Promise<DocOutput> {
     const files: DocFile[] = [];
 
-    if (this.options.sections?.includes('overview') || this.options.sections?.includes('architecture')) {
+    if (
+      this.options.sections?.includes('overview') ||
+      this.options.sections?.includes('architecture')
+    ) {
       files.push(await this.generateOverview(model));
     }
     if (this.options.sections?.includes('services')) {
@@ -40,7 +48,10 @@ export class DocumentationGenerator {
     if (this.options.includeCost && this.options.sections?.includes('cost')) {
       files.push(await this.generateCostReport(model));
     }
-    if (this.options.includeCompliance && this.options.sections?.includes('compliance')) {
+    if (
+      this.options.includeCompliance &&
+      this.options.sections?.includes('compliance')
+    ) {
       files.push(await this.generateComplianceReport(model));
     }
 
@@ -61,27 +72,30 @@ export class DocumentationGenerator {
     const template = Handlebars.compile(ArchitectureTemplate);
     const content = template({
       metadata: model.metadata,
-      clouds: model.infrastructure?.clouds || []
+      clouds: model.infrastructure?.clouds || [],
     });
 
     return {
       name: 'architecture.md',
       content,
-      path: 'architecture.md'
+      path: 'architecture.md',
     };
   }
 
   private async generateServiceCatalog(model: AdacConfig): Promise<DocFile> {
     const template = Handlebars.compile(ServiceCatalogTemplate);
-    const services = (model.infrastructure?.clouds || []).flatMap(cloud => 
-      (cloud.services || []).map(service => ({ ...service, provider: cloud.provider }))
+    const services = (model.infrastructure?.clouds || []).flatMap((cloud) =>
+      (cloud.services || []).map((service) => ({
+        ...service,
+        provider: cloud.provider,
+      }))
     );
     const content = template({ services });
 
     return {
       name: 'services.md',
       content,
-      path: 'services.md'
+      path: 'services.md',
     };
   }
 
@@ -93,7 +107,7 @@ export class DocumentationGenerator {
     return {
       name: 'connections.md',
       content,
-      path: 'connections.md'
+      path: 'connections.md',
     };
   }
 
@@ -104,30 +118,34 @@ export class DocumentationGenerator {
     return {
       name: 'cost.md',
       content,
-      path: 'cost.md'
+      path: 'cost.md',
     };
   }
 
   private async generateComplianceReport(model: AdacConfig): Promise<DocFile> {
     const template = Handlebars.compile(ComplianceTemplate);
-    
-    let complianceResults = { results: [], remediationPlan: [] };
+
+    let complianceResults: { results: unknown[]; remediationPlan: unknown[] } =
+      { results: [], remediationPlan: [] };
     try {
       const checker = new ComplianceChecker();
-      complianceResults = checker.checkCompliance(model) as any;
+      complianceResults = checker.checkCompliance(model) as {
+        results: unknown[];
+        remediationPlan: unknown[];
+      };
     } catch (e) {
       console.warn('Failed to check compliance', e);
     }
 
-    const content = template({ 
+    const content = template({
       results: complianceResults.results,
-      remediationPlan: complianceResults.remediationPlan
+      remediationPlan: complianceResults.remediationPlan,
     });
 
     return {
       name: 'compliance.md',
       content,
-      path: 'compliance.md'
+      path: 'compliance.md',
     };
   }
 }

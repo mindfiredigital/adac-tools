@@ -8,9 +8,18 @@ export const requireStorageEncryptionRule: ComplianceRule = {
   severity: 'high',
   evaluate(service) {
     if (
-      ['s3', 'rds', 'gcs', 'cloud-storage', 'cloud-sql', 'cloudsql', 'bigquery', 'cloud-spanner', 'firestore', 'bigtable'].includes(
-        service.service
-      )
+      [
+        's3',
+        'rds',
+        'gcs',
+        'cloud-storage',
+        'cloud-sql',
+        'cloudsql',
+        'bigquery',
+        'cloud-spanner',
+        'firestore',
+        'bigtable',
+      ].includes(service.service)
     ) {
       const config = (service.config || service.configuration) as Record<
         string,
