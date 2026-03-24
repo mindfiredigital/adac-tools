@@ -8,7 +8,16 @@ export const requirePrivateSubnetsRule: ComplianceRule = {
   severity: 'critical',
   evaluate(service) {
     if (
-      ['rds', 'dynamodb', 'databases', 'cloud-sql', 'cloudsql', 'cloud-spanner', 'firestore', 'bigtable'].includes(service.service)
+      [
+        'rds',
+        'dynamodb',
+        'databases',
+        'cloud-sql',
+        'cloudsql',
+        'cloud-spanner',
+        'firestore',
+        'bigtable',
+      ].includes(service.service)
     ) {
       const config = (service.config || service.configuration) as Record<
         string,

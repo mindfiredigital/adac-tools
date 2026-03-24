@@ -25,15 +25,6 @@ const ICON_MAP_FILE = path.join(MAPPINGS_DIR, 'icon-map.json');
 const SERVICES_CONFIG_FILE = path.join(MAPPINGS_DIR, 'services.yaml');
 
 /**
- * Official GCP icon pack download URL.
- * Google Cloud hosts a stable ZIP of all product icon SVGs.
- * The URL below is from the official icon library page:
- *   https://cloud.google.com/icons
- */
-const GCP_ICONS_ZIP_URL =
-  'https://www.gstatic.com/pantheon/images/welcome/supercloud.png'; // placeholder; see note below
-
-/**
  * NOTE: Google Cloud provides icons at:
  *   https://cloud.google.com/icons
  *
@@ -45,20 +36,7 @@ const GCP_ICONS_ZIP_URL =
  * this script uses a known stable CDN URL pattern for the icon pack.
  * If the URL is unavailable, the script falls back to generating placeholder
  * SVG icons so the pipeline still works.
- *
- * The canonical download URL as of 2025:
- *   https://storage.googleapis.com/gweb-cloudblog-publish/original_images/GCP-architecture-icon-pack.zip
- * Or use the official icons page: https://cloud.google.com/icons
  */
-const GCP_ICONS_DOWNLOAD_URL =
-  'https://storage.googleapis.com/cloud-training/T-INFRA-B/v1.0/icon_set.zip';
-
-/**
- * Fallback: known stable URL for Google Cloud product icons ZIP.
- * This is the link provided on https://cloud.google.com/icons
- */
-const GCP_PRODUCT_ICONS_URL =
-  'https://www.gstatic.com/images/icons/material/product/2x/cloud_googleg.png'; // just a test asset
 
 async function downloadFile(url: string, dest: string): Promise<void> {
   console.log(`Downloading: ${url}`);
@@ -111,14 +89,18 @@ async function main() {
   console.log('🚀 Setting up GCP icons...');
 
   if (!fs.existsSync(SERVICES_CONFIG_FILE)) {
-    throw new Error(`GCP Services mapping file not found at: ${SERVICES_CONFIG_FILE}`);
+    throw new Error(
+      `GCP Services mapping file not found at: ${SERVICES_CONFIG_FILE}`
+    );
   }
 
   const configContent = await fs.readFile(SERVICES_CONFIG_FILE, 'utf8');
-  const serviceMappings = yaml.load(configContent) as Record<string, { name: string; category?: string; color: string }>;
+  const serviceMappings = yaml.load(configContent) as Record<
+    string,
+    { name: string; category?: string; color: string }
+  >;
 
   let downloadSucceeded = false;
-  let extractedCount = 0;
 
   // Attempt to download official GCP icon pack
   const zipPath = path.join(ASSETS_DIR, 'gcp-icons.zip');
@@ -140,21 +122,19 @@ async function main() {
       for (const entry of entries) {
         const name = entry.entryName;
         // Only extract SVG files
-        if (
-          !entry.isDirectory &&
-          name.endsWith('.svg')
-        ) {
+        if (!entry.isDirectory && name.endsWith('.svg')) {
           // Flatten: remove directories from the path
           const fileName = path.basename(name);
           const destPath = path.join(ICONS_DIR, fileName);
           // Always extract/overwrite to ensure the latest version (like core icons) is used
           await fs.writeFile(destPath, entry.getData());
           zipExtractedCount++;
-          extractedCount++;
         }
       }
 
-      console.log(`✅ Extracted ${zipExtractedCount} SVG icons from ${path.basename(url)}`);
+      console.log(
+        `✅ Extracted ${zipExtractedCount} SVG icons from ${path.basename(url)}`
+      );
       downloadSucceeded = true;
       // Cleanup the zip after extraction
       await fs.remove(zipPath);
@@ -168,9 +148,7 @@ async function main() {
     console.log(
       '⚠️  Could not download official GCP icons. Generating placeholder SVG icons.'
     );
-    console.log(
-      '   To use official icons, download the GCP icon ZIP from:'
-    );
+    console.log('   To use official icons, download the GCP icon ZIP from:');
     console.log('   https://cloud.google.com/icons');
     console.log(`   and extract the SVGs to: ${ICONS_DIR}`);
   }
@@ -230,7 +208,12 @@ async function main() {
         const files = await fs.readdir(ICONS_DIR);
         const lowerServiceName = info.name.toLowerCase().replace(/\s+/g, '');
         for (const f of files) {
-          if (f.toLowerCase().replace(/[^a-z0-9]/g, '').includes(lowerServiceName.replace(/[^a-z0-9]/g, ''))) {
+          if (
+            f
+              .toLowerCase()
+              .replace(/[^a-z0-9]/g, '')
+              .includes(lowerServiceName.replace(/[^a-z0-9]/g, ''))
+          ) {
             foundFile = f;
             break;
           }
@@ -254,7 +237,9 @@ async function main() {
   }
 
   await fs.writeJson(ICON_MAP_FILE, iconMap, { spaces: 2 });
-  console.log(`\n✅ Generated GCP icon-map.json with ${Object.keys(iconMap).length} entries`);
+  console.log(
+    `\n✅ Generated GCP icon-map.json with ${Object.keys(iconMap).length} entries`
+  );
   console.log(`   Icons saved to: ${ICONS_DIR}`);
   console.log(`   Mapping saved to: ${ICON_MAP_FILE}`);
   console.log('\nDone! 🎉');

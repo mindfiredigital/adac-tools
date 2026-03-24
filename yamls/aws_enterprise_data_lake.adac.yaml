@@ -12,7 +12,7 @@ applications:
     name: 'Spark ETL'
     type: 'worker'
     technology: 'Apache Spark'
-    
+
   - id: 'bi-dashboard'
     name: 'Executive BI'
     type: 'frontend'
@@ -32,7 +32,7 @@ infrastructure:
         - id: 'kinesis-data-stream'
           service: 'kinesis-streams'
           name: 'Clickstream Data'
-        
+
         - id: 's3-raw-zone'
           service: 's3'
           name: 'Raw S3 Bucket'
@@ -40,7 +40,7 @@ infrastructure:
         - id: 'aws-glue-crawler'
           service: 'glue'
           name: 'Glue Data Catalog'
-        
+
         - id: 'emr-cluster'
           service: 'emr'
           name: 'EMR Cluster'
@@ -49,11 +49,11 @@ infrastructure:
         - id: 's3-processed-zone'
           service: 's3'
           name: 'Curated S3 Bucket'
-        
+
         - id: 'athena-query'
           service: 'athena'
           name: 'Athena Query Editor'
-        
+
         - id: 'redshift-dwh'
           service: 'redshift'
           name: 'Redshift DWH'
@@ -71,11 +71,11 @@ infrastructure:
         - id: 'macie-sec'
           service: 'macie'
           name: 'Macie PII Scan'
-        
+
         - id: 'kms-encryption'
           service: 'kms'
           name: 'AWS KMS Key'
-        
+
         - id: 'lake-formation'
           service: 'data-pipeline'
           name: 'Lake Formation'

@@ -4,8 +4,11 @@ import Flow from './components/flow';
 import { Home } from './components/home';
 import { Uploader } from './components/uploader';
 
+export type Provider = 'aws' | 'gcp';
+
 function App() {
   const [view, setView] = useState<'home' | 'ui' | 'upload'>('home');
+  const [provider, setProvider] = useState<Provider>('aws');
 
   if (view === 'home') {
     return <Home onSelect={setView} />;
@@ -17,8 +20,8 @@ function App() {
 
   return (
     <div className="flex h-screen w-screen bg-[#121212] overflow-hidden text-white">
-      <Sidebar />
-      <Flow onBack={() => setView('home')} />
+      <Sidebar provider={provider} setProvider={setProvider} />
+      <Flow onBack={() => setView('home')} provider={provider} />
     </div>
   );
 }

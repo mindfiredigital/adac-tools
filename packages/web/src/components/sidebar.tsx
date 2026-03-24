@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from 'react';
+import { Cloud, Server } from 'lucide-react';
+import type { Provider } from '../app';
 
 type Icon = {
   name: string;
@@ -10,14 +12,21 @@ type Category = {
   icons: Icon[];
 };
 
-export const Sidebar = () => {
+interface SidebarProps {
+  provider: Provider;
+  setProvider: (provider: Provider) => void;
+}
+
+export const Sidebar = ({ provider, setProvider }: SidebarProps) => {
   const [categories, setCategories] = useState<Category[]>([]);
 
   useEffect(() => {
-    fetch('/icons.json')
+    const iconFile = provider === 'aws' ? '/icons.json' : '/gcp-icons.json';
+    fetch(iconFile)
       .then((res) => res.json())
-      .then((data) => setCategories(data));
-  }, []);
+      .then((data) => setCategories(data))
+      .catch((err) => console.error('Failed to fetch icons:', err));
+  }, [provider]);
 
   const onDragStart = (
     event: React.DragEvent,
@@ -37,7 +46,32 @@ export const Sidebar = () => {
         <h2 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-orange-400 to-pink-500">
           ADAC Components
         </h2>
-        <p className="text-xs text-gray-500 mt-1 font-medium">
+
+        {/* Provider Switch */}
+        <div className="flex bg-[#2d2d2d] p-1 rounded-lg mt-4 border border-[#444]">
+          <button
+            onClick={() => setProvider('aws')}
+            className={`flex-1 flex items-center justify-center gap-2 py-1.5 rounded-md text-xs font-bold transition-all ${
+              provider === 'aws'
+                ? 'bg-[#ec7211] text-white shadow-lg'
+                : 'text-gray-400 hover:text-white hover:bg-[#333]'
+            }`}
+          >
+            <Cloud size={14} /> AWS
+          </button>
+          <button
+            onClick={() => setProvider('gcp')}
+            className={`flex-1 flex items-center justify-center gap-2 py-1.5 rounded-md text-xs font-bold transition-all ${
+              provider === 'gcp'
+                ? 'bg-[#4285F4] text-white shadow-lg'
+                : 'text-gray-400 hover:text-white hover:bg-[#333]'
+            }`}
+          >
+            <Server size={14} /> GCP
+          </button>
+        </div>
+
+        <p className="text-xs text-gray-500 mt-3 font-medium">
           Drag components to the board
         </p>
       </div>
@@ -57,7 +91,11 @@ export const Sidebar = () => {
                 return (
                   <div
                     key={icon.name}
-                    className="aspect-square flex flex-col items-center justify-center p-1 bg-[#252526] rounded-lg hover:bg-[#2d2d2d] cursor-grab transition-all hover:scale-105 border border-[#333] hover:border-orange-500/50 hover:shadow-lg hover:shadow-orange-500/10 active:cursor-grabbing group/item"
+                    className={`aspect-square flex flex-col items-center justify-center p-1 bg-[#252526] rounded-lg hover:bg-[#2d2d2d] cursor-grab transition-all hover:scale-105 border border-[#333] ${
+                      provider === 'aws'
+                        ? 'hover:border-orange-500/50 hover:shadow-orange-500/10'
+                        : 'hover:border-blue-500/50 hover:shadow-blue-500/10'
+                    } hover:shadow-lg active:cursor-grabbing group/item`}
                     onDragStart={(event) =>
                       onDragStart(event, 'customNode', icon.path, label)
                     }
@@ -69,7 +107,7 @@ export const Sidebar = () => {
                       alt={label}
                       className="w-8 h-8 mb-1 pointer-events-none object-contain"
                     />
-                    <span className="text-[9px] text-center text-gray-400 group-hover/item:text-white leading-tight line-clamp-2 break-words w-full">
+                    <span className="text-[9px] text-center text-gray-400 group-hover/item:text-white leading-tight line-clamp-2 break-words w-full px-0.5">
                       {label}
                     </span>
                   </div>
