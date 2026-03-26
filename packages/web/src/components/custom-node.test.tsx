@@ -22,6 +22,10 @@ vi.mock('@xyflow/react', async () => {
 // Mock Lucide icons
 vi.mock('lucide-react', () => ({
   Trash2: () => <div data-testid="trash-icon" />,
+  DollarSign: () => <div data-testid="dollar-icon" />,
+  Shield: () => <div data-testid="shield-icon" />,
+  ShieldCheck: () => <div data-testid="shield-check-icon" />,
+  ShieldAlert: () => <div data-testid="shield-alert-icon" />,
 }));
 
 describe('CustomNode', () => {
@@ -87,5 +91,56 @@ describe('CustomNode', () => {
     );
     // GCP color (blue)
     expect(container.firstChild).toHaveClass('border-blue-500');
+  });
+
+  it('shows cost badge when hasCost is true', () => {
+    const props = {
+      ...defaultProps,
+      data: {
+        ...defaultProps.data,
+        costConfig: { tier: 't3.micro', monthlyCost: 15.5 },
+      },
+    };
+    render(<CustomNode {...(props as unknown as NodeProps)} />);
+    expect(screen.getByTitle('$15.50/mo')).toBeInTheDocument();
+    expect(screen.getByText('16')).toBeInTheDocument(); // 15.5 rounded up to 16
+  });
+
+  it('shows compliance badge with different statuses', () => {
+    const { rerender } = render(
+      <CustomNode
+        {...(defaultProps as unknown as NodeProps)}
+        data={{
+          ...defaultProps.data,
+          complianceFrameworks: ['pci-dss'],
+          complianceStatus: 'pass',
+        }}
+      />
+    );
+    expect(screen.getByTitle('All compliant')).toBeInTheDocument();
+
+    rerender(
+      <CustomNode
+        {...(defaultProps as unknown as NodeProps)}
+        data={{
+          ...defaultProps.data,
+          complianceFrameworks: ['pci-dss'],
+          complianceStatus: 'fail',
+        }}
+      />
+    );
+    expect(screen.getByTitle('Violations found')).toBeInTheDocument();
+
+    rerender(
+      <CustomNode
+        {...(defaultProps as unknown as NodeProps)}
+        data={{
+          ...defaultProps.data,
+          complianceFrameworks: ['pci-dss'],
+          complianceStatus: 'unchecked',
+        }}
+      />
+    );
+    expect(screen.getByTitle('1 framework(s)')).toBeInTheDocument();
   });
 });

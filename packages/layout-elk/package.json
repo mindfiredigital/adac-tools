@@ -15,5 +15,14 @@
     "@mindfiredigital/adac-layout-core": "workspace:*",
     "@mindfiredigital/adac-schema": "workspace:*"
   },
-  "license": "ISC"
+  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mindfiredigital/adac-tools.git",
+    "directory": "packages/layout-elk"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://npm.pkg.github.com"
+  }
 }

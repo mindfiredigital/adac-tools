@@ -1,0 +1,87 @@
+# ─────────────────────────────────────────────────────────────
+# Release — publishes npm packages to GitHub Packages registry
+# Triggered when a GitHub Release is published or manually
+# ─────────────────────────────────────────────────────────────
+name: Release Packages
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Perform a dry run (skip actual publish)'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'false'
+          - 'true'
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  release:
+    name: Publish to GitHub Packages
+    runs-on: ubuntu-latest
+    environment: release
+
+    steps:
+      # ── Checkout ──────────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ── pnpm + Node ──────────────────────────────────────
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: 'https://npm.pkg.github.com'
+          scope: '@mindfiredigital'
+          cache: 'pnpm'
+
+      # ── Install & Build ──────────────────────────────────
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build all packages
+        run: pnpm run build
+
+      # ── Test ─────────────────────────────────────────────
+      - name: Run tests
+        run: pnpm run test
+
+      # ── Publish ──────────────────────────────────────────
+      - name: Publish packages (dry run)
+        if: ${{ github.event.inputs.dry_run == 'true' }}
+        run: |
+          echo "🏜️  DRY RUN — packages would be published:"
+          node scripts/publish-packages.mjs --dry-run
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish packages
+        if: ${{ github.event.inputs.dry_run != 'true' }}
+        run: node scripts/publish-packages.mjs
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # ── Summary ──────────────────────────────────────────
+      - name: Release summary
+        if: always()
+        run: |
+          echo "## 📦 Release Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Field | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| **Trigger** | ${{ github.event_name }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Tag** | ${{ github.event.release.tag_name || 'manual' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Dry Run** | ${{ github.event.inputs.dry_run || 'false' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Actor** | @${{ github.actor }} |" >> $GITHUB_STEP_SUMMARY

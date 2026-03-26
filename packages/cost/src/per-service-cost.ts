@@ -22,9 +22,9 @@ export function calculatePerServiceCosts(
   period: CostPeriod = 'monthly',
   pricingModel: PricingModel = 'on_demand'
 ): Record<string, number> | undefined {
-  const services =
-    (adac.infrastructure?.clouds?.flatMap((cloud) => cloud.services ?? []) ??
-      []) as AdacCostService[];
+  const services = (adac.infrastructure?.clouds?.flatMap(
+    (cloud) => cloud.services ?? []
+  ) ?? []) as AdacCostService[];
   if (services.length === 0) {
     return undefined;
   }

@@ -5,7 +5,19 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc",
-    "test": "echo \"No tests specified\" && exit 0"
+    "test": "echo \"No tests specified\""
   },
-  "license": "ISC"
+  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mindfiredigital/adac-tools.git",
+    "directory": "packages/icons-azure"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://npm.pkg.github.com"
+  },
+  "files": [
+    "dist"
+  ]
 }

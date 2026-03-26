@@ -14,11 +14,19 @@ vi.mock('./components/home', () => ({
 }));
 
 vi.mock('./components/sidebar', () => ({
-  Sidebar: () => <div data-testid="sidebar-view" />,
+  Sidebar: ({ setProvider }: { setProvider: (v: string) => void }) => (
+    <div data-testid="sidebar-view">
+      <button onClick={() => setProvider('gcp')}>Switch to GCP</button>
+    </div>
+  ),
 }));
 
 vi.mock('./components/flow', () => ({
-  default: () => <div data-testid="flow-view" />,
+  default: ({ onBack }: { onBack: () => void }) => (
+    <div data-testid="flow-view">
+      <button onClick={onBack}>Back from Flow</button>
+    </div>
+  ),
 }));
 
 vi.mock('./components/uploader', () => ({
@@ -53,6 +61,19 @@ describe('App', () => {
     render(<App />);
     fireEvent.click(screen.getByText('Go to Upload'));
     fireEvent.click(screen.getByText('Back from Uploader'));
+    expect(screen.getByTestId('home-view')).toBeInTheDocument();
+  });
+
+  it('can change provider', () => {
+    render(<App />);
+    fireEvent.click(screen.getByText('Go to UI'));
+    fireEvent.click(screen.getByText('Switch to GCP'));
+  });
+
+  it('can navigate back from Flow', () => {
+    render(<App />);
+    fireEvent.click(screen.getByText('Go to UI'));
+    fireEvent.click(screen.getByText('Back from Flow'));
     expect(screen.getByTestId('home-view')).toBeInTheDocument();
   });
 });

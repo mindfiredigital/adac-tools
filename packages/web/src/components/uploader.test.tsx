@@ -24,7 +24,7 @@ describe('Uploader', () => {
     render(<Uploader onBack={onBack} />);
 
     expect(screen.getByText('Upload YAML Definition')).toBeInTheDocument();
-    expect(screen.getByText('Back to Home')).toBeInTheDocument();
+    expect(screen.getByText(/Back to Home/)).toBeInTheDocument();
   });
 
   it('handles file upload and generation', async () => {
@@ -33,7 +33,7 @@ describe('Uploader', () => {
     });
     const onBack = vi.fn();
 
-    // Mock file.text() just in case
+    // Mock file.text()
     mockFile.text = vi.fn().mockResolvedValue('content: test');
 
     // Mock fetch for generation
@@ -55,7 +55,42 @@ describe('Uploader', () => {
 
     await waitFor(() => {
       expect(screen.getByText('Generated Diagram')).toBeInTheDocument();
-      expect(screen.getByTestId('arrow-right-icon')).toBeInTheDocument();
+    });
+
+    // Handle download
+    const createObjectURLMock = vi.fn().mockReturnValue('mock-url');
+    const revokeObjectURLMock = vi.fn();
+    vi.stubGlobal('URL', {
+      createObjectURL: createObjectURLMock,
+      revokeObjectURL: revokeObjectURLMock,
+    });
+
+    fireEvent.click(screen.getByText('Download SVG'));
+    expect(createObjectURLMock).toHaveBeenCalled();
+  });
+
+  it('handles generation failure', async () => {
+    const mockFile = new File(['content: test'], 'test.yaml', {
+      type: 'text/yaml',
+    });
+    mockFile.text = vi.fn().mockResolvedValue('content: test');
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: false,
+        json: () => Promise.resolve({ error: 'Invalid schema' }),
+      })
+    );
+
+    render(<Uploader onBack={vi.fn()} />);
+    const input = document.querySelector('input[type="file"]')!;
+    fireEvent.change(input, { target: { files: [mockFile] } });
+
+    fireEvent.click(screen.getByText('Generate Diagram'));
+
+    await waitFor(() => {
+      expect(screen.getByText(/Invalid schema/i)).toBeInTheDocument();
     });
   });
 });

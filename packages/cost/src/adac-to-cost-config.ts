@@ -60,7 +60,10 @@ export function mapAdacServicesToCostConfig(
     const config = getServiceConfig(service);
 
     if (service.type === 'compute' && service.subtype === 'ec2') {
-      const instanceType = getString(config, ['instance_class', 'instanceType']);
+      const instanceType = getString(config, [
+        'instance_class',
+        'instanceType',
+      ]);
       if (!instanceType) {
         continue;
       }
@@ -105,7 +108,10 @@ export function mapAdacServicesToCostConfig(
     }
 
     if (service.type === 'database' && service.subtype === 'rds-postgres') {
-      const instanceType = getString(config, ['instance_class', 'instanceType']);
+      const instanceType = getString(config, [
+        'instance_class',
+        'instanceType',
+      ]);
       if (!instanceType) {
         continue;
       }
@@ -151,7 +157,11 @@ export function mapAdacServicesToCostConfig(
     }
 
     if (service.type === 'storage' && service.subtype === 'ebs') {
-      const volumeType = getString(config, ['volume_type', 'volumeType'], 'gp3');
+      const volumeType = getString(
+        config,
+        ['volume_type', 'volumeType'],
+        'gp3'
+      );
       const sizeGB = getNumber(config, ['size_gb', 'sizeGB'], Number.NaN);
       if (!Number.isFinite(sizeGB)) {
         continue;
@@ -167,7 +177,10 @@ export function mapAdacServicesToCostConfig(
       continue;
     }
 
-    if (service.type === 'network' && service.subtype === 'application-load-balancer') {
+    if (
+      service.type === 'network' &&
+      service.subtype === 'application-load-balancer'
+    ) {
       costConfig.networking?.push({
         type: 'alb',
         lcuUnits: getNumber(config, ['lcu_units', 'lcuUnits'], 1),

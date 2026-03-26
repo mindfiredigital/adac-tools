@@ -1,0 +1,214 @@
+# ─────────────────────────────────────────────────────────────────────────────
+#  CodeRabbit Configuration for mindfiredigital/adac-tools
+#
+#  Stack   : Node.js + React 18 + TypeScript · Tailwind CSS
+#  Tooling : pnpm · Vitest · ESLint · Prettier
+#  Pattern : Monorepo (pnpm workspaces) with multiple packages (@mindfiredigital/adac-*)
+#
+#  Validate : https://docs.coderabbit.ai/configuration/yaml-validator
+#  Reference: https://docs.coderabbit.ai/reference/configuration
+# ─────────────────────────────────────────────────────────────────────────────
+
+language: 'en-US'
+
+# Max 250 characters
+tone_instructions: 'Senior Node.js/TypeScript and React engineer reviewer. Be concise and specific. Cite AWS architecture, Node.js, React, or TypeScript best-practices when flagging issues. Suggest concrete fixes. Praise good patterns as well as flagging problems.'
+
+early_access: false
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  REVIEWS
+# ─────────────────────────────────────────────────────────────────────────────
+reviews:
+  profile: 'assertive'
+  request_changes_workflow: true
+
+  # PR description enrichment
+  high_level_summary: true
+  high_level_summary_instructions: >
+    Summarise the PR as a concise bullet-point list. Group changes by:
+    (1) Architecture / Package API changes,
+    (2) Core Logic / Generators,
+    (3) Web UI / Components,
+    (4) Tooling / Docs.
+    End with a "Breaking changes" section (write "None" if absent).
+  high_level_summary_in_walkthrough: false
+  # Walkthrough & diagnostics
+  collapse_walkthrough: false
+  changed_files_summary: true
+  sequence_diagrams: true
+  estimate_code_review_effort: true
+  assess_linked_issues: true
+  related_issues: true
+  related_prs: true
+
+  # Labels
+  suggested_labels: true
+  auto_apply_labels: false
+  labeling_instructions:
+    - label: 'core'
+      instructions: 'Apply when the PR touches core generator, layout, parser, or schema logic.'
+    - label: 'exporter'
+      instructions: 'Apply when the PR touches export-cloudformation, export-terraform, or export-k8s packages.'
+    - label: 'web'
+      instructions: 'Apply when the PR changes the React frontend or web-server in packages/web and packages/web-server.'
+    - label: 'vscode'
+      instructions: 'Apply when the PR affects the VS Code extension package.'
+    - label: 'cli'
+      instructions: 'Apply when the PR touches packages/cli.'
+    - label: 'icons'
+      instructions: 'Apply when the PR updates cloud provider icons in packages/icons-*.'
+    - label: 'docs'
+      instructions: 'Apply when the PR only changes documentation, README files, or JSDoc.'
+    - label: 'tests'
+      instructions: 'Apply when the PR adds or modifies Vitest test files (*.test.ts / *.spec.ts / *.test.tsx).'
+    - label: 'build'
+      instructions: 'Apply when the PR changes package configs, package.json scripts, or GitHub workflows.'
+    - label: 'dependencies'
+      instructions: 'Apply when the PR bumps or removes npm/pnpm dependencies.'
+
+  # Reviewer suggestions
+  suggested_reviewers: true
+  auto_assign_reviewers: false
+
+  # Commit status
+  commit_status: true
+  fail_commit_status: false
+  review_status: true
+  review_details: true
+
+  # Display
+  poem: false
+  in_progress_fortune: false
+
+  # Auto-review triggers
+  auto_review:
+    enabled: true
+    branches:
+      - main
+      - development
+
+  # Files excluded from review (still cloned for context)
+  path_filters:
+    - '!dist/**'
+    - '!packages/*/dist/**'
+    - '!packages/*/out/**'
+    - '!node_modules/**'
+    - '!pnpm-lock.yaml'
+    - '!package-lock.json'
+    - '!yarn.lock'
+    - '!**/*.snap'
+    - '!**/__snapshots__/**'
+    - '!.husky/**'
+    - '!coverage/**'
+    - '!.turbo/**'
+    - '!.next/**'
+    - '!storybook-static/**'
+    - '!packages/icons-*/**'
+
+  # Path-specific review instructions
+  path_instructions:
+    - path: 'packages/core/**/*.ts'
+      instructions: |
+        ## Core Generators Review Checklist
+        - Prefer functional, stateless operations.
+        - Validate input data against schemas early.
+        - Avoid unhandled exceptions; use Result-type returns or meaningful error throws that can be caught globally.
+
+    - path: 'packages/web/**/*.tsx'
+      instructions: |
+        ## Web UI Review Checklist
+        - All components should use React functional components and hooks.
+        - Ensure a11y standards: semantic tags, proper ARIA labels.
+        - Avoid tightly coupling UI with backend data fetching. Extract state management or data fetching via hooks.
+        - Respect Tailwind CSS conventions.
+
+    - path: 'packages/**/*.test.ts'
+      instructions: |
+        ## Test Review Checklist (Vitest)
+        - Ensure tests cover both happy paths and error handling.
+        - Check that mocking doesn't obscure the core logic being tested.
+        - Verify expected types are strictly tested when using TS integration tests.
+
+    - path: 'packages/cli/**/*.ts'
+      instructions: |
+        ## CLI Review Checklist
+        - Ensure good user feedback mapping: chalk logs, ora spinners, clear error messages.
+        - Don't leak stack traces on standard user errors. Only output full traces in a `--debug` or verbose mode.
+
+    - path: 'packages/vscode/**/*.ts'
+      instructions: |
+        ## VS Code Extension Review
+        - Ensure commands are non-blocking where possible.
+        - Check proper disposal of Webviews to prevent memory leaks.
+        - Ensure error notifications use `vscode.window.showErrorMessage` cleanly.
+
+    - path: 'eslint.config.*'
+      instructions: |
+        - Ensure workspace-wide rules are preserved. 
+        - Avoid disabling core TS rules unless appropriately justified.
+
+    - path: 'package.json'
+      instructions: |
+        - Updates to workspaces configuration require cross-package stability.
+        - New scripts must be well-documented or align with the monorepo standards.
+
+    - path: 'packages/*/package.json'
+      instructions: |
+        - Cross-package imports within the monorepo must use workspace rules, e.g. `workspace:*`.
+
+    - path: '.github/workflows/**'
+      instructions: |
+        - Ensure cache reuse across monorepo builds.
+        - All actions should use pinned versions.
+        - Continue-on-error should generally be false.
+
+  # Static analysis tools (nested under reviews per schema)
+  tools:
+    eslint:
+      enabled: true
+    biome:
+      enabled: false
+    markdownlint:
+      enabled: true
+    actionlint:
+      enabled: true
+    gitleaks:
+      enabled: true
+    htmlhint:
+      enabled: true
+    checkov:
+      enabled: true
+    languagetool:
+      enabled: true
+      enabled_rules:
+        - 'OXFORD_COMMA'
+        - 'EN_QUOTES'
+        - 'COMMA_PARENTHESIS_WHITESPACE'
+      disabled_categories:
+        - 'TYPOGRAPHY'
+    yamllint:
+      enabled: true
+    ast-grep:
+      essential_rules: true
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  CHAT
+# ─────────────────────────────────────────────────────────────────────────────
+chat:
+  auto_reply: true
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  KNOWLEDGE BASE
+# ─────────────────────────────────────────────────────────────────────────────
+knowledge_base:
+  opt_out: false
+  web_search:
+    enabled: true
+  code_guidelines:
+    enabled: true
+    filePatterns:
+      - 'CONTRIBUTING.md'
+      - 'README.md'
+  learnings:
+    scope: auto
