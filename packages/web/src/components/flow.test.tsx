@@ -142,7 +142,8 @@ describe('Flow', () => {
                 'application/reactflow/type': 'customNode',
                 'application/reactflow/icon': s.icon,
                 'application/reactflow/label': s.label,
-              } as Record<string, string>)[key],
+              }) as Record<string, string>
+            )[key],
         },
         clientX: 0,
         clientY: 0,
@@ -170,7 +171,8 @@ describe('Flow', () => {
                 'application/reactflow/type': 'customNode',
                 'application/reactflow/icon': s.icon,
                 'application/reactflow/label': s.label,
-              } as Record<string, string>)[key],
+              }) as Record<string, string>
+            )[key],
         },
         clientX: 0,
         clientY: 0,
