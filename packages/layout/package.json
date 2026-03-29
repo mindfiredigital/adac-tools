@@ -1,0 +1,19 @@
+{
+  "name": "@mindfiredigital/adac-layout",
+  "version": "0.1.0",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run"
+  },
+  "peerDependencies": {
+    "@mindfiredigital/adac-layout-core": "workspace:*",
+    "@mindfiredigital/adac-layout-elk": "workspace:*"
+  },
+  "peerDependenciesMeta": {
+    "@mindfiredigital/adac-layout-elk": {
+      "optional": true
+    }
+  }
+}
