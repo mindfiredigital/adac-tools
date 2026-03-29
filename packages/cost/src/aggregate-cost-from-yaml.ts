@@ -25,7 +25,8 @@ export function aggregateCostFromYaml(
   const file = fs.readFileSync(yamlPath, 'utf8');
   const parsed = yaml.load(file) as YamlInfrastructure;
   const services =
-    parsed.infrastructure?.clouds?.flatMap((cloud) => cloud.services ?? []) ?? [];
+    parsed.infrastructure?.clouds?.flatMap((cloud) => cloud.services ?? []) ??
+    [];
   const costConfig = mapAdacServicesToCostConfig(services, pricingModel);
 
   return new CostCalculator().calculate(costConfig, period);

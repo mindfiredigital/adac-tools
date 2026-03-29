@@ -1,23 +1,30 @@
+import { Handle, Position, type NodeProps, useReactFlow } from '@xyflow/react';
+import { NodeResizer } from '@xyflow/react';
+import { memo } from 'react';
 import {
-  Handle,
-  Position,
-  type NodeProps,
-  NodeResizer,
-  useReactFlow,
-} from '@xyflow/react';
-import { memo, useCallback } from 'react';
-import { Trash2 } from 'lucide-react';
+  DollarSign,
+  Shield,
+  ShieldCheck,
+  ShieldAlert,
+  Trash2,
+} from 'lucide-react';
 
 const CustomNode = ({ id, data, selected }: NodeProps) => {
   const { setNodes } = useReactFlow();
 
-  const onDelete = useCallback(
-    (e: React.MouseEvent) => {
-      e.stopPropagation();
-      setNodes((nodes) => nodes.filter((node) => node.id !== id));
-    },
-    [id, setNodes]
-  );
+  const onDelete = () => {
+    setNodes((nds) => nds.filter((n) => n.id !== id));
+  };
+  const hasCost = !!(data.costConfig as Record<string, unknown>)?.tier;
+  const monthlyCost = (data.costConfig as Record<string, unknown>)
+    ?.monthlyCost as number | undefined;
+  const complianceFrameworks = (data.complianceFrameworks as string[]) || [];
+  const hasCompliance = complianceFrameworks.length > 0;
+  const complianceStatus = data.complianceStatus as
+    | 'pass'
+    | 'fail'
+    | 'unchecked'
+    | undefined;
 
   return (
     <div
@@ -50,6 +57,46 @@ const CustomNode = ({ id, data, selected }: NodeProps) => {
         >
           <Trash2 size={12} />
         </button>
+      )}
+
+      {/* ─── Cost Badge ──── */}
+      {hasCost && monthlyCost !== undefined && monthlyCost > 0 && (
+        <div
+          className="absolute -top-2.5 -left-2.5 flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/90 text-white shadow-lg z-40 pointer-events-none select-none"
+          title={`$${monthlyCost.toFixed(2)}/mo`}
+        >
+          <DollarSign size={8} />
+          {monthlyCost.toFixed(0)}
+        </div>
+      )}
+
+      {/* ─── Compliance Badge ──── */}
+      {hasCompliance && (
+        <div
+          className={`absolute -bottom-2.5 -left-2.5 flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-bold shadow-lg z-40 pointer-events-none select-none ${
+            complianceStatus === 'pass'
+              ? 'bg-emerald-500/90 text-white'
+              : complianceStatus === 'fail'
+                ? 'bg-red-500/90 text-white'
+                : 'bg-blue-500/80 text-white'
+          }`}
+          title={
+            complianceStatus === 'pass'
+              ? 'All compliant'
+              : complianceStatus === 'fail'
+                ? 'Violations found'
+                : `${complianceFrameworks.length} framework(s)`
+          }
+        >
+          {complianceStatus === 'pass' ? (
+            <ShieldCheck size={8} />
+          ) : complianceStatus === 'fail' ? (
+            <ShieldAlert size={8} />
+          ) : (
+            <Shield size={8} />
+          )}
+          {complianceFrameworks.length}
+        </div>
       )}
 
       <div className="flex flex-col items-center gap-2 flex-grow justify-center w-full">

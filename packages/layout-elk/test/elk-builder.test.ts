@@ -271,4 +271,104 @@ describe('ELK Builder', () => {
     buildElkGraph(config);
     existSpy.mockRestore();
   });
+
+  it('should build an ELK graph with GCP infrastructure', () => {
+    const config: AdacConfig = {
+      version: '0.1',
+      metadata: { name: 'GCP Test', created: '2023-10-27' },
+      infrastructure: {
+        clouds: [
+          {
+            id: 'gcp-cloud',
+            provider: 'gcp',
+            region: 'us-central1',
+            services: [
+              {
+                id: 'gcp-vpc',
+                name: 'GCP VPC',
+                service: 'vpc',
+              },
+              {
+                id: 'gcp-subnet',
+                name: 'GCP Subnet',
+                service: 'subnet',
+                configuration: {
+                  vpc: 'gcp-vpc',
+                },
+              },
+              {
+                id: 'gke-cluster',
+                name: 'GKE Cluster',
+                service: 'gke',
+                configuration: {
+                  vpc: 'gcp-vpc',
+                  subnets: ['gcp-subnet'],
+                },
+              },
+              {
+                id: 'cloud-sql',
+                name: 'Database',
+                service: 'cloud-sql',
+              },
+            ],
+          },
+        ],
+      },
+      applications: [
+        {
+          id: 'app-run',
+          name: 'Cloud Run App',
+          type: 'service',
+          technology: 'Node.js',
+        },
+      ],
+    };
+
+    const graph = buildElkGraph(config);
+    expect(graph).toBeDefined();
+    expect(graph.id).toBe('root');
+
+    // Check containers styles for GCP
+    const vpcNode = graph.children?.find((c) => c.id === 'gcp-vpc');
+    expect(vpcNode?.properties?.cssClass).toBe('gcp-vpc');
+
+    const subnetNode = vpcNode?.children?.find((c) => c.id === 'gcp-subnet');
+    expect(subnetNode?.properties?.cssClass).toBe('gcp-subnet');
+
+    const gkeNode = subnetNode?.children?.find((c) => c.id === 'gke-cluster');
+    expect(gkeNode?.properties?.cssClass).toBe('gcp-compute-cluster');
+
+    // Test GCP region and zone
+    const regionConfig: AdacConfig = {
+      version: '0.1',
+      metadata: { name: 'Region Test', created: '2023-10-27' },
+      infrastructure: {
+        clouds: [
+          {
+            id: 'gcp-cloud-2',
+            provider: 'gcp',
+            region: 'us-east1',
+            services: [
+              { id: 'my-region', service: 'region' },
+              {
+                id: 'my-zone',
+                service: 'zone',
+                configuration: { vpc: 'some-vpc' },
+              },
+            ],
+          },
+        ],
+      },
+    };
+    const regionGraph = buildElkGraph(regionConfig);
+    const utilityGroup = regionGraph.children?.find(
+      (c) => c.id === 'group-utility-shared'
+    );
+    const regionNode = utilityGroup?.children?.find(
+      (c) => c.id === 'my-region'
+    );
+    expect(regionNode?.properties?.cssClass).toBe('gcp-region');
+    const zoneNode = utilityGroup?.children?.find((c) => c.id === 'my-zone');
+    expect(zoneNode?.properties?.cssClass).toBe('gcp-zone');
+  });
 });

@@ -40,12 +40,18 @@ describe('Sidebar', () => {
     });
   });
 
-  it('switches provider when clicked', () => {
+  it('switches provider when clicked', async () => {
     const setProvider = vi.fn();
-    render(<Sidebar provider="aws" setProvider={setProvider} />);
+    const { rerender } = render(
+      <Sidebar provider="aws" setProvider={setProvider} />
+    );
 
     fireEvent.click(screen.getByText('GCP'));
     expect(setProvider).toHaveBeenCalledWith('gcp');
+
+    rerender(<Sidebar provider="gcp" setProvider={setProvider} />);
+    fireEvent.click(screen.getByText('AWS'));
+    expect(setProvider).toHaveBeenCalledWith('aws');
   });
 
   it('handles drag start', async () => {

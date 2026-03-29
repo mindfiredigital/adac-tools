@@ -1,5 +1,6 @@
 import { Command } from 'commander';
 import path from 'path';
+import { exec } from 'child_process';
 
 export type CostPeriod = 'hourly' | 'daily' | 'monthly' | 'yearly';
 export type PricingModel = 'on_demand' | 'reserved';
@@ -126,6 +127,24 @@ export function runCLI(options: CLIOptions) {
           opts.period as CostPeriod,
           opts.pricing as PricingModel
         );
+
+        console.log(`Diagram successfully generated at ${outputPath}`);
+        console.log('Automatically launching browser to view diagram...');
+
+        let startCmd = '';
+        if (process.platform === 'darwin') {
+          startCmd = `open "${outputPath}"`;
+        } else if (process.platform === 'win32') {
+          startCmd = `start "" "${outputPath}"`;
+        } else {
+          startCmd = `xdg-open "${outputPath}"`;
+        }
+
+        exec(startCmd, (err) => {
+          if (err) {
+            console.error('Failed to launch browser:', err.message);
+          }
+        });
       } catch (error: unknown) {
         const message = error instanceof Error ? error.message : String(error);
         console.error('Error generating diagram:', message);
