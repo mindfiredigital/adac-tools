@@ -3,11 +3,11 @@
 export interface NodeData {
   width: number;
   height: number;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export interface EdgeData {
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export interface NodePosition {

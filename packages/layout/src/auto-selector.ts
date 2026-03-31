@@ -1,10 +1,10 @@
 export interface AdacModel {
   infrastructure?: {
     clouds?: {
-      services?: any[];
+      services?: Record<string, unknown>[];
     }[];
   };
-  connections?: any[];
+  connections?: Record<string, unknown>[];
 }
 
 export function analyzeComplexity(model?: AdacModel): boolean {

@@ -1,31 +1,34 @@
 import type { LayoutEngine, LayoutOptions } from './interface';
 import { analyzeComplexity, AdacModel } from './auto-selector';
-import { CustomLayoutEngine } from '@mindfiredigital/adac-layout-core';
-import { ElkLayoutEngine } from '@mindfiredigital/adac-layout-elk';
+import { CustomLayoutEngineAdapter } from './custom-layout-engine-adapter';
 
 export type EngineType = 'auto' | 'custom' | 'elk';
 
 export async function createLayoutEngine(
   type: EngineType,
   options: LayoutOptions = {},
-  model?: AdacModel 
+  model?: AdacModel
 ): Promise<LayoutEngine> {
-      
-  // AUTO MODE
-  if (type === 'auto') {
-    const useElk = analyzeComplexity(model);
-    type = useElk ? 'elk' : 'custom';
-  }
-  
+  const resolvedType =
+    type === 'auto' ? (analyzeComplexity(model) ? 'elk' : 'custom') : type;
+
   // CUSTOM ENGINE (Default)
-  if (type === 'custom') {
-    return new CustomLayoutEngine(options);
+  if (resolvedType === 'custom') {
+    return new CustomLayoutEngineAdapter(options);
   }
 
-  // ELK ENGINE (Optional peer)
-  if (type === 'elk') {
-    return new ElkLayoutEngine(options);
+  // ELK ENGINE (Optional install)
+  if (resolvedType === 'elk') {
+    try {
+      const { ElkLayoutEngine } = await import('@mindfiredigital/adac-layout-elk');
+      return new ElkLayoutEngine(options);
+    } catch (error) {
+      throw new Error(
+        'ELK layout engine is unavailable. Install @mindfiredigital/adac-layout-elk to use the elk engine.',
+        { cause: error }
+      );
+    }
   }
 
-  throw new Error(`Unknown engine type: ${type}`);
+  throw new Error(`Unknown engine type: ${resolvedType}`);
 }

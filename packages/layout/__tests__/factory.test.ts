@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { createLayoutEngine } from '../src/factory'
+import { createLayoutEngine } from '../src/factory';
 import * as autoSelector from '../src/auto-selector';
+import { CustomLayoutEngineAdapter } from '../src/custom-layout-engine-adapter';
 
 // Mock engines
 vi.mock('@mindfiredigital/adac-layout-core', () => ({
@@ -22,7 +23,7 @@ describe('createLayoutEngine', () => {
 
   it('returns CustomLayoutEngine when type is custom', async () => {
     const engine = await createLayoutEngine('custom');
-    expect(engine).toEqual({ type: 'custom' });
+    expect(engine).toBeInstanceOf(CustomLayoutEngineAdapter);
   });
 
   it('returns ElkLayoutEngine when type is elk', async () => {
@@ -36,7 +37,7 @@ describe('createLayoutEngine', () => {
     const engine = await createLayoutEngine('auto', {}, {});
 
     expect(autoSelector.analyzeComplexity).toHaveBeenCalled();
-    expect(engine).toEqual({ type: 'custom' });
+    expect(engine).toBeInstanceOf(CustomLayoutEngineAdapter);
   });
 
   it('uses elk engine in auto mode when complexity is true', async () => {
@@ -59,7 +60,7 @@ describe('createLayoutEngine', () => {
 
   it('throws error for invalid type', async () => {
     await expect(
-      createLayoutEngine('invalid' as any)
+      createLayoutEngine('invalid' as unknown as import('../src/factory').EngineType)
     ).rejects.toThrow('Unknown engine type: invalid');
   });
 });

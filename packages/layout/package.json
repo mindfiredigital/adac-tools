@@ -7,13 +7,10 @@
     "build": "tsc",
     "test": "vitest run"
   },
-  "peerDependencies": {
-    "@mindfiredigital/adac-layout-core": "workspace:*",
-    "@mindfiredigital/adac-layout-elk": "workspace:*"
+  "dependencies": {
+    "@mindfiredigital/adac-layout-core": "workspace:*"
   },
-  "peerDependenciesMeta": {
-    "@mindfiredigital/adac-layout-elk": {
-      "optional": true
-    }
+  "optionalDependencies": {
+    "@mindfiredigital/adac-layout-elk": "workspace:*"
   }
 }

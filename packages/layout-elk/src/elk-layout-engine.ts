@@ -9,7 +9,7 @@ import {
   LayoutEngine,
   LayoutOptions,
   LayoutResult,
-} from "@mindfiredigital/adac-layout";
+} from "./types.js";
 
 export class ElkLayoutEngine implements LayoutEngine {
   private elk: InstanceType<typeof ELK>;
@@ -96,10 +96,10 @@ export class ElkLayoutEngine implements LayoutEngine {
 
     const result = await this.elk.layout(graph);
 
-    const nodes: Record<string, any> = {};
-    const edges: Record<string, any> = {};
+    const nodes: LayoutResult['nodes'] = {};
+    const edges: LayoutResult['edges'] = {};
 
-    result.children?.forEach((node: any) => {
+    result.children?.forEach((node) => {
       nodes[node.id] = {
         x: node.x ?? 0,
         y: node.y ?? 0,
@@ -108,7 +108,7 @@ export class ElkLayoutEngine implements LayoutEngine {
       };
     });
 
-    result.edges?.forEach((edge: any) => {
+    result.edges?.forEach((edge) => {
       const sections: ElkEdgeSection[] = edge.sections ?? [];
 
       const points: { x: number; y: number }[] = [];
