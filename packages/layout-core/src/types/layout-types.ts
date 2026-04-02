@@ -8,7 +8,7 @@ export interface LayoutOptions {
   marginy?: number;
 }
 
-export interface PositionedNode {
+export interface NodePosition {
   x: number;
   y: number;
   width: number;

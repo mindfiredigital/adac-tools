@@ -5,14 +5,14 @@ export class Graph {
   nodes: Map<string, Node> = new Map();
   edges: Edge[] = [];
 
-  addNode(id: string, data: { width: number; height: number }) {
+  addNode(id: string, data: { width: number; height: number; [key: string]: unknown }) {
     if (!this.nodes.has(id)) {
-      this.nodes.set(id, new Node(id, data.width, data.height));
+      this.nodes.set(id, new Node(id, data.width, data.height, data));
     }
   }
 
-  addEdge(from: string, to: string) {
-    const edge = new Edge(from, to);
+  addEdge(from: string, to: string, data?: Record<string, unknown>) {
+    const edge = new Edge(from, to, data);
     this.edges.push(edge);
 
     this.nodes.get(from)?.outgoing.add(to);
