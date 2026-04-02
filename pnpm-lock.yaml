@@ -327,6 +327,16 @@ importers:
         specifier: ^10.9.2
         version: 10.9.2(@types/node@25.3.0)(typescript@5.9.3)
 
+  packages/layout:
+    dependencies:
+      '@mindfiredigital/adac-layout-core':
+        specifier: workspace:*
+        version: link:../layout-core
+    optionalDependencies:
+      '@mindfiredigital/adac-layout-elk':
+        specifier: workspace:*
+        version: link:../layout-elk
+
   packages/layout-core:
     devDependencies:
       '@types/jest':

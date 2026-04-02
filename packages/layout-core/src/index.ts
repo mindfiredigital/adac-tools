@@ -32,7 +32,7 @@ export { routeEdges } from './algorithms/edge-routing';
 export type {
   LayoutOptions,
   RankDir,
-  PositionedNode,
+  NodePosition,
   EdgePath,
   RankMap,
   OrderingMap,
