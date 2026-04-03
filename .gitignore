@@ -79,3 +79,4 @@ packages/*/mappings/
 tmp/
 temp/
 *.tgz
+*.vsix

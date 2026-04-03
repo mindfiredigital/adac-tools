@@ -22,6 +22,5 @@ export default defineConfig({
       path.resolve(root, 'src/mappings'),
       path.resolve(root, 'dist/mappings')
     );
-    console.log('✅ Mappings copied to dist');
   },
 });

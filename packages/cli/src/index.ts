@@ -59,6 +59,10 @@ function printCostBreakdown(cost: CostBreakdown) {
   );
 }
 
+/**
+ * Initializes and runs the ADAC CLI with diagram generation, cost calculation, and validation commands.
+ * @param options - Configuration object providing core functionality (diagram generation, parsing, validation) and version info
+ */
 export function runCLI(options: CLIOptions) {
   const program = new Command();
 

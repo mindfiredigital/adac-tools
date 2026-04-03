@@ -19,12 +19,12 @@ on:
           - 'true'
 
 permissions:
-  contents: read
-  packages: write
+  contents: write # needed to upload release assets
+  packages: write # needed to publish to GitHub Packages
 
 jobs:
   release:
-    name: Publish to GitHub Packages
+    name: Build, Publish & Upload Release Assets
     runs-on: ubuntu-latest
     environment: release
 
@@ -58,7 +58,28 @@ jobs:
       - name: Run tests
         run: pnpm run test
 
-      # ── Publish ──────────────────────────────────────────
+      # ── Pack Artifacts (.tgz, .vsix) ─────────────────────
+      - name: Pack release artifacts
+        run: node scripts/pack-release.js
+
+      # ── Upload artifacts (available for download in Actions)
+      - name: Upload release artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-artifacts
+          path: releases/
+          retention-days: 90
+
+      # ── Attach assets to GitHub Release ──────────────────
+      - name: Upload assets to GitHub Release
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: releases/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # ── Publish to GitHub Packages npm registry ──────────
       - name: Publish packages (dry run)
         if: ${{ github.event.inputs.dry_run == 'true' }}
         run: |
@@ -85,3 +106,12 @@ jobs:
           echo "| **Tag** | ${{ github.event.release.tag_name || 'manual' }} |" >> $GITHUB_STEP_SUMMARY
           echo "| **Dry Run** | ${{ github.event.inputs.dry_run || 'false' }} |" >> $GITHUB_STEP_SUMMARY
           echo "| **Actor** | @${{ github.actor }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📄 Artifacts" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ -d releases ]; then
+            for f in releases/*; do
+              size=$(du -h "$f" | cut -f1)
+              echo "- \`$(basename $f)\` ($size)" >> $GITHUB_STEP_SUMMARY
+            done
+          fi
