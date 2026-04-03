@@ -1,5 +1,6 @@
 /**
- * Cost catalog for AWS and GCP services.
+ * Cloud service pricing catalog and logic for architecture cost estimation.
+ * Provides monthly cost maps for AWS/GCP services based on default instance sizes.
  * Each service type has multiple pricing tiers the user can select from.
  * Monthly costs are estimates in USD for a typical small-to-medium workload.
  */

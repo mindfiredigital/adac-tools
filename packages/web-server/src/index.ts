@@ -112,6 +112,25 @@ app.post('/api/cost', (req, res) => {
   }
 });
 
+// Global error handling middleware
+app.use(
+  (
+    err: Error,
+    req: express.Request,
+    res: express.Response,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    _next: express.NextFunction
+  ) => {
+    console.error(`[${new Date().toISOString()}] Unhandled error:`, err);
+    console.error(`Request: ${req.method} ${req.path}`);
+
+    res.status(500).json({
+      error: 'Internal Server Error',
+      message: process.env.NODE_ENV === 'development' ? err.message : undefined,
+    });
+  }
+);
+
 // Start Server only if run directly (not imported as module)
 if (process.argv[1].endsWith('index.js')) {
   app.listen(PORT, () => {

@@ -1,0 +1,92 @@
+{
+  "name": "ADAC YAML",
+  "scopeName": "source.adac.yaml",
+  "fileTypes": ["adac.yaml", "adac.yml"],
+  "patterns": [
+    { "include": "#comment" },
+    { "include": "#adac-top-level-keys" },
+    { "include": "#adac-service-types" },
+    { "include": "#adac-connection-types" },
+    { "include": "#adac-cloud-providers" },
+    { "include": "#adac-environments" },
+    { "include": "#adac-compliance-frameworks" },
+    { "include": "#string-quoted-double" },
+    { "include": "#string-quoted-single" },
+    { "include": "#boolean" },
+    { "include": "#number" },
+    { "include": "#key-value" },
+    { "include": "#list-item" }
+  ],
+  "repository": {
+    "comment": {
+      "match": "#.*$",
+      "name": "comment.line.number-sign.adac.yaml"
+    },
+    "adac-top-level-keys": {
+      "match": "^(version|metadata|applications|infrastructure|connections|cost|layout)\\s*:",
+      "captures": {
+        "1": { "name": "keyword.control.adac.yaml" }
+      }
+    },
+    "adac-service-types": {
+      "match": "\\b(ec2|ecs-fargate|ecs-ec2|eks|lambda|elastic-beanstalk|lightsail|batch|rds-mysql|rds-postgres|rds-mariadb|rds-oracle|rds-sqlserver|rds-aurora-mysql|rds-aurora-postgres|dynamodb|documentdb|neptune|elasticache-redis|elasticache-memcached|redshift|timestream|s3|efs|fsx|glacier|storage-gateway|alb|nlb|clb|cloudfront|route53|api-gateway-rest|api-gateway-http|api-gateway-websocket|appsync|vpc|direct-connect|vpn|transit-gateway|nat-gateway|internet-gateway|vpc-peering|privatelink|sqs|sns|kinesis-streams|kinesis-firehose|kinesis-analytics|msk|eventbridge|step-functions|cloudwatch|cloudwatch-logs|x-ray|cloudtrail|config|systems-manager|iam|cognito|secrets-manager|kms|waf|shield|guardduty|security-hub|macie|inspector|acm|sagemaker|rekognition|comprehend|textract|transcribe|translate|polly|bedrock|glue|athena|emr|data-pipeline|quicksight|codepipeline|codebuild|codecommit|codedeploy|codeartifact|ecr|amplify|ses|pinpoint|workspaces|appstream|backup|cloudformation|cdk|opsworks|elastic-disaster-recovery|cloud-run|cloud-functions|gke|cloud-sql|cloud-spanner|bigquery|cloud-storage|pub-sub|cloud-cdn|cloud-dns|cloud-armor|memorystore|filestore|dataflow|dataproc|vertex-ai|cloud-build|artifact-registry|cloud-logging|cloud-monitoring)\\b",
+      "name": "support.type.service.adac.yaml"
+    },
+    "adac-connection-types": {
+      "match": "\\b(api-call|database-query|cache-read|cache-write|message-publish|message-consume|file-upload|file-download|stream-read|stream-write|replication|backup|failover|cdn-origin|dns-resolution|vpn-tunnel|direct-connect|vpc-peering|transit-gateway|load-balancing|authentication|authorization|database)\\b",
+      "name": "support.type.connection.adac.yaml"
+    },
+    "adac-cloud-providers": {
+      "match": "\\b(aws|gcp|azure|kubernetes)\\b",
+      "name": "constant.language.provider.adac.yaml"
+    },
+    "adac-environments": {
+      "match": "\\b(development|staging|production|test|demo)\\b",
+      "name": "constant.language.environment.adac.yaml"
+    },
+    "adac-compliance-frameworks": {
+      "match": "\\b(pci-dss|hipaa|gdpr|soc2|iso27001|fedramp)\\b",
+      "name": "constant.language.compliance.adac.yaml"
+    },
+    "string-quoted-double": {
+      "name": "string.quoted.double.adac.yaml",
+      "begin": "\"",
+      "end": "\"",
+      "patterns": [
+        {
+          "match": "\\\\.",
+          "name": "constant.character.escape.adac.yaml"
+        }
+      ]
+    },
+    "string-quoted-single": {
+      "name": "string.quoted.single.adac.yaml",
+      "begin": "'",
+      "end": "'",
+      "patterns": [
+        {
+          "match": "\\\\.",
+          "name": "constant.character.escape.adac.yaml"
+        }
+      ]
+    },
+    "boolean": {
+      "match": "\\b(true|false|yes|no)\\b",
+      "name": "constant.language.boolean.adac.yaml"
+    },
+    "number": {
+      "match": "\\b[0-9]+(\\.[0-9]+)?\\b",
+      "name": "constant.numeric.adac.yaml"
+    },
+    "key-value": {
+      "match": "^\\s*([a-zA-Z_][a-zA-Z0-9_-]*)\\s*:",
+      "captures": {
+        "1": { "name": "entity.name.tag.adac.yaml" }
+      }
+    },
+    "list-item": {
+      "match": "^\\s*- ",
+      "name": "punctuation.definition.block.sequence.item.adac.yaml"
+    }
+  }
+}
