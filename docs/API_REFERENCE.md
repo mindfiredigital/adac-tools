@@ -57,4 +57,17 @@ The root object for an architecture definition.
 ### CLI
 
 - `adac diagram <file>`: Generate SVG.
+  - `-l, --layout <type>`: Set layout engine ('elk' or 'dagre').
+  - `--validate`: Run schema validation prior to diagram generation.
+  - _Note: Compliance is handled automatically based on matching `compliance: [...]` frameworks defined on individual services in your YAML file._
 - `adac validate <file>`: Validate YAML against schema.
+
+### Compliance (`@mindfiredigital/adac-compliance`)
+
+Performs security and structural audits on generated abstract syntax trees based on individual service definitions.
+
+- `const checker = new ComplianceChecker()`: Initializes engine.
+- `checker.checkCompliance(config: AdacConfig)`: Automatically reads the `compliance` declarations from each `service` in your YAML and executes relevant rules. Output contains:
+  - `byService`: Map of `serviceId` to their respective array of `ComplianceResult` objects.
+  - `results`: Flat convenience array of all evaluations.
+  - `remediationPlan`: Unified list of active remediations across violated checks.

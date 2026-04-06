@@ -4,28 +4,88 @@ import fs from 'fs-extra';
 import { layoutDagre } from '@mindfiredigital/adac-layout-dagre';
 
 const CSS_STYLES = `
+  /* ── AWS Styles ──────────────────────────────────────────────────── */
   .aws-container { fill: none; stroke-width: 2px; }
   .aws-root { fill: #ffffff; stroke: none; }
   .aws-vpc { fill: #fcfcfc; stroke: #8C4FFF; stroke-dasharray: 5,5; }
   .aws-az { fill: none; stroke: #545b64; stroke-dasharray: 5,5; stroke-width: 1.5px; }
-  .aws-subnet-public { fill: #e6f6e6; stroke: #6cae6c; } 
-  .aws-subnet-private { fill: #e6f2f8; stroke: #007dbc; }
-  .aws-vpc-rect { fill: #ffffff; stroke: #232f3e; stroke-width: 2px; }
-  
   .aws-subnet-public { fill: #e6f6e6; stroke: #6cae6c; } /* Light Green */
   .aws-subnet-private { fill: #e6f2f8; stroke: #007dbc; } /* Light Blue */
-  
+  .aws-vpc-rect { fill: #ffffff; stroke: #232f3e; stroke-width: 2px; }
   .aws-compute-cluster { fill: #fff; stroke: #d86613; stroke-dasharray: 4,4; }
-  
   .aws-label { font-family: "Amazon Ember", sans-serif; font-size: 14px; fill: #232f3e; font-weight: bold;}
   .aws-label-sm { font-family: "Amazon Ember", sans-serif; font-size: 12px; fill: #545b64; }
-  
   .aws-edge { stroke: #545b64; stroke-width: 2px; fill: none; }
+
+  /* ── GCP Styles ──────────────────────────────────────────────────── */
+  /* GCP uses the official Google Cloud brand palette:                  */
+  /*   Blue  #4285F4  Green #34A853  Red #EA4335  Yellow #FBBC04        */
+
+  /* GCP VPC Network — blue dashed border like gcloud diagrams */
+  .gcp-vpc {
+    fill: #f5f8ff;
+    stroke: #4285F4;
+    stroke-dasharray: 6, 4;
+    stroke-width: 2px;
+  }
+
+  /* GCP Region — green border (regions are a key GCP concept) */
+  .gcp-region {
+    fill: #f6fdf8;
+    stroke: #34A853;
+    stroke-dasharray: 5, 3;
+    stroke-width: 2px;
+  }
+
+  /* GCP Zone — light blue solid border */
+  .gcp-zone {
+    fill: #f0f6ff;
+    stroke: #4285F4;
+    stroke-width: 1.5px;
+    stroke-dasharray: 3, 3;
+  }
+
+  /* GCP Subnetwork — a slightly deeper blue */
+  .gcp-subnet {
+    fill: #e8f0fe;
+    stroke: #4285F4;
+    stroke-width: 1.5px;
+  }
+
+  /* GCP Compute Cluster (GKE, Cloud Run services) — orange dashed */
+  .gcp-compute-cluster {
+    fill: #fff8f0;
+    stroke: #FF6D00;
+    stroke-dasharray: 4, 4;
+    stroke-width: 1.5px;
+  }
+
+  /* GCP text labels */
+  .gcp-label {
+    font-family: "Google Sans", Roboto, Arial, sans-serif;
+    font-size: 14px;
+    fill: #202124;
+    font-weight: 600;
+  }
+  .gcp-label-sm {
+    font-family: "Google Sans", Roboto, Arial, sans-serif;
+    font-size: 12px;
+    fill: #5f6368;
+  }
+
+  /* GCP edges — Google blue */
+  .gcp-edge { stroke: #4285F4; stroke-width: 2px; fill: none; }
 `;
 
 export async function renderSvg(
   graph: ElkNode,
-  layoutEngine: 'elk' | 'dagre' = 'elk'
+  layoutEngine: 'elk' | 'dagre' = 'elk',
+  complianceTooltipMap?: Record<
+    string,
+    { frameworks: string[]; violations: string[] }
+  >,
+  perServiceCosts?: Record<string, number>,
+  period: 'hourly' | 'daily' | 'monthly' | 'yearly' = 'monthly'
 ): Promise<string> {
   // Create ELK instance. We use 'any' cast only for the constructor if types are tricky,
   // but let's try to be cleaner.
@@ -132,10 +192,8 @@ export async function renderSvg(
 
         if (containerId && nodeAbsPos.has(containerId)) {
           containerOffset = nodeAbsPos.get(containerId)!;
-        } else {
-          if (nodeAbsPos.has(node.id)) {
-            containerOffset = nodeAbsPos.get(node.id)!;
-          }
+        } else if (nodeAbsPos.has(node.id)) {
+          containerOffset = nodeAbsPos.get(node.id)!;
         }
 
         const globalEdge: ElkEdge = JSON.parse(JSON.stringify(edge));
@@ -181,6 +239,20 @@ export async function renderSvg(
     }
   });
 
+  const resolveNodeCost = (nodeId: string): number | undefined => {
+    if (!perServiceCosts) return undefined;
+
+    if (perServiceCosts[nodeId] !== undefined) {
+      return perServiceCosts[nodeId];
+    }
+
+    const match = Object.entries(perServiceCosts).find(
+      ([k]) => nodeId === k || nodeId.endsWith(k) || k.endsWith(nodeId)
+    );
+
+    return match?.[1];
+  };
+
   const renderNode = (node: ElkNode): string => {
     let output = '';
     const nodeX = node.x || 0;
@@ -192,9 +264,17 @@ export async function renderSvg(
     const label =
       node.labels && node.labels.length > 0 ? node.labels[0].text : '';
 
+    const cost = resolveNodeCost(node.id);
+    const costLabel =
+      cost !== undefined ? `💰 ${cost.toFixed(2)}/${period}` : '';
+
     const escapeXml = (unsafe: string) => {
       const escapeMap: Record<string, string> = {
-        '<': '&lt;', '>': '&gt;', '&': '&amp;', "'": '&apos;', '"': '&quot;'
+        '<': '&lt;',
+        '>': '&gt;',
+        '&': '&amp;',
+        "'": '&apos;',
+        '"': '&quot;',
       };
       return unsafe.replace(/[<>&'"]/g, (c) => escapeMap[c]);
     };
@@ -219,6 +299,43 @@ export async function renderSvg(
     };
 
     output += `<g transform="translate(${nodeX}, ${nodeY})">`;
+
+    let tooltipTitle = '';
+    const nodeId = (props as { id?: string }).id || node.id || '';
+
+    // Apply compliance tooltip to any node that appears in the map.
+    // Only skip pure layout containers (vpc, az, subnet) — they are never services.
+    const isLayoutContainer =
+      props.type === 'container' &&
+      (props.cssClass === 'aws-vpc' ||
+        props.cssClass === 'aws-az' ||
+        props.cssClass === 'gcp-vpc' ||
+        props.cssClass === 'gcp-region' ||
+        props.cssClass === 'gcp-zone' ||
+        props.cssClass === 'gcp-subnet' ||
+        (typeof props.cssClass === 'string' &&
+          (props.cssClass.includes('aws-subnet') ||
+            props.cssClass.includes('gcp-subnet'))));
+
+    if (complianceTooltipMap && !isLayoutContainer) {
+      const entry = complianceTooltipMap[nodeId];
+      if (entry) {
+        if (entry.violations.length > 0) {
+          tooltipTitle = `⚠ Compliance Violations (${entry.frameworks.join(', ')}): ${entry.violations.join(' | ')}`;
+        } else {
+          tooltipTitle = `✅ Compliant with: ${entry.frameworks.join(', ')}`;
+        }
+      }
+    }
+
+    let complianceLine = '';
+    if (tooltipTitle) {
+      complianceLine = escapeXml(tooltipTitle);
+    }
+    const costLine = costLabel ? escapeXml(costLabel) : '';
+    if (complianceLine || costLine) {
+      output += `<title>${[complianceLine, costLine].filter(Boolean).join('\n')}</title>`;
+    }
 
     if (props.type === 'container') {
       let rectClass = 'aws-container';

@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { Sidebar } from './components/Sidebar';
-import Flow from './components/Flow';
-import { Home } from './components/Home';
-import { Uploader } from './components/Uploader';
+import { Sidebar } from './components/sidebar';
+import Flow from './components/flow';
+import { Home } from './components/home';
+import { Uploader } from './components/uploader';
 
 function App() {
   const [view, setView] = useState<'home' | 'ui' | 'upload'>('home');

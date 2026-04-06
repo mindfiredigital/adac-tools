@@ -6,6 +6,20 @@ import {
   ValidationResult,
 } from '@mindfiredigital/adac-schema';
 
+export interface CostBreakdown {
+  compute: number;
+  database: number;
+  storage: number;
+  networking: number;
+  total: number;
+  period: 'hourly' | 'daily' | 'monthly' | 'yearly';
+  perService?: Record<string, number>;
+}
+
+export interface AdacConfigWithCosts extends AdacConfig {
+  costs?: CostBreakdown;
+}
+
 export class AdacParseError extends Error {
   constructor(
     message: string,
@@ -23,8 +37,9 @@ export interface ParseOptions {
 export function parseAdacFromContent(
   content: string,
   options: ParseOptions = { validate: true }
-): AdacConfig {
+): AdacConfigWithCosts {
   let parsed: unknown;
+
   try {
     parsed = yaml.load(content);
   } catch (e: unknown) {
@@ -34,6 +49,7 @@ export function parseAdacFromContent(
 
   if (options.validate) {
     const validation: ValidationResult = validateAdacConfig(parsed);
+
     if (!validation.valid) {
       throw new AdacParseError('Schema validation failed', validation.errors);
     }
@@ -45,10 +61,12 @@ export function parseAdacFromContent(
 export function parseAdac(
   filePath: string,
   options: ParseOptions = { validate: true }
-): AdacConfig {
+): AdacConfigWithCosts {
   if (!fs.existsSync(filePath)) {
     throw new AdacParseError(`File not found: ${filePath}`);
   }
+
   const raw = fs.readFileSync(filePath, 'utf8');
+
   return parseAdacFromContent(raw, options);
 }

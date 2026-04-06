@@ -34,6 +34,7 @@ export interface AdacService {
   configuration?: Record<string, unknown>;
   cost?: Record<string, unknown>;
   monitoring?: Record<string, unknown>;
+  compliance?: string[];
   tags?: Record<string, string>;
   availability_zones?: string[];
   security_groups?: string[];
@@ -58,12 +59,43 @@ export interface AdacService {
 
 export interface AdacCloud {
   id: string;
-  provider: 'aws';
+  provider: 'aws' | 'gcp' | 'azure' | string;
   region: string;
   account_id?: string;
+  project_id?: string;
   vpc_id?: string;
   tier?: string;
   services: AdacService[];
+}
+
+export interface GcpService {
+  id: string;
+  service: string;
+  name?: string;
+  description?: string;
+  runs?: string[];
+  configuration?: Record<string, unknown>;
+  config?: Record<string, unknown>;
+  cost?: Record<string, unknown>;
+  monitoring?: Record<string, unknown>;
+  compliance?: string[];
+  tags?: Record<string, string>;
+  zone?: string;
+  region?: string;
+  project?: string;
+  visual?: {
+    icon?: string;
+    group?: string;
+    description?: string;
+  };
+  ai_tags?: {
+    icon?: string;
+    group?: string;
+    description?: string;
+    tags?: string[];
+  };
+  subtype?: string;
+  type?: string;
 }
 
 export interface AdacConnection {

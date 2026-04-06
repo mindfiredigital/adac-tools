@@ -82,19 +82,25 @@ infrastructure:
                 source_security_group: 'alb-sg'
 
         # ---------- Load Balancer ----------
+        # compliance: pci-dss requires logging enabled on ALB
         - id: 'alb'
           type: 'network'
           subtype: 'application-load-balancer'
+          compliance:
+            - pci-dss
+            - soc2
           config:
             subnets: ['public-subnet-a']
             security_groups: ['alb-sg']
             scheme: 'internet-facing'
+            loggingEnabled: true # satisfies log-01
 
         # ---------- ECS ----------
         - id: 'ecs-service'
           type: 'compute'
           subtype: 'ecs-fargate'
           runs: ['frontend', 'backend']
+          # No compliance declared — this service is skipped in compliance checks
           config:
             subnets: ['private-subnet-a']
             security_groups: ['ecs-sg']
@@ -109,10 +115,15 @@ infrastructure:
                 port: 8080
 
         # ---------- RDS ----------
+        # compliance: pci-dss, hipaa and soc2 checked per-service
         - id: 'rds-postgres'
           type: 'database'
           subtype: 'rds-postgres'
           runs: ['database']
+          compliance:
+            - pci-dss
+            - hipaa
+            - soc2
           config:
             engine_version: '14'
             instance_class: 'db.t3.micro'
@@ -120,6 +131,12 @@ infrastructure:
             subnets: ['private-subnet-a']
             security_groups: ['ecs-sg']
             multi_az: false
+            # Compliance config fields
+            encrypted: true # satisfies enc-01
+            publiclyAccessible: false # satisfies net-01
+            backupRetentionPeriod: 7 # satisfies bck-01
+          monitoring:
+            enabled: true # satisfies mon-01
 
 connections:
   - id: 'alb-to-frontend'

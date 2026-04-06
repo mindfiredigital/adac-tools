@@ -1,0 +1,32 @@
+{
+  "version": "0.1",
+  "metadata": {
+    "name": "Non Compliant Arch",
+    "created": "2026-02-26"
+  },
+  "infrastructure": {
+    "clouds": [
+      {
+        "id": "cloud-1",
+        "provider": "aws",
+        "region": "us-east-1",
+        "services": [
+          {
+            "id": "db-unsafe",
+            "service": "rds",
+            "name": "My Open DB",
+            "compliance": ["pci-dss"],
+            "config": {
+              "encrypted": false,
+              "publiclyAccessible": true,
+              "backupRetentionPeriod": 0
+            },
+            "monitoring": {
+              "enabled": false
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

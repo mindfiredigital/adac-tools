@@ -1,11 +1,27 @@
 {
   "name": "@mindfiredigital/adac-doc",
   "version": "0.0.1",
+  "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsc",
-    "test": "echo \"No tests specified\" && exit 0"
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "handlebars": "^4.7.8",
+    "marked": "^15.0.0",
+    "@mindfiredigital/adac-schema": "workspace:*",
+    "@mindfiredigital/adac-parser": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/handlebars": "^4.1.0",
+    "@types/marked": "^5.0.0",
+    "@types/node": "^22.0.0",
+    "vitest": "^4.0.18"
   },
   "license": "ISC"
 }

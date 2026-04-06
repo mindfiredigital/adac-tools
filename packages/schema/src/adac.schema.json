@@ -220,22 +220,23 @@
         },
         "provider": {
           "type": "string",
-          "description": "Cloud provider (aws, kubernetes, azure, gcp, etc.)"
+          "description": "Cloud provider (aws, gcp, azure, kubernetes, etc.)"
         },
         "region": {
           "type": "string",
-          "description": "Region or cluster identifier",
-          "pattern": "^[a-z]{2}-[a-z0-9-]+-[0-9]$"
+          "description": "Region or cluster identifier (AWS: us-east-1, GCP: us-central1, etc.)"
         },
         "account_id": {
           "type": "string",
-          "description": "AWS Account ID",
-          "pattern": "^[0-9]{12}$"
+          "description": "AWS Account ID"
+        },
+        "project_id": {
+          "type": "string",
+          "description": "GCP Project ID"
         },
         "vpc_id": {
           "type": "string",
-          "description": "VPC identifier",
-          "pattern": "^vpc-[a-z0-9-]+$"
+          "description": "VPC / network identifier"
         },
         "tier": {
           "type": "string",
@@ -251,9 +252,16 @@
         },
         "services": {
           "type": "array",
-          "description": "AWS services in this region",
+          "description": "Cloud services in this region",
           "items": {
-            "$ref": "#/$defs/aws_service"
+            "anyOf": [
+              {
+                "$ref": "#/$defs/aws_service"
+              },
+              {
+                "$ref": "#/$defs/gcp_service"
+              }
+            ]
           }
         }
       }
@@ -539,6 +547,21 @@
         "cost": {
           "$ref": "#/$defs/cost"
         },
+        "compliance": {
+          "type": "array",
+          "description": "Compliance frameworks this service should be validated against (e.g. pci-dss, hipaa)",
+          "items": {
+            "type": "string",
+            "enum": [
+              "pci-dss",
+              "hipaa",
+              "gdpr",
+              "soc2",
+              "iso27001",
+              "fedramp"
+            ]
+          }
+        },
         "monitoring": {
           "type": "object",
           "properties": {
@@ -785,7 +808,13 @@
         "monthly_estimate": {
           "type": "number",
           "minimum": 0,
-          "description": "Estimated monthly cost in USD"
+          "description": "Estimated cost for the selected period in USD"
+        },
+        "period": {
+          "type": "string",
+          "enum": ["monthly", "yearly", "weekly", "daily"],
+          "default": "monthly",
+          "description": "The period for which the cost estimate applies"
         },
         "currency": {
           "type": "string",
@@ -826,7 +855,13 @@
         "total_monthly": {
           "type": "number",
           "minimum": 0,
-          "description": "Total monthly cost"
+          "description": "Total cost for the selected period"
+        },
+        "period": {
+          "type": "string",
+          "enum": ["monthly", "yearly", "weekly", "daily"],
+          "default": "monthly",
+          "description": "The period for which the cost summary applies"
         },
         "currency": {
           "type": "string",
@@ -859,6 +894,190 @@
           "items": {
             "type": "string"
           }
+        }
+      }
+    },
+    "gcp_service": {
+      "type": "object",
+      "required": [
+        "id"
+      ],
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for this GCP service instance",
+          "pattern": "^[a-z0-9-]+$"
+        },
+        "service": {
+          "type": "string",
+          "description": "GCP service type",
+          "enum": [
+            "compute-engine",
+            "cloud-run",
+            "gke",
+            "google-kubernetes-engine",
+            "cloud-functions",
+            "cloud-run-functions",
+            "app-engine",
+            "batch",
+            "vmware-engine",
+            "bare-metal-solution",
+            "cloud-sql",
+            "cloud-spanner",
+            "firestore",
+            "bigtable",
+            "datastore",
+            "memorystore",
+            "alloydb",
+            "database-migration-service",
+            "cloud-storage",
+            "gcs",
+            "persistent-disk",
+            "filestore",
+            "backup-and-dr",
+            "virtual-private-cloud",
+            "vpc",
+            "cloud-load-balancing",
+            "cloud-dns",
+            "cloud-cdn",
+            "cloud-armor",
+            "cloud-nat",
+            "cloud-interconnect",
+            "cloud-vpn",
+            "traffic-director",
+            "network-connectivity-center",
+            "cloud-router",
+            "subnet",
+            "subnetwork",
+            "region",
+            "zone",
+            "project",
+            "pubsub",
+            "cloud-pub-sub",
+            "eventarc",
+            "cloud-tasks",
+            "cloud-scheduler",
+            "bigquery",
+            "dataflow",
+            "dataproc",
+            "cloud-composer",
+            "data-catalog",
+            "looker",
+            "looker-studio",
+            "dataplex",
+            "analytics-hub",
+            "vertex-ai",
+            "ai-platform",
+            "natural-language-api",
+            "vision-api",
+            "speech-to-text",
+            "cloud-translate",
+            "dialogflow",
+            "document-ai",
+            "recommendations-ai",
+            "cloud-iam",
+            "identity-aware-proxy",
+            "cloud-kms",
+            "secret-manager",
+            "security-command-center",
+            "certificate-authority-service",
+            "web-risk",
+            "access-context-manager",
+            "cloud-monitoring",
+            "cloud-logging",
+            "cloud-trace",
+            "cloud-profiler",
+            "error-reporting",
+            "cloud-debugger",
+            "cloud-build",
+            "artifact-registry",
+            "cloud-deploy",
+            "cloud-source-repositories",
+            "container-registry"
+          ]
+        },
+        "type": {
+          "type": "string"
+        },
+        "subtype": {
+          "type": "string"
+        },
+        "config": {
+          "type": "object"
+        },
+        "name": {
+          "type": "string",
+          "description": "Human-readable service name"
+        },
+        "description": {
+          "type": "string",
+          "description": "Service description"
+        },
+        "runs": {
+          "type": "array",
+          "description": "Application IDs that run on this service",
+          "items": {
+            "type": "string"
+          }
+        },
+        "zone": {
+          "type": "string",
+          "description": "GCP availability zone (e.g. us-central1-a)"
+        },
+        "region": {
+          "type": "string",
+          "description": "GCP region override (e.g. us-central1)"
+        },
+        "project": {
+          "type": "string",
+          "description": "GCP project reference"
+        },
+        "configuration": {
+          "type": "object",
+          "description": "Service-specific configuration"
+        },
+        "tags": {
+          "type": "object",
+          "description": "GCP resource labels",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "cost": {
+          "$ref": "#/$defs/cost"
+        },
+        "compliance": {
+          "type": "array",
+          "description": "Compliance frameworks this service should be validated against",
+          "items": {
+            "type": "string",
+            "enum": [
+              "pci-dss",
+              "hipaa",
+              "gdpr",
+              "soc2",
+              "iso27001",
+              "fedramp"
+            ]
+          }
+        },
+        "monitoring": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "metrics": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "visual": {
+          "$ref": "#/$defs/visual"
         }
       }
     }
