@@ -24,34 +24,17 @@ export interface CLIOptions {
     period?: CostPeriod
   ) => Promise<void>;
   calculateCostFromYaml?: (input: string) => CostBreakdown;
+  generateTerraformFromYaml?: (
+    input: string,
+    outputDir?: string,
+    validate?: boolean
+  ) => Promise<void>;
   parseAdac: (input: string, options?: Record<string, unknown>) => unknown;
   validateAdacConfig: (config: unknown) => {
     valid: boolean;
     errors?: string[];
   };
   version: string;
-}
-
-function printCostBreakdown(cost: CostBreakdown) {
-  const formatCurrency = (value: number) => `$${value.toFixed(2)}`;
-  const pct = (value: number) =>
-    cost.total > 0 ? Math.round((value / cost.total) * 100) : 0;
-
-  console.log(
-    `💰 Estimated ${cost.period.charAt(0).toUpperCase() + cost.period.slice(1)} Cost: ${formatCurrency(cost.total)}`
-  );
-  console.log(
-    `├─ Compute: ${formatCurrency(cost.compute)} (${pct(cost.compute)}%)`
-  );
-  console.log(
-    `├─ Database: ${formatCurrency(cost.database)} (${pct(cost.database)}%)`
-  );
-  console.log(
-    `├─ Storage: ${formatCurrency(cost.storage)} (${pct(cost.storage)}%)`
-  );
-  console.log(
-    `└─ Networking: ${formatCurrency(cost.networking)} (${pct(cost.networking)}%)`
-  );
 }
 
 function printCostBreakdown(cost: CostBreakdown) {
@@ -150,6 +133,16 @@ export function runCLI(options: CLIOptions) {
   program
     .command('cost <file>')
     .description('Calculate and print cost breakdown from ADAC YAML file')
+    .option(
+      '--pricing <model>',
+      'Pricing model (on_demand or reserved)',
+      'on_demand'
+    )
+    .option(
+      '--period <period>',
+      'Cost period (hourly, daily, monthly, yearly)',
+      'monthly'
+    )
     .action(async (file) => {
       try {
         const inputPath = path.resolve(process.cwd(), file);
@@ -190,6 +183,37 @@ export function runCLI(options: CLIOptions) {
       } catch (error: unknown) {
         const message = error instanceof Error ? error.message : String(error);
         console.error('Error validating file:', message);
+        process.exit(1);
+      }
+    });
+
+  program
+    .command('terraform <file>')
+    .description('Generate Terraform files from ADAC YAML file')
+    .option('-o, --output <dir>', 'Output directory for Terraform files')
+    .option('--validate', 'Validate schema before generating')
+    .action(async (file, opts) => {
+      try {
+        const inputPath = path.resolve(process.cwd(), file);
+        const outputDir = opts.output
+          ? path.resolve(process.cwd(), opts.output)
+          : undefined;
+
+        if (!options.generateTerraformFromYaml) {
+          throw new Error(
+            'Terraform generation is not available in this CLI build.'
+          );
+        }
+
+        console.log(`Generating Terraform from ${inputPath}...`);
+        await options.generateTerraformFromYaml(
+          inputPath,
+          outputDir,
+          Boolean(opts.validate)
+        );
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : String(error);
+        console.error('Error generating Terraform:', message);
         process.exit(1);
       }
     });
