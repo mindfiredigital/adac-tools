@@ -8,7 +8,8 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@mindfiredigital/adac-layout-core": "workspace:*"
+    "@mindfiredigital/adac-layout-core": "workspace:*",
+    "@mindfiredigital/adac-schema": "workspace:*"
   },
   "optionalDependencies": {
     "@mindfiredigital/adac-layout-elk": "workspace:*"

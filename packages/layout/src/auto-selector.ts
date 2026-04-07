@@ -1,11 +1,6 @@
-export interface AdacModel {
-  infrastructure?: {
-    clouds?: {
-      services?: Record<string, unknown>[];
-    }[];
-  };
-  connections?: Record<string, unknown>[];
-}
+import type { AdacConfig, AdacCloud } from '@mindfiredigital/adac-schema';
+
+export type AdacModel = Partial<Pick<AdacConfig, 'infrastructure' | 'connections'>>;
 
 /**
  * Analyzes the complexity of an AdacModel to determine if it requires advanced layout.
@@ -22,7 +17,7 @@ export function analyzeComplexity(model?: AdacModel): boolean {
 
   const nodeCount =
     model.infrastructure?.clouds?.reduce(
-      (sum, cloud) => sum + (cloud.services?.length || 0),
+      (sum: number, cloud: AdacCloud) => sum + (cloud.services?.length || 0),
       0
     ) || 0;
 
