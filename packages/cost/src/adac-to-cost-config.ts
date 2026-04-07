@@ -45,6 +45,12 @@ function getString(
   return fallback;
 }
 
+/**
+ * Maps ADAC service definitions to a cost configuration structure for calculation.
+ * @param services - Array of ADAC service definitions from the parsed YAML
+ * @param pricingModel - Pricing model to apply ('on_demand' or 'reserved')
+ * @returns CostConfig object with services categorized by compute, database, storage, and networking
+ */
 export function mapAdacServicesToCostConfig(
   services: AdacCostService[],
   pricingModel: PricingModel = 'on_demand'

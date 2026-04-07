@@ -4,6 +4,18 @@ import { AWSPricing } from '../pricing/aws-pricing';
 import type { CostConfig, CostPeriod } from '../types';
 import { convertCost, convertMonthlyCost } from '../utils/cost-converter';
 
+/**
+ * Calculates AWS compute costs for EC2, ECS, and Lambda services.
+ *
+ * Supports on-demand and spot pricing models, and aggregates costs
+ * across multiple service instances for a given time period.
+ *
+ * @example
+ * ```ts
+ * const calculator = new ComputeCalculator(awsPricing);
+ * const monthlyCost = calculator.calculate(costConfig, 'monthly');
+ * ```
+ */
 export class ComputeCalculator {
   private pricing: AWSPricing;
 

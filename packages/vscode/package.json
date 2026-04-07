@@ -1,23 +1,161 @@
 {
-  "name": "@mindfiredigital/adac-vscode",
+  "name": "adac-vscode",
+  "displayName": "ADAC - Architecture Diagram as Code",
+  "description": "Full IDE support for ADAC (.adac.yaml) files: syntax highlighting, IntelliSense, validation, diagram preview, and more.",
   "version": "0.0.1",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
-  "scripts": {
-    "build": "tsc",
-    "test": "echo \"No tests specified\""
-  },
-  "license": "ISC",
+  "publisher": "mindfiredigital",
   "repository": {
     "type": "git",
-    "url": "https://github.com/mindfiredigital/adac-tools.git",
-    "directory": "packages/vscode"
+    "url": "https://github.com/mindfiredigital/adac-tools.git"
   },
-  "publishConfig": {
-    "access": "public",
-    "registry": "https://npm.pkg.github.com"
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.85.0"
   },
-  "files": [
-    "dist"
-  ]
+  "categories": [
+    "Programming Languages",
+    "Linters",
+    "Visualization",
+    "Snippets",
+    "Other"
+  ],
+  "keywords": [
+    "adac",
+    "aws",
+    "diagram",
+    "mindfiredigital"
+  ],
+  "activationEvents": [
+    "onLanguage:adac-yaml",
+    "workspaceContains:**/*.adac.yaml",
+    "workspaceContains:**/*.adac.yml"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "adac-yaml",
+        "aliases": [
+          "ADAC YAML",
+          "adac"
+        ],
+        "extensions": [
+          ".adac.yaml",
+          ".adac.yml"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "adac-yaml",
+        "scopeName": "source.adac.yaml",
+        "path": "./syntaxes/adac.tmLanguage.json"
+      }
+    ],
+    "snippets": [
+      {
+        "language": "adac-yaml",
+        "path": "./snippets/adac.json"
+      }
+    ],
+    "commands": [
+      {
+        "command": "adac.validate",
+        "title": "ADAC: Validate Current File",
+        "icon": "$(check-all)"
+      },
+      {
+        "command": "adac.previewDiagram",
+        "title": "ADAC: Preview Diagram",
+        "icon": "$(open-preview)"
+      },
+      {
+        "command": "adac.formatDocument",
+        "title": "ADAC: Format Document",
+        "icon": "$(edit)"
+      }
+    ],
+    "menus": {
+      "editor/title": [
+        {
+          "when": "(resourceExtname == '.yaml' || resourceExtname == '.yml') && resourceFilename =~ /\\.adac\\.ya?ml$/",
+          "command": "adac.previewDiagram",
+          "group": "navigation"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "adac.validate",
+          "when": "editorLangId == adac-yaml"
+        },
+        {
+          "command": "adac.previewDiagram",
+          "when": "editorLangId == adac-yaml"
+        },
+        {
+          "command": "adac.formatDocument",
+          "when": "editorLangId == adac-yaml"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "ADAC",
+      "properties": {
+        "adac.validation.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable real-time ADAC file validation"
+        },
+        "adac.validation.onSave": {
+          "type": "boolean",
+          "default": true,
+          "description": "Validate ADAC files on save"
+        },
+        "adac.validation.onType": {
+          "type": "boolean",
+          "default": true,
+          "description": "Validate ADAC files as you type (with debounce)"
+        },
+        "adac.diagram.theme": {
+          "type": "string",
+          "default": "auto",
+          "enum": [
+            "auto",
+            "light",
+            "dark"
+          ],
+          "description": "Diagram preview theme"
+        },
+        "adac.diagram.layoutEngine": {
+          "type": "string",
+          "default": "elk",
+          "enum": [
+            "elk",
+            "dagre"
+          ],
+          "description": "Layout engine for diagram preview"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "pnpm run build",
+    "build": "node esbuild.js --production",
+    "watch": "node esbuild.js --watch",
+    "test": "vitest run",
+    "prepublishOnly": "npm run build",
+    "package": "npx @vscode/vsce package --no-dependencies",
+    "publish": "npx @vscode/vsce publish --no-dependencies"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.85.0",
+    "@vscode/vsce": "^3.7.1",
+    "esbuild": "^0.24.2"
+  },
+  "dependencies": {
+    "@mindfiredigital/adac-core": "workspace:*",
+    "js-yaml": "^4.1.1"
+  },
+  "author": "Mindfire Digital"
 }

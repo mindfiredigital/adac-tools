@@ -46,6 +46,4 @@ const config: CostConfig = {
   ],
 };
 
-const result = calculator.calculate(config);
-
-console.log(result);
+calculator.calculate(config);

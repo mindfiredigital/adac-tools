@@ -1,6 +1,10 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Upload, FileText, ArrowRight, Loader } from 'lucide-react';
 
+/**
+ * Uploader component for ADAC YAML files.
+ * Handles file reading, basic validation, and passing content to the editor.
+ */
 interface UploaderProps {
   onBack: () => void;
 }

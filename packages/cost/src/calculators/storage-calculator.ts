@@ -2,6 +2,11 @@ import { AWSPricing } from '../pricing/aws-pricing';
 import type { CostConfig, CostPeriod } from '../types';
 import { convertMonthlyCost } from '../utils/cost-converter';
 
+/**
+ * Calculates AWS storage costs for S3 and EBS services.
+ * @description Computes storage costs based on pricing models (on-demand/reserved)
+ * and converts to the specified time period (hourly, daily, monthly, yearly).
+ */
 export class StorageCalculator {
   private pricing: AWSPricing;
 
