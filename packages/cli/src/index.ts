@@ -23,7 +23,11 @@ export interface CLIOptions {
     pricingModel?: PricingModel,
     period?: CostPeriod
   ) => Promise<void>;
-  calculateCostFromYaml?: (input: string) => CostBreakdown;
+  calculateCostFromYaml?: (
+    input: string,
+    period?: CostPeriod,
+    pricingModel?: PricingModel
+  ) => CostBreakdown;
   generateTerraformFromYaml?: (
     input: string,
     outputDir?: string,
@@ -96,7 +100,11 @@ export function runCLI(options: CLIOptions) {
                 'Cost calculation is not available in this CLI build.'
               );
             }
-            const cost = options.calculateCostFromYaml(inputPath);
+            const cost = options.calculateCostFromYaml(
+              inputPath,
+              opts.period,
+              opts.pricing
+            );
             printCostBreakdown(cost);
           } catch (err) {
             const msg = err instanceof Error ? err.message : String(err);
@@ -143,7 +151,7 @@ export function runCLI(options: CLIOptions) {
       'Cost period (hourly, daily, monthly, yearly)',
       'monthly'
     )
-    .action(async (file) => {
+    .action(async (file, opts) => {
       try {
         const inputPath = path.resolve(process.cwd(), file);
         if (!options.calculateCostFromYaml) {
@@ -152,7 +160,11 @@ export function runCLI(options: CLIOptions) {
           );
         }
 
-        const cost = options.calculateCostFromYaml(inputPath);
+        const cost = options.calculateCostFromYaml(
+          inputPath,
+          opts.period,
+          opts.pricing
+        );
         printCostBreakdown(cost);
       } catch (error: unknown) {
         const message = error instanceof Error ? error.message : String(error);

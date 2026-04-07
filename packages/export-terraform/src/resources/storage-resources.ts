@@ -57,7 +57,7 @@ export function mapStorageServices(
       outputs.push({
         name: `${service.id}_name`,
         description: `Bucket name for ${service.id}`,
-        value: terraformRef('aws_s3_bucket', service.id, 'bucket'),
+        value: terraformRef('aws_s3_bucket', resourceLabel, 'bucket'),
       });
     }
   }
