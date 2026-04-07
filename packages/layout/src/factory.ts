@@ -34,11 +34,15 @@ export async function createLayoutEngine(
       const { ElkLayoutEngine } = await import('@mindfiredigital/adac-layout-elk');
       return new ElkLayoutEngine(options);
     } catch (error) {
-      console.warn(
-        'ELK layout engine is unavailable. Install @mindfiredigital/adac-layout-elk to use the elk engine. Falling back to custom engine.',
-        error
-      );
-      return new CustomLayoutEngineAdapter(options);
+      const errCode = (error as any)?.code;
+      if (errCode === 'ERR_MODULE_NOT_FOUND' || errCode === 'MODULE_NOT_FOUND') {
+        console.warn(
+          'ELK layout engine is unavailable. Install @mindfiredigital/adac-layout-elk to use the elk engine. Falling back to custom engine.',
+          error
+        );
+        return new CustomLayoutEngineAdapter(options);
+      }
+      throw error;
     }
   }
 

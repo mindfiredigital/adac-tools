@@ -9,7 +9,7 @@ export interface AdacModel {
 
 /**
  * Analyzes the complexity of an AdacModel to determine if it requires advanced layout.
- * Uses node and edge counts to compute a complexity score.
+ * Checks node and edge counts against defined complexity thresholds.
  * 
  * @param model - The AdacModel to analyze.
  * @returns true if the model layout is complex and requires advanced engines, false otherwise.
