@@ -17,7 +17,8 @@ export interface AdacModel {
 export function analyzeComplexity(model?: AdacModel): boolean {
   if (!model) return false;
 
-  let score = 0;
+  const COMPLEX_NODE_THRESHOLD = 200;
+  const COMPLEX_EDGE_THRESHOLD = 300;
 
   const nodeCount =
     model.infrastructure?.clouds?.reduce(
@@ -25,12 +26,9 @@ export function analyzeComplexity(model?: AdacModel): boolean {
       0
     ) || 0;
 
-  if (nodeCount > 200) score += 20;
-
   const edgeCount = model.connections?.length || 0;
-  if (edgeCount > 300) score += 20;
 
-  // We return true if score >= 20, meaning at least one boundary
-  // was broken (i.e. more than 200 nodes OR more than 300 edges).
-  return score >= 20;
+  // We return true if either the node count or the edge count
+  // exceeds the established threshold, making the layout complex.
+  return nodeCount > COMPLEX_NODE_THRESHOLD || edgeCount > COMPLEX_EDGE_THRESHOLD;
 }

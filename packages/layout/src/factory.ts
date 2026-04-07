@@ -34,7 +34,10 @@ export async function createLayoutEngine(
       const { ElkLayoutEngine } = await import('@mindfiredigital/adac-layout-elk');
       return new ElkLayoutEngine(options);
     } catch (error) {
-      console.warn('ELK layout engine is unavailable. Install @mindfiredigital/adac-layout-elk to use the elk engine. Falling back to custom engine.');
+      console.warn(
+        'ELK layout engine is unavailable. Install @mindfiredigital/adac-layout-elk to use the elk engine. Falling back to custom engine.',
+        error
+      );
       return new CustomLayoutEngineAdapter(options);
     }
   }

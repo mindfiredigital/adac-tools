@@ -9,7 +9,7 @@ import { orderNodes } from './algorithms/node-ordering';
 import { assignCoordinates } from './algorithms/coordinate-assignment';
 import { routeEdges } from './algorithms/edge-routing';
 
-import { LayoutOptions, NodePosition, EdgePath } from './types';
+import { LayoutOptions, NodePosition, EdgePath, NodeData, EdgeData } from './types';
 
 /**
  * CustomLayoutEngine
@@ -36,14 +36,14 @@ export class CustomLayoutEngine {
   /**
    * Add node
    */
-  addNode(id: string, data: { width: number; height: number; [key: string]: unknown }) {
+  addNode(id: string, data: NodeData) {
     this.graph.addNode(id, data);
   }
 
   /**
    * Add edge
    */
-  addEdge(from: string, to: string, data?: Record<string, unknown>) {
+  addEdge(from: string, to: string, data?: EdgeData) {
     this.graph.addEdge(from, to, data);
   }
 
