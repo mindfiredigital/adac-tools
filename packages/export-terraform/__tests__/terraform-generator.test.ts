@@ -156,7 +156,9 @@ infrastructure:
       'gcs-default-region-test.adac.yaml'
     );
 
-    expect(result.mainTf).toContain('provider "google" {\n  region = "us-central1"\n}');
+    expect(result.mainTf).toContain(
+      'provider "google" {\n  region = "us-central1"\n}'
+    );
     expect(result.variablesTf).toContain('default = "us-central1"');
   });
 
@@ -173,7 +175,9 @@ infrastructure:
       { provider: 'gcp' }
     );
 
-    expect(result.mainTf).toContain('provider "google" {\n  region = "us-central1"\n}');
+    expect(result.mainTf).toContain(
+      'provider "google" {\n  region = "us-central1"\n}'
+    );
     expect(result.diagnostics).toContain('Provider gcp');
     expect(result.diagnostics).toContain('Processed 0 services');
   });
@@ -273,6 +277,8 @@ infrastructure:
           config:
             cpu: 512
             memory: 1024
+            subnets: ['private-subnet-a']
+            security_groups: ['ecs-sg']
             containers:
               - name: 'api'
                 image: 'example/api:1.2.3'
