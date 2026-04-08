@@ -29,6 +29,11 @@ export type CLIOptions = {
     period?: CostPeriod,
     pricingModel?: PricingModel
   ) => CostBreakdown;
+  generateTerraformFromYaml?: (
+    input: string,
+    outputDir?: string,
+    validate?: boolean
+  ) => Promise<void>;
   parseAdac: (input: string, options?: Record<string, unknown>) => unknown;
   validateAdacConfig: (config: unknown) => {
     valid: boolean;
@@ -213,6 +218,37 @@ export function runCLI(options: CLIOptions) {
       } catch (error: unknown) {
         const message = error instanceof Error ? error.message : String(error);
         console.error('Error validating file:', message);
+        process.exit(1);
+      }
+    });
+
+  program
+    .command('terraform <file>')
+    .description('Generate Terraform files from ADAC YAML file')
+    .option('-o, --output <dir>', 'Output directory for Terraform files')
+    .option('--validate', 'Validate schema before generating')
+    .action(async (file, opts) => {
+      try {
+        const inputPath = path.resolve(process.cwd(), file);
+        const outputDir = opts.output
+          ? path.resolve(process.cwd(), opts.output)
+          : undefined;
+
+        if (!options.generateTerraformFromYaml) {
+          throw new Error(
+            'Terraform generation is not available in this CLI build.'
+          );
+        }
+
+        console.log(`Generating Terraform from ${inputPath}...`);
+        await options.generateTerraformFromYaml(
+          inputPath,
+          outputDir,
+          Boolean(opts.validate)
+        );
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : String(error);
+        console.error('Error generating Terraform:', message);
         process.exit(1);
       }
     });
