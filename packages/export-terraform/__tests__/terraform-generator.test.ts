@@ -1,12 +1,29 @@
-import { mkdtempSync, writeFileSync } from 'fs';
+import { mkdtempSync, rmSync, writeFileSync } from 'fs';
 import { execFileSync } from 'child_process';
 import { join, resolve } from 'path';
 import { tmpdir } from 'os';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { generateTerraformFromAdacFile } from '../src/terraform-generator.js';
 
 const YAMLS_DIR = resolve(join(import.meta.dirname, '../../../yamls'));
 const TEMP_DIR_PREFIX = join(tmpdir(), 'adac-export-terraform-');
+const tempDirs: string[] = [];
+
+function createTempDir(): string {
+  const tempDir = mkdtempSync(TEMP_DIR_PREFIX);
+  tempDirs.push(tempDir);
+  return tempDir;
+}
+
+afterEach(() => {
+  while (tempDirs.length > 0) {
+    const tempDir = tempDirs.pop();
+
+    if (tempDir) {
+      rmSync(tempDir, { recursive: true, force: true });
+    }
+  }
+});
 
 function hasTerraformCli(): boolean {
   try {
@@ -22,7 +39,7 @@ function generateTerraformFromYaml(
   fileName: string,
   options?: Parameters<typeof generateTerraformFromAdacFile>[1]
 ) {
-  const tempDir = mkdtempSync(TEMP_DIR_PREFIX);
+  const tempDir = createTempDir();
   const filePath = join(tempDir, fileName);
   writeFileSync(filePath, yamlContent);
   return generateTerraformFromAdacFile(filePath, {
@@ -119,6 +136,46 @@ infrastructure:
 
     expect(result.variablesTf).toContain('variable "gcp_region"');
     expect(result.variablesTf).toContain('default = "europe-west1"');
+  });
+
+  it('defaults GCP region to us-central1 when a selected cloud omits region', () => {
+    const result = generateTerraformFromYaml(
+      `
+version: '0.1'
+metadata:
+  name: 'GCS Default Region Test'
+infrastructure:
+  clouds:
+    - id: 'gcp-primary'
+      provider: 'gcp'
+      services:
+        - id: 'artifact-bucket-default'
+          type: 'storage'
+          subtype: 'gcs'
+`,
+      'gcs-default-region-test.adac.yaml'
+    );
+
+    expect(result.mainTf).toContain('provider "google" {\n  region = "us-central1"\n}');
+    expect(result.variablesTf).toContain('default = "us-central1"');
+  });
+
+  it('defaults GCP region to us-central1 when no clouds are defined but provider is gcp', () => {
+    const result = generateTerraformFromYaml(
+      `
+version: '0.1'
+metadata:
+  name: 'No Clouds GCP Test'
+infrastructure:
+  clouds: []
+`,
+      'no-clouds-gcp-test.adac.yaml',
+      { provider: 'gcp' }
+    );
+
+    expect(result.mainTf).toContain('provider "google" {\n  region = "us-central1"\n}');
+    expect(result.diagnostics).toContain('Provider gcp');
+    expect(result.diagnostics).toContain('Processed 0 services');
   });
 
   it('generates GCP subnets with a required network reference', () => {
@@ -651,7 +708,7 @@ infrastructure:
     const result = generateTerraformFromAdacFile(
       join(YAMLS_DIR, 'aws.adac.yaml')
     );
-    const tempDir = mkdtempSync(TEMP_DIR_PREFIX);
+    const tempDir = createTempDir();
 
     writeFileSync(join(tempDir, 'main.tf'), result.mainTf);
     writeFileSync(join(tempDir, 'variables.tf'), result.variablesTf);
@@ -702,7 +759,7 @@ infrastructure:
   clouds: []
 `;
 
-    const tempDir = mkdtempSync(TEMP_DIR_PREFIX);
+    const tempDir = createTempDir();
     const filePath = join(tempDir, 'invalid-schema-test.adac.yaml');
     writeFileSync(filePath, invalidSchemaYaml);
 

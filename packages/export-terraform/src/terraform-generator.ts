@@ -154,10 +154,20 @@ function renderModuleBlock(service: AdacService): string | undefined {
     );
   }
 
+  if (moduleRecord.inputs !== undefined) {
+    if (
+      !moduleRecord.inputs ||
+      typeof moduleRecord.inputs !== 'object' ||
+      Array.isArray(moduleRecord.inputs)
+    ) {
+      throw new Error(
+        `Service "${service.id}" has an invalid config.module.inputs value. Expected an object.`
+      );
+    }
+  }
+
   const inputs =
-    moduleRecord.inputs && typeof moduleRecord.inputs === 'object'
-      ? (moduleRecord.inputs as Record<string, unknown>)
-      : {};
+    (moduleRecord.inputs as Record<string, unknown> | undefined) ?? {};
 
   const body = [
     `source = ${hclString(source)}`,
@@ -230,6 +240,10 @@ function normalizeCloudProvider(value: unknown): CloudProvider {
   );
 }
 
+function defaultRegionForProvider(provider: CloudProvider): string {
+  return provider === 'gcp' ? 'us-central1' : 'us-east-1';
+}
+
 /**
  * Normalizes services from the ADAC config based on the provided options.
  * It selects the appropriate cloud configuration and extracts services, provider, and region information.
@@ -241,9 +255,15 @@ function normalizeServicesFromAdac(
   const clouds = adacConfig.infrastructure?.clouds ?? [];
 
   const selectedCloud =
-    (options.cloudId
+    options.cloudId !== undefined
       ? clouds.find((cloud) => cloud.id === options.cloudId)
-      : undefined) ?? clouds[0];
+      : clouds[0];
+
+  if (options.cloudId !== undefined && !selectedCloud) {
+    throw new Error(
+      `Cloud "${options.cloudId}" was not found in infrastructure.clouds.`
+    );
+  }
 
   if (!selectedCloud) {
     if (!options.provider) {
@@ -252,13 +272,16 @@ function normalizeServicesFromAdac(
     return {
       services: [],
       provider: options.provider,
-      region: options.region ?? 'us-east-1',
+      region: options.region ?? defaultRegionForProvider(options.provider),
     };
   }
 
   const provider =
     options.provider ?? normalizeCloudProvider(selectedCloud.provider);
-  const region = options.region ?? selectedCloud.region ?? 'us-east-1';
+  const region =
+    options.region ??
+    selectedCloud.region ??
+    defaultRegionForProvider(provider);
 
   const services: AdacService[] = (selectedCloud.services ?? [])
     .map((service) => {
@@ -289,7 +312,7 @@ function generateTerraformFromServices(
   options: Pick<TerraformFromAdacOptions, 'provider' | 'region'> = {}
 ): TerraformGenerationResult {
   const provider = options.provider ?? 'aws';
-  const region = options.region ?? 'us-east-1';
+  const region = options.region ?? defaultRegionForProvider(provider);
   const renderedModuleBlocks = services.map((service) => ({
     service,
     moduleBlock: renderModuleBlock(service),

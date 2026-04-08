@@ -12,6 +12,7 @@ export default defineConfig({
   noExternal: [
     '@mindfiredigital/adac-core',
     '@mindfiredigital/adac-cli',
+    '@mindfiredigital/adac-cost',
     '@mindfiredigital/adac-export-terraform',
   ],
   // Keep these as external dependencies

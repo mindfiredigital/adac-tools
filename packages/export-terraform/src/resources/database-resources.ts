@@ -192,8 +192,15 @@ export function mapDatabaseServices(
       const tier = (cfg.tier as string | undefined) ?? 'db-f1-micro';
 
       resources.push(
-        `resource "google_sql_database_instance" "${resourceLabel}" {\n  name             = "${service.id}"\n  database_version = "${dbVersion}"\n\n  settings {\n    tier = "${tier}"\n  }\n}`
+        `resource "google_sql_database_instance" "${resourceLabel}" {\n  name             = "${service.id}"\n  region           = var.gcp_region\n  database_version = "${dbVersion}"\n\n  settings {\n    tier = "${tier}"\n  }\n}`
       );
+
+      variables.push({
+        name: 'gcp_region',
+        type: 'string',
+        description: 'GCP region for resources',
+        default: 'us-central1',
+      });
 
       outputs.push({
         name: `${service.id}_connection_name`,

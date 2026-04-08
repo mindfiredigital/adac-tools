@@ -96,7 +96,9 @@ function toEcsContainerDefinitions(value: unknown, serviceId: string): string {
               ? item.name
               : undefined,
           value:
-            typeof item.value === 'string' || typeof item.value === 'number'
+            typeof item.value === 'string' ||
+            typeof item.value === 'number' ||
+            typeof item.value === 'boolean'
               ? String(item.value)
               : '',
         }))
@@ -206,6 +208,11 @@ export function mapComputeServices(
             .filter((subnet): subnet is string => typeof subnet === 'string')
             .map((subnet) => terraformRef('aws_subnet', subnet, 'id'))
         : [];
+      if (subnets.length === 0) {
+        throw new Error(
+          `ECS service "${service.id}" must define at least one subnet for awsvpc network mode.`
+        );
+      }
       const securityGroups = Array.isArray(service.config?.security_groups)
         ? service.config.security_groups
             .filter((sg): sg is string => typeof sg === 'string')

@@ -246,6 +246,9 @@ export function runCLI(options: CLIOptions) {
           outputDir,
           opts.validate
         );
+        console.log(
+          `Terraform successfully generated${outputDir ? ` in ${outputDir}` : '.'}`
+        );
       } catch (error: unknown) {
         const message = error instanceof Error ? error.message : String(error);
         console.error('Error generating Terraform:', message);
