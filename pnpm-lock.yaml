@@ -335,6 +335,10 @@ importers:
       '@mindfiredigital/adac-schema':
         specifier: workspace:*
         version: link:../schema
+    devDependencies:
+      vitest:
+        specifier: ^4.0.18
+        version: 4.0.18(@edge-runtime/vm@3.2.0)(@types/node@25.3.0)(@vitest/ui@4.1.1)(jiti@2.6.1)(jsdom@29.0.1)(tsx@4.21.0)
     optionalDependencies:
       '@mindfiredigital/adac-layout-elk':
         specifier: workspace:*

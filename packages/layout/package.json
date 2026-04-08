@@ -7,6 +7,9 @@
     "build": "tsc",
     "test": "vitest run"
   },
+  "devDependencies": {
+    "vitest": "^4.0.18"
+  },
   "dependencies": {
     "@mindfiredigital/adac-layout-core": "workspace:*",
     "@mindfiredigital/adac-schema": "workspace:*"
