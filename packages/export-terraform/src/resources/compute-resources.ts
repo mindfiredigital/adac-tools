@@ -25,86 +25,92 @@ type EcsContainerConfig = {
  * Converts an array of container configs into ECS-compatible container definitions JSON.
  */
 function toEcsContainerDefinitions(value: unknown, serviceId: string): string {
-  const containers = Array.isArray(value) ? value : [];
-  const definitions = containers
-    .filter(
-      (container): container is EcsContainerConfig =>
-        typeof container === 'object' && container !== null
-    )
-    .map((container, index) => {
-      const definition: Record<string, unknown> = {
-        name:
-          typeof container.name === 'string' && container.name.length > 0
-            ? container.name
-            : `${serviceId}-${index + 1}`,
-        image:
-          typeof container.image === 'string' && container.image.length > 0
-            ? container.image
-            : 'nginx:latest',
-        essential:
-          typeof container.essential === 'boolean' ? container.essential : true,
-      };
+  if (!Array.isArray(value) || value.length === 0) {
+    throw new Error(
+      `ECS service "${serviceId}" must define at least one container with a valid image.`
+    );
+  }
 
-      if (typeof container.cpu === 'number') {
-        definition.cpu = container.cpu;
+  const definitions = value.map((container, index) => {
+    if (typeof container !== 'object' || container === null) {
+      throw new Error(
+        `ECS service "${serviceId}" contains an invalid container entry at index ${index}.`
+      );
+    }
+
+    const typedContainer = container as EcsContainerConfig;
+
+    if (
+      typeof typedContainer.image !== 'string' ||
+      typedContainer.image.trim().length === 0
+    ) {
+      throw new Error(
+        `ECS service "${serviceId}" container at index ${index} must define a non-empty image.`
+      );
+    }
+
+    const definition: Record<string, unknown> = {
+      name:
+        typeof typedContainer.name === 'string' &&
+        typedContainer.name.length > 0
+          ? typedContainer.name
+          : `${serviceId}-${index + 1}`,
+      image: typedContainer.image,
+      essential:
+        typeof typedContainer.essential === 'boolean'
+          ? typedContainer.essential
+          : true,
+    };
+
+    if (typeof typedContainer.cpu === 'number') {
+      definition.cpu = typedContainer.cpu;
+    }
+
+    if (typeof typedContainer.memory === 'number') {
+      definition.memory = typedContainer.memory;
+    }
+
+    if (typeof typedContainer.port === 'number') {
+      definition.portMappings = [
+        {
+          containerPort: typedContainer.port,
+          hostPort: typedContainer.port,
+          protocol: 'tcp',
+        },
+      ];
+    }
+
+    if (Array.isArray(typedContainer.environment)) {
+      const environment = typedContainer.environment
+        .filter(
+          (
+            item
+          ): item is {
+            name?: unknown;
+            value?: unknown;
+          } => typeof item === 'object' && item !== null
+        )
+        .map((item) => ({
+          name:
+            typeof item.name === 'string' && item.name.length > 0
+              ? item.name
+              : undefined,
+          value:
+            typeof item.value === 'string' || typeof item.value === 'number'
+              ? String(item.value)
+              : '',
+        }))
+        .filter((item) => item.name);
+
+      if (environment.length > 0) {
+        definition.environment = environment;
       }
+    }
 
-      if (typeof container.memory === 'number') {
-        definition.memory = container.memory;
-      }
+    return definition;
+  });
 
-      if (typeof container.port === 'number') {
-        definition.portMappings = [
-          {
-            containerPort: container.port,
-            hostPort: container.port,
-            protocol: 'tcp',
-          },
-        ];
-      }
-
-      if (Array.isArray(container.environment)) {
-        const environment = container.environment
-          .filter(
-            (
-              item
-            ): item is {
-              name?: unknown;
-              value?: unknown;
-            } => typeof item === 'object' && item !== null
-          )
-          .map((item) => ({
-            name:
-              typeof item.name === 'string' && item.name.length > 0
-                ? item.name
-                : undefined,
-            value:
-              typeof item.value === 'string' || typeof item.value === 'number'
-                ? String(item.value)
-                : '',
-          }))
-          .filter((item) => item.name);
-
-        if (environment.length > 0) {
-          definition.environment = environment;
-        }
-      }
-
-      return definition;
-    });
-
-  const containerDefinitions =
-    definitions.length > 0
-      ? definitions
-      : [
-          {
-            name: serviceId,
-            image: 'nginx:latest',
-            essential: true,
-          },
-        ];
-
-  return JSON.stringify(containerDefinitions, null, 2);
+  return JSON.stringify(definitions, null, 2);
 }
 
 /**

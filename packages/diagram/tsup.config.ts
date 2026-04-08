@@ -9,7 +9,11 @@ export default defineConfig({
   sourcemap: true,
   minify: false,
   // Bundle internal workspace packages
-  noExternal: ['@mindfiredigital/adac-core', '@mindfiredigital/adac-cli'],
+  noExternal: [
+    '@mindfiredigital/adac-core',
+    '@mindfiredigital/adac-cli',
+    '@mindfiredigital/adac-export-terraform',
+  ],
   // Keep these as external dependencies
   external: ['elkjs', 'fs-extra'],
   // Fix for __dirname in bundled code

@@ -13,7 +13,8 @@ import { terraformLabel, terraformRef } from '../utils/terraform-names.js';
  */
 export function mapStorageServices(
   services: AdacService[],
-  provider: CloudProvider
+  provider: CloudProvider,
+  region?: string
 ): TerraformResourceMapping {
   const resources: string[] = [];
   const variables: TerraformVariable[] = [];
@@ -39,7 +40,7 @@ export function mapStorageServices(
         name: 'gcp_region',
         type: 'string',
         description: 'GCP region for resources',
-        default: 'us-central1',
+        default: region ?? 'us-central1',
       });
 
       outputs.push({

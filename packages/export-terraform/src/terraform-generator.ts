@@ -82,6 +82,10 @@ function renderOutputsBlock(outputs: TerraformOutput[]): string {
     .join('\n\n');
 }
 
+function renderHclObjectKey(key: string): string {
+  return /^[A-Za-z_][A-Za-z0-9_]*$/.test(key) ? key : hclString(key);
+}
+
 function renderModuleValue(value: unknown): string {
   if (
     value &&
@@ -119,7 +123,8 @@ function renderModuleValue(value: unknown): string {
 
     return `{\n${entries
       .map(
-        ([key, entryValue]) => `    ${key} = ${renderModuleValue(entryValue)}`
+        ([key, entryValue]) =>
+          `    ${renderHclObjectKey(key)} = ${renderModuleValue(entryValue)}`
       )
       .join('\n')}\n  }`;
   }
@@ -130,15 +135,23 @@ function renderModuleValue(value: unknown): string {
 function renderModuleBlock(service: AdacService): string | undefined {
   const moduleConfig = service.config?.module;
 
-  if (!moduleConfig || typeof moduleConfig !== 'object') {
+  if (moduleConfig === undefined) {
     return undefined;
+  }
+
+  if (!moduleConfig || typeof moduleConfig !== 'object') {
+    throw new Error(
+      `Service "${service.id}" has an invalid config.module value. Expected an object with a non-empty source.`
+    );
   }
 
   const moduleRecord = moduleConfig as Record<string, unknown>;
   const source = moduleRecord.source;
 
   if (typeof source !== 'string' || source.length === 0) {
-    return undefined;
+    throw new Error(
+      `Service "${service.id}" declares config.module but is missing a non-empty module source.`
+    );
   }
 
   const inputs =
@@ -208,7 +221,13 @@ function mapServiceToTypeAndSubtype(
 }
 
 function normalizeCloudProvider(value: unknown): CloudProvider {
-  return value === 'gcp' ? 'gcp' : 'aws';
+  if (value === 'aws' || value === 'gcp') {
+    return value;
+  }
+
+  throw new Error(
+    `Unsupported cloud provider: ${String(value)}. Expected "aws" or "gcp".`
+  );
 }
 
 /**
@@ -271,14 +290,15 @@ function generateTerraformFromServices(
 ): TerraformGenerationResult {
   const provider = options.provider ?? 'aws';
   const region = options.region ?? 'us-east-1';
-  const moduleServices = services.filter((service) =>
-    renderModuleBlock(service)
-  );
-  const standardServices = services.filter(
-    (service) => !renderModuleBlock(service)
-  );
-  const moduleResources = moduleServices
-    .map((service) => renderModuleBlock(service))
+  const renderedModuleBlocks = services.map((service) => ({
+    service,
+    moduleBlock: renderModuleBlock(service),
+  }));
+  const standardServices = renderedModuleBlocks
+    .filter((entry) => entry.moduleBlock === undefined)
+    .map((entry) => entry.service);
+  const moduleResources = renderedModuleBlocks
+    .map((entry) => entry.moduleBlock)
     .filter((resource): resource is string => typeof resource === 'string');
 
   const mapping = mergeMappings(
@@ -289,7 +309,7 @@ function generateTerraformFromServices(
     },
     mapNetworkingServices(standardServices, provider),
     mapComputeServices(standardServices, provider),
-    mapStorageServices(standardServices, provider),
+    mapStorageServices(standardServices, provider, region),
     mapDatabaseServices(standardServices, provider)
   );
 

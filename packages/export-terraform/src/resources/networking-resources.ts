@@ -162,9 +162,23 @@ export function mapNetworkingServices(
 
       if (service.subtype === 'subnet') {
         const cidr = (cfg.cidr as string | undefined) ?? '10.0.0.0/24';
+        const network =
+          typeof cfg.network === 'string'
+            ? cfg.network
+            : typeof cfg.vpc === 'string'
+              ? cfg.vpc
+              : undefined;
+
+        if (!network) {
+          throw new Error(
+            `GCP subnet service "${service.id}" must define config.network referencing a VPC service.`
+          );
+        }
+
+        const networkId = terraformRef('google_compute_network', network, 'id');
 
         resources.push(
-          `resource "google_compute_subnetwork" "${terraformLabel(service.id)}" {\n  name          = "${service.id}"\n  ip_cidr_range = "${cidr}"\n  region        = var.gcp_region\n}`
+          `resource "google_compute_subnetwork" "${terraformLabel(service.id)}" {\n  name          = "${service.id}"\n  ip_cidr_range = "${cidr}"\n  region        = var.gcp_region\n  network       = ${networkId}\n}`
         );
 
         variables.push({

@@ -15,7 +15,7 @@ export interface TerraformVariable {
   name: string;
   type: 'string' | 'number' | 'bool' | 'list(string)' | 'map(string)';
   description?: string;
-  default?: string | number | boolean | string[] | Record<string, string>;
+  default?: string | number | boolean;
   sensitive?: boolean;
 }
 

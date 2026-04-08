@@ -37,6 +37,32 @@ export function mapDatabaseServices(
         (cfg.instance_class as string | undefined) ?? 'db.t3.micro';
       const storage = (cfg.allocated_storage as number | undefined) ?? 20;
       const multiAz = cfg.multi_az === true;
+      const storageEncrypted =
+        typeof cfg.storage_encrypted === 'boolean'
+          ? cfg.storage_encrypted
+          : typeof cfg.encrypted === 'boolean'
+            ? cfg.encrypted
+            : true;
+      const deletionProtection =
+        typeof cfg.deletion_protection === 'boolean'
+          ? cfg.deletion_protection
+          : true;
+      const backupRetentionPeriod =
+        typeof cfg.backup_retention_period === 'number'
+          ? cfg.backup_retention_period
+          : typeof cfg.backupRetentionPeriod === 'number'
+            ? cfg.backupRetentionPeriod
+            : 30;
+      const skipFinalSnapshot =
+        typeof cfg.skip_final_snapshot === 'boolean'
+          ? cfg.skip_final_snapshot
+          : false;
+      const finalSnapshotIdentifier =
+        (cfg.final_snapshot_identifier as string | undefined) ??
+        `${service.id}-final-snapshot`;
+      const finalSnapshotBlock = skipFinalSnapshot
+        ? '  skip_final_snapshot    = true'
+        : `  skip_final_snapshot    = false\n  final_snapshot_identifier = "${finalSnapshotIdentifier}"`;
       const subnets = Array.isArray(cfg.subnets)
         ? cfg.subnets
             .filter((subnet): subnet is string => typeof subnet === 'string')
@@ -54,7 +80,7 @@ export function mapDatabaseServices(
       const passwordVariableName = `${resourceLabel}_password`;
 
       resources.push(
-        `resource "aws_db_subnet_group" "${terraformLabel(subnetGroupName)}" {\n  name       = "${service.id}-subnet-group"\n  subnet_ids = ${terraformStringList(subnets)}\n}\n\nresource "aws_db_instance" "${resourceLabel}" {\n  identifier             = "${service.id}"\n  engine                 = "postgres"\n  instance_class         = var.${instanceClassVariableName}\n  allocated_storage      = var.${allocatedStorageVariableName}\n  username               = var.${usernameVariableName}\n  password               = var.${passwordVariableName}\n  multi_az               = ${multiAz}\n  skip_final_snapshot    = true\n  db_subnet_group_name   = ${terraformRef('aws_db_subnet_group', subnetGroupName, 'name')}\n  vpc_security_group_ids = ${terraformStringList(securityGroups)}\n}`
+        `resource "aws_db_subnet_group" "${terraformLabel(subnetGroupName)}" {\n  name       = "${service.id}-subnet-group"\n  subnet_ids = ${terraformStringList(subnets)}\n}\n\nresource "aws_db_instance" "${resourceLabel}" {\n  identifier             = "${service.id}"\n  engine                 = "postgres"\n  instance_class         = var.${instanceClassVariableName}\n  allocated_storage      = var.${allocatedStorageVariableName}\n  username               = var.${usernameVariableName}\n  password               = var.${passwordVariableName}\n  multi_az               = ${multiAz}\n  storage_encrypted      = ${storageEncrypted}\n  deletion_protection    = ${deletionProtection}\n  backup_retention_period = ${backupRetentionPeriod}\n${finalSnapshotBlock}\n  db_subnet_group_name   = ${terraformRef('aws_db_subnet_group', subnetGroupName, 'name')}\n  vpc_security_group_ids = ${terraformStringList(securityGroups)}\n}`
       );
 
       variables.push({
@@ -98,6 +124,10 @@ export function mapDatabaseServices(
       const hashKey = (cfg.hash_key as string | undefined) ?? 'id';
       const rangeKey =
         typeof cfg.range_key === 'string' ? cfg.range_key : undefined;
+      const readCapacity =
+        typeof cfg.read_capacity === 'number' ? cfg.read_capacity : 5;
+      const writeCapacity =
+        typeof cfg.write_capacity === 'number' ? cfg.write_capacity : 5;
       const attributeConfigs = Array.isArray(cfg.attributes)
         ? cfg.attributes
             .map((attribute) => {
@@ -120,13 +150,19 @@ export function mapDatabaseServices(
               } => attribute !== undefined
             )
         : [];
-      const attributes =
-        attributeConfigs.length > 0
-          ? attributeConfigs
-          : [
-              { name: hashKey, type: 'S' },
-              ...(rangeKey ? [{ name: rangeKey, type: 'S' }] : []),
-            ];
+      const attributesByName = new Map(
+        attributeConfigs.map((attribute) => [attribute.name, attribute])
+      );
+
+      if (!attributesByName.has(hashKey)) {
+        attributesByName.set(hashKey, { name: hashKey, type: 'S' });
+      }
+
+      if (rangeKey && !attributesByName.has(rangeKey)) {
+        attributesByName.set(rangeKey, { name: rangeKey, type: 'S' });
+      }
+
+      const attributes = Array.from(attributesByName.values());
       const attributeBlocks = attributes
         .map(
           (attribute) =>
@@ -134,9 +170,13 @@ export function mapDatabaseServices(
         )
         .join('\n');
       const rangeKeyLine = rangeKey ? `\n  range_key     = "${rangeKey}"` : '';
+      const capacityLines =
+        billingMode === 'PROVISIONED'
+          ? `\n  read_capacity  = ${readCapacity}\n  write_capacity = ${writeCapacity}`
+          : '';
 
       resources.push(
-        `resource "aws_dynamodb_table" "${resourceLabel}" {\n  name         = "${service.id}"\n  billing_mode = "${billingMode}"\n  hash_key     = "${hashKey}"${rangeKeyLine}\n${attributeBlocks}\n}`
+        `resource "aws_dynamodb_table" "${resourceLabel}" {\n  name         = "${service.id}"\n  billing_mode = "${billingMode}"\n  hash_key     = "${hashKey}"${rangeKeyLine}${capacityLines}\n${attributeBlocks}\n}`
       );
 
       outputs.push({

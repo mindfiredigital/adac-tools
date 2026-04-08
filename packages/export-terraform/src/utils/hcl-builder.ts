@@ -13,7 +13,12 @@ export function indent(value: string, spaces: number = 2): string {
  * Escape special characters for HCL strings
  */
 export function hclString(value: string): string {
-  const escaped = value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+  const escaped = value
+    .replace(/\\/g, '\\\\')
+    .replace(/\n/g, '\\n')
+    .replace(/\r/g, '\\r')
+    .replace(/\t/g, '\\t')
+    .replace(/"/g, '\\"');
   return `"${escaped}"`;
 }
 

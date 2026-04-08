@@ -244,7 +244,7 @@ export function runCLI(options: CLIOptions) {
         await options.generateTerraformFromYaml(
           inputPath,
           outputDir,
-          Boolean(opts.validate)
+          opts.validate
         );
       } catch (error: unknown) {
         const message = error instanceof Error ? error.message : String(error);

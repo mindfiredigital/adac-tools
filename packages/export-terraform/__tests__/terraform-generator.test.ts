@@ -92,8 +92,67 @@ infrastructure:
       'resource "google_storage_bucket" "artifact_bucket_dev"'
     );
     expect(result.variablesTf).toContain('variable "gcp_region"');
+    expect(result.variablesTf).toContain('default = "us-central1"');
     expect(result.outputsTf).toContain('output "artifact-bucket-dev_name"');
     expect(result.diagnostics).toContain('Provider gcp');
+  });
+
+  it('uses the resolved GCP region as the gcp_region variable default', () => {
+    const result = generateTerraformFromYaml(
+      `
+version: '0.1'
+metadata:
+  name: 'GCS Europe Test'
+infrastructure:
+  clouds:
+    - id: 'gcp-primary'
+      provider: 'gcp'
+      region: 'europe-west1'
+      services:
+        - id: 'artifact-bucket-eu'
+          type: 'storage'
+          subtype: 'gcs'
+`,
+      'gcs-europe-test.adac.yaml',
+      { provider: 'gcp', region: 'europe-west1' }
+    );
+
+    expect(result.variablesTf).toContain('variable "gcp_region"');
+    expect(result.variablesTf).toContain('default = "europe-west1"');
+  });
+
+  it('generates GCP subnets with a required network reference', () => {
+    const result = generateTerraformFromYaml(
+      `
+version: '0.1'
+metadata:
+  name: 'GCP Subnet Test'
+infrastructure:
+  clouds:
+    - id: 'gcp-primary'
+      provider: 'gcp'
+      region: 'us-central1'
+      services:
+        - id: 'vpc-main'
+          type: 'networking'
+          subtype: 'vpc'
+        - id: 'subnet-a'
+          type: 'networking'
+          subtype: 'subnet'
+          config:
+            cidr: '10.10.0.0/24'
+            network: 'vpc-main'
+`,
+      'gcp-subnet-test.adac.yaml',
+      { provider: 'gcp', region: 'us-central1' }
+    );
+
+    expect(result.mainTf).toContain(
+      'resource "google_compute_subnetwork" "subnet_a"'
+    );
+    expect(result.mainTf).toContain(
+      'network       = google_compute_network.vpc_main.id'
+    );
   });
 
   it('generates AWS Lambda resource with extracted package and role variables', () => {
@@ -178,6 +237,55 @@ infrastructure:
     expect(result.mainTf).toContain('"image": "example/worker:1.2.3"');
   });
 
+  it('throws for ECS service with empty containers list', () => {
+    expect(() =>
+      generateTerraformFromYaml(
+        `
+version: '0.1'
+metadata:
+  name: 'ECS Empty Containers Test'
+infrastructure:
+  clouds:
+    - id: 'aws-primary'
+      provider: 'aws'
+      region: 'us-east-1'
+      services:
+        - id: 'api-service'
+          type: 'compute'
+          subtype: 'ecs-fargate'
+          config:
+            containers: []
+`,
+        'ecs-empty-containers-test.adac.yaml'
+      )
+    ).toThrow(/must define at least one container/i);
+  });
+
+  it('throws for ECS service when a container image is missing', () => {
+    expect(() =>
+      generateTerraformFromYaml(
+        `
+version: '0.1'
+metadata:
+  name: 'ECS Missing Image Test'
+infrastructure:
+  clouds:
+    - id: 'aws-primary'
+      provider: 'aws'
+      region: 'us-east-1'
+      services:
+        - id: 'api-service'
+          type: 'compute'
+          subtype: 'ecs-fargate'
+          config:
+            containers:
+              - name: 'api'
+`,
+        'ecs-missing-image-test.adac.yaml'
+      )
+    ).toThrow(/must define a non-empty image/i);
+  });
+
   it('generates AWS DynamoDB table resource', () => {
     const result = generateTerraformFromYaml(
       `
@@ -215,6 +323,108 @@ infrastructure:
     expect(result.mainTf).toContain('name = "pk"');
     expect(result.mainTf).toContain('name = "sk"');
     expect(result.outputsTf).toContain('output "sessions-table_arn"');
+  });
+
+  it('ensures DynamoDB key attributes exist and adds capacities for provisioned tables', () => {
+    const result = generateTerraformFromYaml(
+      `
+version: '0.1'
+metadata:
+  name: 'DynamoDB Provisioned Test'
+infrastructure:
+  clouds:
+    - id: 'aws-primary'
+      provider: 'aws'
+      region: 'us-east-1'
+      services:
+        - id: 'orders-table'
+          type: 'database'
+          subtype: 'dynamodb'
+          config:
+            billing_mode: 'PROVISIONED'
+            hash_key: 'pk'
+            range_key: 'sk'
+            read_capacity: 10
+            write_capacity: 4
+            attributes:
+              - name: 'status'
+                type: 'S'
+`,
+      'dynamodb-provisioned-test.adac.yaml'
+    );
+
+    expect(result.mainTf).toContain('billing_mode = "PROVISIONED"');
+    expect(result.mainTf).toContain('read_capacity  = 10');
+    expect(result.mainTf).toContain('write_capacity = 4');
+    expect(result.mainTf).toContain('hash_key     = "pk"');
+    expect(result.mainTf).toContain('range_key     = "sk"');
+    expect(result.mainTf).toContain('name = "pk"');
+    expect(result.mainTf).toContain('name = "sk"');
+    expect(result.mainTf).toContain('name = "status"');
+  });
+
+  it('applies secure defaults for AWS RDS Postgres resources', () => {
+    const result = generateTerraformFromYaml(
+      `
+version: '0.1'
+metadata:
+  name: 'RDS Defaults Test'
+infrastructure:
+  clouds:
+    - id: 'aws-primary'
+      provider: 'aws'
+      region: 'us-east-1'
+      services:
+        - id: 'db-main'
+          type: 'database'
+          subtype: 'rds-postgres'
+          config:
+            subnets: ['private-subnet-a']
+            security_groups: ['ecs-sg']
+`,
+      'rds-defaults-test.adac.yaml'
+    );
+
+    expect(result.mainTf).toContain('storage_encrypted      = true');
+    expect(result.mainTf).toContain('deletion_protection    = true');
+    expect(result.mainTf).toContain('backup_retention_period = 30');
+    expect(result.mainTf).toContain('skip_final_snapshot    = false');
+    expect(result.mainTf).toContain(
+      'final_snapshot_identifier = "db-main-final-snapshot"'
+    );
+  });
+
+  it('respects explicit RDS safety overrides from config', () => {
+    const result = generateTerraformFromYaml(
+      `
+version: '0.1'
+metadata:
+  name: 'RDS Override Test'
+infrastructure:
+  clouds:
+    - id: 'aws-primary'
+      provider: 'aws'
+      region: 'us-east-1'
+      services:
+        - id: 'db-override'
+          type: 'database'
+          subtype: 'rds-postgres'
+          config:
+            subnets: ['private-subnet-a']
+            security_groups: ['ecs-sg']
+            storage_encrypted: false
+            deletion_protection: false
+            backup_retention_period: 7
+            skip_final_snapshot: true
+`,
+      'rds-override-test.adac.yaml'
+    );
+
+    expect(result.mainTf).toContain('storage_encrypted      = false');
+    expect(result.mainTf).toContain('deletion_protection    = false');
+    expect(result.mainTf).toContain('backup_retention_period = 7');
+    expect(result.mainTf).toContain('skip_final_snapshot    = true');
+    expect(result.mainTf).not.toContain('final_snapshot_identifier =');
   });
 
   it('generates Terraform module blocks when module metadata is provided', () => {
@@ -285,6 +495,37 @@ infrastructure:
     expect(result.mainTf).toContain('vpc_id = aws_vpc.vpc_main.id');
     expect(result.mainTf).not.toContain('vpc_id = "aws_vpc.vpc_main.id"');
     expect(result.mainTf).toContain('ingress_cidr_blocks = [');
+  });
+
+  it('quotes non-identifier object keys in module map inputs', () => {
+    const result = generateTerraformFromYaml(
+      `
+version: '0.1'
+metadata:
+  name: 'Module Map Key Test'
+infrastructure:
+  clouds:
+    - id: 'aws-primary'
+      provider: 'aws'
+      region: 'us-east-1'
+      services:
+        - id: 'module-map-test'
+          type: 'networking'
+          subtype: 'vpc'
+          config:
+            module:
+              source: 'terraform-aws-modules/security-group/aws'
+              inputs:
+                tags:
+                  cost-center: 'platform'
+                  owner_team: 'adac'
+`,
+      'module-map-key-test.adac.yaml'
+    );
+
+    expect(result.mainTf).toContain('tags = {');
+    expect(result.mainTf).toContain('"cost-center" = "platform"');
+    expect(result.mainTf).toContain('owner_team = "adac"');
   });
 
   it('parses ADAC yaml content and generates terraform', () => {
@@ -364,6 +605,13 @@ infrastructure:
     expect(result.mainTf).toContain(
       'password               = var.rds_postgres_password'
     );
+    expect(result.mainTf).toContain('storage_encrypted      = true');
+    expect(result.mainTf).toContain('deletion_protection    = true');
+    expect(result.mainTf).toContain('backup_retention_period = 7');
+    expect(result.mainTf).toContain('skip_final_snapshot    = false');
+    expect(result.mainTf).toContain(
+      'final_snapshot_identifier = "rds-postgres-final-snapshot"'
+    );
     expect(result.variablesTf).toContain(
       'variable "rds_postgres_instance_class"'
     );
@@ -395,14 +643,12 @@ infrastructure:
     expect(result.diagnostics).toContain('Provider gcp');
   });
 
-  it(
-    'passes terraform validate for generated AWS Terraform when Terraform CLI is available',
-    () => {
-      if (!hasTerraformCli()) {
-        return;
-      }
+  it('passes terraform validate for generated AWS Terraform when Terraform CLI is available', () => {
+    if (!hasTerraformCli()) {
+      return;
+    }
 
-      const result = generateTerraformFromAdacFile(
+    const result = generateTerraformFromAdacFile(
       join(YAMLS_DIR, 'aws.adac.yaml')
     );
     const tempDir = mkdtempSync(TEMP_DIR_PREFIX);
@@ -416,11 +662,70 @@ infrastructure:
       stdio: 'pipe',
     });
 
-      execFileSync('terraform', ['validate'], {
-        cwd: tempDir,
-        stdio: 'pipe',
-      });
-    },
-    120000
-  );
+    execFileSync('terraform', ['validate'], {
+      cwd: tempDir,
+      stdio: 'pipe',
+    });
+  }, 120000);
+
+  it('throws a parse error for malformed YAML input', () => {
+    expect(() =>
+      generateTerraformFromYaml(
+        `
+version: '0.1'
+metadata:
+  name: 'Broken YAML Test'
+  created: '2026-04-08'
+infrastructure:
+  clouds:
+    - id: 'aws-primary'
+      provider: 'aws'
+      region: 'us-east-1'
+      services:
+        - id: 'bad-service'
+          type: 'compute'
+          subtype: 'ec2'
+          config:
+            instance_class: 't3.micro'
+: invalid
+`,
+        'malformed-test.adac.yaml'
+      )
+    ).toThrow(/Failed to parse YAML content/);
+  });
+
+  it('throws a schema validation error when validate=true and required fields are missing', () => {
+    const invalidSchemaYaml = `
+applications:
+  - id: app1
+infrastructure:
+  clouds: []
+`;
+
+    const tempDir = mkdtempSync(TEMP_DIR_PREFIX);
+    const filePath = join(tempDir, 'invalid-schema-test.adac.yaml');
+    writeFileSync(filePath, invalidSchemaYaml);
+
+    expect(() =>
+      generateTerraformFromAdacFile(filePath, {
+        validate: true,
+      })
+    ).toThrow(/Schema validation failed/);
+  });
+
+  it('throws when config has no cloud and no provider override', () => {
+    expect(() =>
+      generateTerraformFromYaml(
+        `
+version: '0.1'
+metadata:
+  name: 'No Cloud Test'
+  created: '2026-04-08'
+infrastructure:
+  clouds: []
+`,
+        'no-cloud-test.adac.yaml'
+      )
+    ).toThrow(/Provider must be specified/);
+  });
 });
