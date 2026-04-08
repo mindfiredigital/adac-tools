@@ -161,7 +161,7 @@ export function mapComputeServices(
       outputs.push({
         name: `${service.id}_id`,
         description: `Instance ID for ${service.id}`,
-        value: terraformRef('aws_instance', service.id, 'id'),
+        value: terraformRef('aws_instance', resourceLabel, 'id'),
       });
     }
 
@@ -188,7 +188,7 @@ export function mapComputeServices(
         description: `Instance ID for ${service.id}`,
         value: terraformRef(
           'google_compute_instance',
-          service.id,
+          resourceLabel,
           'instance_id'
         ),
       });
@@ -221,13 +221,17 @@ export function mapComputeServices(
       const networkConfiguration = `  network_configuration {\n    subnets          = ${terraformStringList(subnets)}\n    security_groups  = ${terraformStringList(securityGroups)}\n    assign_public_ip = false\n  }`;
 
       resources.push(
-        `resource "aws_ecs_cluster" "${resourceLabel}_cluster" {\n  name = "${service.id}-cluster"\n}\n\nresource "aws_ecs_task_definition" "${resourceLabel}" {\n  family                   = "${service.id}"\n  requires_compatibilities = ["FARGATE"]\n  network_mode             = "awsvpc"\n  cpu                      = "${cpu}"\n  memory                   = "${memory}"\n  container_definitions    = <<DEFINITIONS\n${containerDefinitions}\nDEFINITIONS\n}\n\nresource "aws_ecs_service" "${resourceLabel}" {\n  name            = "${service.id}"\n  cluster         = ${terraformRef('aws_ecs_cluster', `${service.id}_cluster`, 'id')}\n  task_definition = ${terraformRef('aws_ecs_task_definition', service.id, 'arn')}\n  desired_count   = ${desiredCount}\n  launch_type     = "FARGATE"\n${networkConfiguration}\n}`
+        `resource "aws_ecs_cluster" "${resourceLabel}_cluster" {\n  name = "${service.id}-cluster"\n}\n\nresource "aws_ecs_task_definition" "${resourceLabel}" {\n  family                   = "${service.id}"\n  requires_compatibilities = ["FARGATE"]\n  network_mode             = "awsvpc"\n  cpu                      = "${cpu}"\n  memory                   = "${memory}"\n  container_definitions    = <<DEFINITIONS\n${containerDefinitions}\nDEFINITIONS\n}\n\nresource "aws_ecs_service" "${resourceLabel}" {\n  name            = "${service.id}"\n  cluster         = ${terraformRef('aws_ecs_cluster', `${resourceLabel}_cluster`, 'id')}\n  task_definition = ${terraformRef('aws_ecs_task_definition', resourceLabel, 'arn')}\n  desired_count   = ${desiredCount}\n  launch_type     = "FARGATE"\n${networkConfiguration}\n}`
       );
 
       outputs.push({
         name: `${service.id}_cluster_arn`,
         description: `ECS Cluster ARN for ${service.id}`,
-        value: terraformRef('aws_ecs_cluster', `${service.id}_cluster`, 'arn'),
+        value: terraformRef(
+          'aws_ecs_cluster',
+          `${resourceLabel}_cluster`,
+          'arn'
+        ),
       });
     }
 
@@ -259,7 +263,7 @@ export function mapComputeServices(
       outputs.push({
         name: `${service.id}_arn`,
         description: `Lambda ARN for ${service.id}`,
-        value: terraformRef('aws_lambda_function', service.id, 'arn'),
+        value: terraformRef('aws_lambda_function', resourceLabel, 'arn'),
       });
     }
 
@@ -281,7 +285,11 @@ export function mapComputeServices(
       outputs.push({
         name: `${service.id}_url`,
         description: `Cloud Run URL for ${service.id}`,
-        value: terraformRef('google_cloud_run_v2_service', service.id, 'uri'),
+        value: terraformRef(
+          'google_cloud_run_v2_service',
+          resourceLabel,
+          'uri'
+        ),
       });
     }
   }

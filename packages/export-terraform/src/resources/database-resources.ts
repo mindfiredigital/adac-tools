@@ -114,7 +114,7 @@ export function mapDatabaseServices(
       outputs.push({
         name: `${service.id}_endpoint`,
         description: `RDS endpoint for ${service.id}`,
-        value: terraformRef('aws_db_instance', service.id, 'endpoint'),
+        value: terraformRef('aws_db_instance', resourceLabel, 'endpoint'),
       });
     }
 
@@ -182,7 +182,7 @@ export function mapDatabaseServices(
       outputs.push({
         name: `${service.id}_arn`,
         description: `DynamoDB table ARN for ${service.id}`,
-        value: terraformRef('aws_dynamodb_table', service.id, 'arn'),
+        value: terraformRef('aws_dynamodb_table', resourceLabel, 'arn'),
       });
     }
 
@@ -207,7 +207,7 @@ export function mapDatabaseServices(
         description: `Cloud SQL connection name for ${service.id}`,
         value: terraformRef(
           'google_sql_database_instance',
-          service.id,
+          resourceLabel,
           'connection_name'
         ),
       });

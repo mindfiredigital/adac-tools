@@ -706,30 +706,30 @@ infrastructure:
     expect(result.diagnostics).toContain('Provider gcp');
   });
 
-  it('passes terraform validate for generated AWS Terraform when Terraform CLI is available', () => {
-    if (!hasTerraformCli()) {
-      return;
-    }
+  it.skipIf(!hasTerraformCli())(
+    'passes terraform validate for generated AWS Terraform when Terraform CLI is available',
+    () => {
+      const result = generateTerraformFromAdacFile(
+        join(YAMLS_DIR, 'aws.adac.yaml')
+      );
+      const tempDir = createTempDir();
 
-    const result = generateTerraformFromAdacFile(
-      join(YAMLS_DIR, 'aws.adac.yaml')
-    );
-    const tempDir = createTempDir();
+      writeFileSync(join(tempDir, 'main.tf'), result.mainTf);
+      writeFileSync(join(tempDir, 'variables.tf'), result.variablesTf);
+      writeFileSync(join(tempDir, 'outputs.tf'), result.outputsTf);
 
-    writeFileSync(join(tempDir, 'main.tf'), result.mainTf);
-    writeFileSync(join(tempDir, 'variables.tf'), result.variablesTf);
-    writeFileSync(join(tempDir, 'outputs.tf'), result.outputsTf);
+      execFileSync('terraform', ['init', '-backend=false'], {
+        cwd: tempDir,
+        stdio: 'pipe',
+      });
 
-    execFileSync('terraform', ['init', '-backend=false'], {
-      cwd: tempDir,
-      stdio: 'pipe',
-    });
-
-    execFileSync('terraform', ['validate'], {
-      cwd: tempDir,
-      stdio: 'pipe',
-    });
-  }, 120000);
+      execFileSync('terraform', ['validate'], {
+        cwd: tempDir,
+        stdio: 'pipe',
+      });
+    },
+    120000
+  );
 
   it('throws a parse error for malformed YAML input', () => {
     expect(() =>
