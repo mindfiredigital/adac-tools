@@ -332,6 +332,9 @@ importers:
       '@mindfiredigital/adac-layout-core':
         specifier: workspace:*
         version: link:../layout-core
+      '@mindfiredigital/adac-schema':
+        specifier: workspace:*
+        version: link:../schema
     optionalDependencies:
       '@mindfiredigital/adac-layout-elk':
         specifier: workspace:*
