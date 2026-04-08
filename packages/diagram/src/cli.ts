@@ -9,9 +9,10 @@ import {
   aggregateCostFromYaml,
   calculatePerServiceCosts,
 } from '@mindfiredigital/adac-cost';
+import { generateTerraformFromAdacFile } from '@mindfiredigital/adac-export-terraform';
 import type { CostPeriod } from '@mindfiredigital/adac-cost';
 import path from 'path';
-import { readFileSync } from 'fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'fs';
 import { PricingModel } from '@mindfiredigital/adac-cost';
 
 // Read version from package.json
@@ -51,6 +52,26 @@ runCLI({
     );
   },
   calculateCostFromYaml: aggregateCostFromYaml,
+  generateTerraformFromYaml: async (
+    input: string,
+    outputDir?: string,
+    validate?: boolean
+  ) => {
+    const result = generateTerraformFromAdacFile(input, {
+      validate: validate ?? true,
+    });
+
+    const parsed = path.parse(input);
+    const targetDir =
+      outputDir ?? path.resolve(parsed.dir, `${parsed.name}-terraform`);
+
+    mkdirSync(targetDir, { recursive: true });
+    writeFileSync(path.join(targetDir, 'main.tf'), result.mainTf);
+    writeFileSync(path.join(targetDir, 'variables.tf'), result.variablesTf);
+    writeFileSync(path.join(targetDir, 'outputs.tf'), result.outputsTf);
+
+    console.log(`Terraform files written to ${targetDir}`);
+  },
   parseAdac,
   validateAdacConfig,
   version,

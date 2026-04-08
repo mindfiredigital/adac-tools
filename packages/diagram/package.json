@@ -39,6 +39,7 @@
   "dependencies": {
     "@mindfiredigital/adac-compliance": "workspace:*",
     "@mindfiredigital/adac-cost": "workspace:*",
+    "@mindfiredigital/adac-export-terraform": "workspace:*",
     "elkjs": "^0.11.0",
     "fs-extra": "^11.3.3"
   },
