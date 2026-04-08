@@ -1,9 +1,9 @@
 import { Graph } from '../graph/graph';
-import { PositionedNode, EdgePath, LayoutOptions } from '../types';
+import { NodePosition, EdgePath, LayoutOptions } from '../types';
 
 export function routeEdges(
   graph: Graph,
-  positions: Record<string, PositionedNode>,
+  positions: Record<string, NodePosition>,
   options: Required<LayoutOptions>
 ): Record<string, EdgePath> {
   const result: Record<string, EdgePath> = {};

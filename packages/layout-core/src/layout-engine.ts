@@ -9,7 +9,7 @@ import { orderNodes } from './algorithms/node-ordering';
 import { assignCoordinates } from './algorithms/coordinate-assignment';
 import { routeEdges } from './algorithms/edge-routing';
 
-import { LayoutOptions, PositionedNode, EdgePath } from './types';
+import { LayoutOptions, NodePosition, EdgePath, NodeData, EdgeData } from './types';
 
 /**
  * CustomLayoutEngine
@@ -36,22 +36,22 @@ export class CustomLayoutEngine {
   /**
    * Add node
    */
-  addNode(id: string, data: { width: number; height: number }) {
+  addNode(id: string, data: NodeData) {
     this.graph.addNode(id, data);
   }
 
   /**
    * Add edge
    */
-  addEdge(from: string, to: string) {
-    this.graph.addEdge(from, to);
+  addEdge(from: string, to: string, data?: EdgeData) {
+    this.graph.addEdge(from, to, data);
   }
 
   /**
    * Run layout pipeline
    */
   layout(): {
-    nodes: Record<string, PositionedNode>;
+    nodes: Record<string, NodePosition>;
     edges: Record<string, EdgePath>;
     bounds: { width: number; height: number };
   } {
@@ -99,7 +99,7 @@ export class CustomLayoutEngine {
   /**
    * Compute diagram bounds
    */
-  private calculateBounds(positions: Record<string, PositionedNode>): {
+  private calculateBounds(positions: Record<string, NodePosition>): {
     width: number;
     height: number;
   } {

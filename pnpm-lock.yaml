@@ -327,6 +327,22 @@ importers:
         specifier: ^10.9.2
         version: 10.9.2(@types/node@25.3.0)(typescript@5.9.3)
 
+  packages/layout:
+    dependencies:
+      '@mindfiredigital/adac-layout-core':
+        specifier: workspace:*
+        version: link:../layout-core
+      '@mindfiredigital/adac-layout-elk':
+        specifier: workspace:*
+        version: link:../layout-elk
+      '@mindfiredigital/adac-schema':
+        specifier: workspace:*
+        version: link:../schema
+    devDependencies:
+      vitest:
+        specifier: ^4.0.18
+        version: 4.0.18(@edge-runtime/vm@3.2.0)(@types/node@25.3.0)(@vitest/ui@4.1.1)(jiti@2.6.1)(jsdom@29.0.1)(tsx@4.21.0)
+
   packages/layout-core:
     devDependencies:
       '@types/jest':

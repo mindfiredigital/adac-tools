@@ -1,13 +1,13 @@
 import { Graph } from '../graph/graph';
-import { RankMap, OrderingMap, PositionedNode, LayoutOptions } from '../types';
+import { RankMap, OrderingMap, NodePosition, LayoutOptions } from '../types';
 
 export function assignCoordinates(
   graph: Graph,
   ranks: RankMap,
   ordering: OrderingMap,
   options: Required<LayoutOptions>
-): Record<string, PositionedNode> {
-  const positions: Record<string, PositionedNode> = {};
+): Record<string, NodePosition> {
+  const positions: Record<string, NodePosition> = {};
 
   ordering.forEach((nodes, rank) => {
     let offset = options.marginx;
