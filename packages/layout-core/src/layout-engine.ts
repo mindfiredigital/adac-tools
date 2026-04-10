@@ -9,7 +9,13 @@ import { orderNodes } from './algorithms/node-ordering';
 import { assignCoordinates } from './algorithms/coordinate-assignment';
 import { routeEdges } from './algorithms/edge-routing';
 
-import { LayoutOptions, NodePosition, EdgePath, NodeData, EdgeData } from './types';
+import {
+  LayoutOptions,
+  NodePosition,
+  EdgePath,
+  NodeData,
+  EdgeData,
+} from './types';
 
 /**
  * CustomLayoutEngine

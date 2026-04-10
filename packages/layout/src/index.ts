@@ -3,7 +3,7 @@ export {
   LayoutOptions,
   LayoutResult,
   NodeData,
-  EdgeData
+  EdgeData,
 } from './interface';
 
 export { CustomLayoutEngineAdapter } from './custom-layout-engine-adapter';

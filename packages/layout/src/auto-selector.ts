@@ -1,11 +1,13 @@
 import type { AdacConfig, AdacCloud } from '@mindfiredigital/adac-schema';
 
-export type AdacModel = Partial<Pick<AdacConfig, 'infrastructure' | 'connections'>>;
+export type AdacModel = Partial<
+  Pick<AdacConfig, 'infrastructure' | 'connections'>
+>;
 
 /**
  * Analyzes the complexity of an AdacModel to determine if it requires advanced layout.
  * Checks node and edge counts against defined complexity thresholds.
- * 
+ *
  * @param model - The AdacModel to analyze.
  * @returns true if the model layout is complex and requires advanced engines, false otherwise.
  */
@@ -25,5 +27,7 @@ export function analyzeComplexity(model?: AdacModel): boolean {
 
   // We return true if either the node count or the edge count
   // exceeds the established threshold, making the layout complex.
-  return nodeCount > COMPLEX_NODE_THRESHOLD || edgeCount > COMPLEX_EDGE_THRESHOLD;
+  return (
+    nodeCount > COMPLEX_NODE_THRESHOLD || edgeCount > COMPLEX_EDGE_THRESHOLD
+  );
 }

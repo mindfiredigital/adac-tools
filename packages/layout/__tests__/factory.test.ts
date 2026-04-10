@@ -51,7 +51,8 @@ describe('createLayoutEngine', () => {
   it('passes options to CustomLayoutEngine', async () => {
     const options = { nodesep: 50 };
 
-    const { CustomLayoutEngine } = await import('@mindfiredigital/adac-layout-core');
+    const { CustomLayoutEngine } =
+      await import('@mindfiredigital/adac-layout-core');
 
     await createLayoutEngine('custom', options);
 
@@ -60,7 +61,9 @@ describe('createLayoutEngine', () => {
 
   it('throws error for invalid type', async () => {
     await expect(
-      createLayoutEngine('invalid' as unknown as import('../src/factory').EngineType)
+      createLayoutEngine(
+        'invalid' as unknown as import('../src/factory').EngineType
+      )
     ).rejects.toThrow('Unknown engine type: invalid');
   });
 });
