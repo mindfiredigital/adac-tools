@@ -243,4 +243,33 @@ describe('cli.ts', () => {
 
     logSpy.mockRestore();
   });
+
+  it('should propagate core generateDiagram errors', async () => {
+    vi.mocked(fs.readFileSync).mockReturnValue(JSON.stringify({ version: '1.2.3' }));
+    await loadCli();
+    const runCLIArg = vi.mocked(runCLI).mock.calls[0][0] as Parameters<typeof runCLI>[0];
+
+    vi.mocked(parseAdac).mockReturnValue({ some: 'config' });
+    vi.mocked(calculatePerServiceCosts).mockReturnValue({ s3: 10 });
+    vi.mocked(generateDiagram).mockRejectedValue(new Error('diagram failed'));
+
+    await expect(
+      runCLIArg.generateDiagram('input.yaml', 'output.png')
+    ).rejects.toThrow('diagram failed');
+  });
+
+  it('should surface terraform generation errors and skip writes', async () => {
+    vi.mocked(fs.readFileSync).mockReturnValue(JSON.stringify({ version: '1.2.3' }));
+    await loadCli();
+    const runCLIArg = vi.mocked(runCLI).mock.calls[0][0] as Parameters<typeof runCLI>[0];
+
+    vi.mocked(generateTerraformFromAdacFile).mockImplementation(() => {
+      throw new Error('terraform failed');
+    });
+
+    await expect(
+      runCLIArg.generateTerraformFromYaml!('input.yaml')
+    ).rejects.toThrow('terraform failed');
+    expect(fs.writeFileSync).not.toHaveBeenCalled();
+  });
 });
