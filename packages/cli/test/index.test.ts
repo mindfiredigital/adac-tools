@@ -106,7 +106,7 @@ describe('ADAC CLI - cost command', () => {
 
     expect(calculateCostFromYaml).toHaveBeenCalled();
     // Should print a cost line to console
-    const allLogs = consoleSpy.mock.calls.map((c) => c[0]).join('\n');
+    const allLogs = consoleSpy.mock.calls.map((c) => c.join(' ')).join('\n');
     expect(allLogs).toContain('100.00');
   });
 
@@ -123,7 +123,7 @@ describe('ADAC CLI - cost command', () => {
     await runCLI(options);
 
     expect(mockExit).toHaveBeenCalledWith(1);
-    const errorLogs = consoleErrorSpy.mock.calls.map((c) => c[0]).join('\n');
+    const errorLogs = consoleErrorSpy.mock.calls.map((c) => c.join(' ')).join('\n');
     expect(errorLogs).toContain('Cost calculation is not available');
   });
 
@@ -142,7 +142,7 @@ describe('ADAC CLI - cost command', () => {
     await runCLI(options);
 
     expect(mockExit).toHaveBeenCalledWith(1);
-    const errorLogs = consoleErrorSpy.mock.calls.map((c) => String(c)).join('\n');
+    const errorLogs = consoleErrorSpy.mock.calls.map((c) => c.join(' ')).join('\n');
     expect(errorLogs).toContain('Pricing data unavailable');
   });
 
@@ -179,7 +179,7 @@ describe('ADAC CLI - cost command', () => {
     process.argv = ['node', 'adac', 'cost', 'test.yaml'];
     await runCLI(options);
 
-    const allLogs = consoleSpy.mock.calls.map((c) => c[0]).join('\n');
+    const allLogs = consoleSpy.mock.calls.map((c) => c.join(' ')).join('\n');
     expect(allLogs).toContain('Compute');
     expect(allLogs).toContain('Database');
     expect(allLogs).toContain('Storage');
@@ -230,7 +230,7 @@ describe('ADAC CLI - terraform command', () => {
       undefined,
       undefined
     );
-    const allLogs = consoleSpy.mock.calls.map((c) => c[0]).join('\n');
+    const allLogs = consoleSpy.mock.calls.map((c) => c.join(' ')).join('\n');
     expect(allLogs).toContain('Terraform successfully generated');
   });
 
@@ -267,7 +267,7 @@ describe('ADAC CLI - terraform command', () => {
     await runCLI(options);
 
     expect(mockExit).toHaveBeenCalledWith(1);
-    const errorLogs = consoleErrorSpy.mock.calls.map((c) => c[0]).join('\n');
+    const errorLogs = consoleErrorSpy.mock.calls.map((c) => c.join(' ')).join('\n');
     expect(errorLogs).toContain('Terraform generation is not available');
   });
 
@@ -284,7 +284,7 @@ describe('ADAC CLI - terraform command', () => {
     await runCLI(options);
 
     expect(mockExit).toHaveBeenCalledWith(1);
-    const errorLogs = consoleErrorSpy.mock.calls.map((c) => String(c)).join('\n');
+    const errorLogs = consoleErrorSpy.mock.calls.map((c) => c.join(' ')).join('\n');
     expect(errorLogs).toContain('Terraform error');
   });
 
@@ -301,7 +301,7 @@ describe('ADAC CLI - terraform command', () => {
     process.argv = ['node', 'adac', 'terraform', 'test.yaml', '-o', 'my-tf-dir'];
     await runCLI(options);
 
-    const allLogs = consoleSpy.mock.calls.map((c) => c[0]).join('\n');
+    const allLogs = consoleSpy.mock.calls.map((c) => c.join(' ')).join('\n');
     expect(allLogs).toContain('my-tf-dir');
   });
 });
@@ -368,7 +368,7 @@ describe('ADAC CLI - diagram command with --cost flag', () => {
 
     // Should still call generateDiagram (cost error is non-fatal in diagram command)
     expect(generateDiagram).toHaveBeenCalled();
-    const errorLogs = consoleErrorSpy.mock.calls.map((c) => String(c)).join('\n');
+    const errorLogs = consoleErrorSpy.mock.calls.map((c) => c.join(' ')).join('\n');
     expect(errorLogs).toContain('Cost calculation is not available');
   });
 });

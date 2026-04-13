@@ -210,4 +210,10 @@ describe('RemediationEngine', () => {
     expect(remIds).toContain('rem-enc-01');
     expect(remIds).toContain('rem-net-01');
   });
+
+  it('should throw error when generateRemediationPlan receives malformed input', () => {
+    const engine = new RemediationEngine();
+    expect(() => engine.generateRemediationPlan(null as any)).toThrow(TypeError);
+    expect(() => engine.generateRemediationPlan(undefined as any)).toThrow(TypeError);
+  });
 });

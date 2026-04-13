@@ -41,4 +41,10 @@ describe('FedRAMP Framework Rules', () => {
       expect(typeof rule.evaluate).toBe('function');
     }
   });
+
+  it('should return empty array for unknown framework', () => {
+    const rules = getRulesForFramework('unknown-framework');
+    expect(rules).toEqual([]);
+    expect(rules.length).toBe(0);
+  });
 });

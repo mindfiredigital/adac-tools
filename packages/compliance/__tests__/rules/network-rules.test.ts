@@ -115,12 +115,14 @@ describe('requirePrivateSubnetsRule (net-01)', () => {
     expect(result?.message).toContain('Production DB');
   });
 
-  it('should return null for database with no access config (defaults to private)', () => {
+  it('should treat missing DB network config as a security violation', () => {
     const service: AdacService = {
       id: 'rds-default',
       service: 'rds',
       config: {},
     } as unknown as AdacService;
-    expect(requirePrivateSubnetsRule.evaluate(service, makeContext())).toBeNull();
+    const result = requirePrivateSubnetsRule.evaluate(service, makeContext());
+    expect(result).not.toBeNull();
+    expect(result?.id).toBe('net-01');
   });
 });

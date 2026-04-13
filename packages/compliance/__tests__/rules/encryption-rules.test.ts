@@ -1,8 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import { requireStorageEncryptionRule } from '../../src/rules/encryption-rules';
-import { AdacConfig } from '@mindfiredigital/adac-schema';
+import type { AdacConfig } from '@mindfiredigital/adac-schema';
 
 type AdacService = AdacConfig['infrastructure']['clouds'][0]['services'][0];
+type ServiceParam = Parameters<typeof requireStorageEncryptionRule.evaluate>[0];
 
 const makeContext = (): { config: AdacConfig } => ({
   config: {
@@ -32,7 +33,7 @@ describe('requireStorageEncryptionRule (enc-01)', () => {
       id: 'bucket-1',
       service: 's3',
       config: { encrypted: false },
-    } as unknown as AdacService;
+    } satisfies ServiceParam;
     const result = requireStorageEncryptionRule.evaluate(service, makeContext());
     expect(result).not.toBeNull();
     expect(result?.id).toBe('enc-01');
@@ -45,7 +46,7 @@ describe('requireStorageEncryptionRule (enc-01)', () => {
       id: 'bucket-enc',
       service: 's3',
       config: { encrypted: true },
-    } as unknown as AdacService;
+    } satisfies ServiceParam;
     expect(requireStorageEncryptionRule.evaluate(service, makeContext())).toBeNull();
   });
 
@@ -54,7 +55,7 @@ describe('requireStorageEncryptionRule (enc-01)', () => {
       id: 'bucket-sse',
       service: 's3',
       config: { sseAlgorithm: 'AES256' },
-    } as unknown as AdacService;
+    } satisfies ServiceParam;
     expect(requireStorageEncryptionRule.evaluate(service, makeContext())).toBeNull();
   });
 
@@ -63,7 +64,7 @@ describe('requireStorageEncryptionRule (enc-01)', () => {
       id: 'rds-1',
       service: 'rds',
       config: { storageEncrypted: true },
-    } as unknown as AdacService;
+    } satisfies ServiceParam;
     expect(requireStorageEncryptionRule.evaluate(service, makeContext())).toBeNull();
   });
 
@@ -72,7 +73,7 @@ describe('requireStorageEncryptionRule (enc-01)', () => {
       id: 'gcs-1',
       service: 'gcs',
       configuration: { encryption_enabled: true },
-    } as unknown as AdacService;
+    } satisfies ServiceParam;
     expect(requireStorageEncryptionRule.evaluate(service, makeContext())).toBeNull();
   });
 
@@ -82,7 +83,7 @@ describe('requireStorageEncryptionRule (enc-01)', () => {
       const service: AdacService = {
         id: `${svc}-1`,
         service: svc,
-      } as unknown as AdacService;
+      } satisfies ServiceParam;
       const result = requireStorageEncryptionRule.evaluate(service, makeContext());
       expect(result?.id).toBe('enc-01');
     }
@@ -93,7 +94,7 @@ describe('requireStorageEncryptionRule (enc-01)', () => {
       id: 'rds-unsafe',
       service: 'rds',
       config: {},
-    } as unknown as AdacService;
+    } satisfies ServiceParam;
     const result = requireStorageEncryptionRule.evaluate(service, makeContext());
     expect(result?.remediation.id).toBe('rem-enc-01');
     expect(result?.remediation.actionableSteps.length).toBeGreaterThan(0);
@@ -106,7 +107,7 @@ describe('requireStorageEncryptionRule (enc-01)', () => {
       name: 'Production Bucket',
       service: 's3',
       config: {},
-    } as unknown as AdacService;
+    } satisfies ServiceParam;
     const result = requireStorageEncryptionRule.evaluate(service, makeContext());
     expect(result?.message).toContain('Production Bucket');
   });

@@ -12,7 +12,7 @@ describe('commonSuggestions', () => {
   });
 
   it('should have non-empty string values for all suggestions', () => {
-    for (const [key, value] of Object.entries(commonSuggestions)) {
+    for (const value of Object.values(commonSuggestions)) {
       expect(typeof value).toBe('string');
       expect(value.length).toBeGreaterThan(0);
     }

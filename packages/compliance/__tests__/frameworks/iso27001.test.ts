@@ -44,4 +44,10 @@ describe('ISO27001 Framework Rules', () => {
     const ruleIds = rules.map((r) => r.id);
     expect(ruleIds).not.toContain('enc-01');
   });
+
+  it('should return empty array for unknown framework', () => {
+    const rules = getRulesForFramework('invalid-framework');
+    expect(rules).toEqual([]);
+    expect(rules).toHaveLength(0);
+  });
 });

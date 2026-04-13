@@ -102,9 +102,7 @@ describe('cli.ts', () => {
 
     vi.mocked(parseAdac).mockReturnValue({ some: 'config' });
     vi.mocked(calculatePerServiceCosts).mockReturnValue({ s3: 10 });
-    vi.mocked(generateDiagram).mockResolvedValue(
-      'diagram-result' as unknown as void
-    );
+    vi.mocked(generateDiagram).mockResolvedValue(undefined);
 
     await runCLIArg.generateDiagram(
       'input.yaml',
@@ -256,6 +254,9 @@ describe('cli.ts', () => {
     await expect(
       runCLIArg.generateDiagram('input.yaml', 'output.png')
     ).rejects.toThrow('diagram failed');
+
+    expect(parseAdac).toHaveBeenCalled();
+    expect(calculatePerServiceCosts).toHaveBeenCalled();
   });
 
   it('should surface terraform generation errors and skip writes', async () => {
@@ -267,9 +268,15 @@ describe('cli.ts', () => {
       throw new Error('terraform failed');
     });
 
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+
     await expect(
       runCLIArg.generateTerraformFromYaml!('input.yaml')
     ).rejects.toThrow('terraform failed');
     expect(fs.writeFileSync).not.toHaveBeenCalled();
+    expect(fs.mkdirSync).not.toHaveBeenCalled();
+    expect(console.log).not.toHaveBeenCalled();
+
+    logSpy.mockRestore();
   });
 });
