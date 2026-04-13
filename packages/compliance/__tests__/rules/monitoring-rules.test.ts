@@ -66,7 +66,17 @@ describe('requireMonitoringRule (mon-01)', () => {
   });
 
   it('should check all compute service types', () => {
-    const computeServices = ['ec2', 'rds', 'ecs', 'compute-engine', 'gce', 'cloud-sql', 'cloudsql', 'gke', 'cloud-run'];
+    const computeServices = [
+      'ec2',
+      'rds',
+      'ecs',
+      'compute-engine',
+      'gce',
+      'cloud-sql',
+      'cloudsql',
+      'gke',
+      'cloud-run',
+    ];
     for (const svc of computeServices) {
       const service: AdacService = {
         id: `${svc}-test`,

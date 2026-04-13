@@ -73,6 +73,28 @@ describe('requireBackupRule (bck-01)', () => {
     expect(requireBackupRule.evaluate(service, makeContext())).toBeNull();
   });
 
+  it('should return compliance status when backup_enabled is set to false', () => {
+    const service: AdacService = {
+      id: 'rds-flag',
+      service: 'rds',
+      config: { backup_enabled: false },
+    } as unknown as AdacService;
+    expect(requireBackupRule.evaluate(service, makeContext())).toEqual({
+      framework: '',
+      id: 'bck-01',
+      message: 'Backup retention is not enabled for database rds-flag.',
+      remediation: {
+        actionableSteps: ["Set 'backupRetentionPeriod' > 0 for rds-flag."],
+        description:
+          'Configure automated backups with a non-zero retention period.',
+        id: 'rem-bck-01',
+        references: [],
+      },
+      resourceId: 'rds-flag',
+      severity: 'high',
+    });
+  });
+
   it('should check GCP cloud-sql service type', () => {
     const service: AdacService = {
       id: 'cloudsql-no-backup',
@@ -93,7 +115,15 @@ describe('requireBackupRule (bck-01)', () => {
   });
 
   it('should check all database service types', () => {
-    const dbServices = ['rds', 'dynamodb', 'cloud-sql', 'cloudsql', 'cloud-spanner', 'firestore', 'bigtable'];
+    const dbServices = [
+      'rds',
+      'dynamodb',
+      'cloud-sql',
+      'cloudsql',
+      'cloud-spanner',
+      'firestore',
+      'bigtable',
+    ];
     for (const svc of dbServices) {
       const service: AdacService = {
         id: `${svc}-test`,

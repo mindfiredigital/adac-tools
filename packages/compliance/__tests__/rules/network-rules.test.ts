@@ -23,7 +23,9 @@ describe('requirePrivateSubnetsRule (net-01)', () => {
 
   it('should return null for non-database services', () => {
     const service: AdacService = { id: 'ec2-1', service: 'ec2' };
-    expect(requirePrivateSubnetsRule.evaluate(service, makeContext())).toBeNull();
+    expect(
+      requirePrivateSubnetsRule.evaluate(service, makeContext())
+    ).toBeNull();
   });
 
   it('should return a violation for publicly accessible RDS', () => {
@@ -45,7 +47,9 @@ describe('requirePrivateSubnetsRule (net-01)', () => {
       service: 'rds',
       config: { publiclyAccessible: false },
     } as unknown as AdacService;
-    expect(requirePrivateSubnetsRule.evaluate(service, makeContext())).toBeNull();
+    expect(
+      requirePrivateSubnetsRule.evaluate(service, makeContext())
+    ).toBeNull();
   });
 
   it('should return a violation for public subnet type', () => {
@@ -76,7 +80,9 @@ describe('requirePrivateSubnetsRule (net-01)', () => {
       service: 'cloud-sql',
       configuration: { public_ip_enabled: false },
     } as unknown as AdacService;
-    expect(requirePrivateSubnetsRule.evaluate(service, makeContext())).toBeNull();
+    expect(
+      requirePrivateSubnetsRule.evaluate(service, makeContext())
+    ).toBeNull();
   });
 
   it('should include remediation with two actionable steps', () => {
@@ -92,7 +98,16 @@ describe('requirePrivateSubnetsRule (net-01)', () => {
   });
 
   it('should check all database service types', () => {
-    const dbServices = ['rds', 'dynamodb', 'databases', 'cloud-sql', 'cloudsql', 'cloud-spanner', 'firestore', 'bigtable'];
+    const dbServices = [
+      'rds',
+      'dynamodb',
+      'databases',
+      'cloud-sql',
+      'cloudsql',
+      'cloud-spanner',
+      'firestore',
+      'bigtable',
+    ];
     for (const svc of dbServices) {
       const service: AdacService = {
         id: `${svc}-test`,

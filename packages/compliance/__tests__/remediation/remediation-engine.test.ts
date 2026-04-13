@@ -213,7 +213,11 @@ describe('RemediationEngine', () => {
 
   it('should throw error when generateRemediationPlan receives malformed input', () => {
     const engine = new RemediationEngine();
-    expect(() => engine.generateRemediationPlan(null as any)).toThrow(TypeError);
-    expect(() => engine.generateRemediationPlan(undefined as any)).toThrow(TypeError);
+    expect(() =>
+      engine.generateRemediationPlan(null as unknown as ComplianceResult[])
+    ).toThrow(TypeError);
+    expect(() =>
+      engine.generateRemediationPlan(undefined as unknown as ComplianceResult[])
+    ).toThrow(TypeError);
   });
 });

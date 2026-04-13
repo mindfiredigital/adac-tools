@@ -25,7 +25,9 @@ describe('requireLeastPrivilegeRule (iam-01)', () => {
 
   it('should return null for non-IAM services', () => {
     const service: AdacService = { id: 'ec2-1', service: 'ec2' };
-    expect(requireLeastPrivilegeRule.evaluate(service, makeContext())).toBeNull();
+    expect(
+      requireLeastPrivilegeRule.evaluate(service, makeContext())
+    ).toBeNull();
   });
 
   it('should return a violation for iam-role with wildcard action using compact notation', () => {
@@ -58,7 +60,9 @@ describe('requireLeastPrivilegeRule (iam-01)', () => {
       service: 'iam-role',
       configuration: { policyDocument: '{"Action":"s3:GetObject"}' },
     } as unknown as AdacService;
-    expect(requireLeastPrivilegeRule.evaluate(service, makeContext())).toBeNull();
+    expect(
+      requireLeastPrivilegeRule.evaluate(service, makeContext())
+    ).toBeNull();
   });
 
   it('should check iam-policy service type', () => {
@@ -97,7 +101,9 @@ describe('requireLeastPrivilegeRule (iam-01)', () => {
       service: 'iam-role',
       configuration: {},
     } as unknown as AdacService;
-    expect(requireLeastPrivilegeRule.evaluate(service, makeContext())).toBeNull();
+    expect(
+      requireLeastPrivilegeRule.evaluate(service, makeContext())
+    ).toBeNull();
   });
 
   it('should return null when policyDocument is not a string', () => {
@@ -106,7 +112,9 @@ describe('requireLeastPrivilegeRule (iam-01)', () => {
       service: 'iam-role',
       configuration: { policyDocument: { Action: '*' } },
     } as unknown as AdacService;
-    expect(requireLeastPrivilegeRule.evaluate(service, makeContext())).toBeNull();
+    expect(
+      requireLeastPrivilegeRule.evaluate(service, makeContext())
+    ).toBeNull();
   });
 
   it('should include remediation steps referencing the resource id', () => {

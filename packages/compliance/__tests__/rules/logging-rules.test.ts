@@ -78,7 +78,16 @@ describe('requireLoggingRule (log-01)', () => {
   });
 
   it('should check all loggable service types', () => {
-    const loggableServices = ['alb', 'api-gateway', 's3', 'cloudfront', 'cloud-load-balancing', 'cloud-storage', 'gcs', 'cloud-cdn'];
+    const loggableServices = [
+      'alb',
+      'api-gateway',
+      's3',
+      'cloudfront',
+      'cloud-load-balancing',
+      'cloud-storage',
+      'gcs',
+      'cloud-cdn',
+    ];
     for (const svc of loggableServices) {
       const service: AdacService = {
         id: `${svc}-test`,

@@ -243,9 +243,13 @@ describe('cli.ts', () => {
   });
 
   it('should propagate core generateDiagram errors', async () => {
-    vi.mocked(fs.readFileSync).mockReturnValue(JSON.stringify({ version: '1.2.3' }));
+    vi.mocked(fs.readFileSync).mockReturnValue(
+      JSON.stringify({ version: '1.2.3' })
+    );
     await loadCli();
-    const runCLIArg = vi.mocked(runCLI).mock.calls[0][0] as Parameters<typeof runCLI>[0];
+    const runCLIArg = vi.mocked(runCLI).mock.calls[0][0] as Parameters<
+      typeof runCLI
+    >[0];
 
     vi.mocked(parseAdac).mockReturnValue({ some: 'config' });
     vi.mocked(calculatePerServiceCosts).mockReturnValue({ s3: 10 });
@@ -260,9 +264,13 @@ describe('cli.ts', () => {
   });
 
   it('should surface terraform generation errors and skip writes', async () => {
-    vi.mocked(fs.readFileSync).mockReturnValue(JSON.stringify({ version: '1.2.3' }));
+    vi.mocked(fs.readFileSync).mockReturnValue(
+      JSON.stringify({ version: '1.2.3' })
+    );
     await loadCli();
-    const runCLIArg = vi.mocked(runCLI).mock.calls[0][0] as Parameters<typeof runCLI>[0];
+    const runCLIArg = vi.mocked(runCLI).mock.calls[0][0] as Parameters<
+      typeof runCLI
+    >[0];
 
     vi.mocked(generateTerraformFromAdacFile).mockImplementation(() => {
       throw new Error('terraform failed');

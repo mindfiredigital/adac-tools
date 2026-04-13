@@ -25,7 +25,9 @@ describe('requireStorageEncryptionRule (enc-01)', () => {
 
   it('should return null for non-storage services', () => {
     const service: AdacService = { id: 'ec2-1', service: 'ec2' };
-    expect(requireStorageEncryptionRule.evaluate(service, makeContext())).toBeNull();
+    expect(
+      requireStorageEncryptionRule.evaluate(service, makeContext())
+    ).toBeNull();
   });
 
   it('should return a violation for unencrypted s3 bucket', () => {
@@ -34,7 +36,10 @@ describe('requireStorageEncryptionRule (enc-01)', () => {
       service: 's3',
       config: { encrypted: false },
     } satisfies ServiceParam;
-    const result = requireStorageEncryptionRule.evaluate(service, makeContext());
+    const result = requireStorageEncryptionRule.evaluate(
+      service,
+      makeContext()
+    );
     expect(result).not.toBeNull();
     expect(result?.id).toBe('enc-01');
     expect(result?.resourceId).toBe('bucket-1');
@@ -47,7 +52,9 @@ describe('requireStorageEncryptionRule (enc-01)', () => {
       service: 's3',
       config: { encrypted: true },
     } satisfies ServiceParam;
-    expect(requireStorageEncryptionRule.evaluate(service, makeContext())).toBeNull();
+    expect(
+      requireStorageEncryptionRule.evaluate(service, makeContext())
+    ).toBeNull();
   });
 
   it('should return null for s3 with sseAlgorithm set', () => {
@@ -56,7 +63,9 @@ describe('requireStorageEncryptionRule (enc-01)', () => {
       service: 's3',
       config: { sseAlgorithm: 'AES256' },
     } satisfies ServiceParam;
-    expect(requireStorageEncryptionRule.evaluate(service, makeContext())).toBeNull();
+    expect(
+      requireStorageEncryptionRule.evaluate(service, makeContext())
+    ).toBeNull();
   });
 
   it('should return null for rds with storageEncrypted: true', () => {
@@ -65,7 +74,9 @@ describe('requireStorageEncryptionRule (enc-01)', () => {
       service: 'rds',
       config: { storageEncrypted: true },
     } satisfies ServiceParam;
-    expect(requireStorageEncryptionRule.evaluate(service, makeContext())).toBeNull();
+    expect(
+      requireStorageEncryptionRule.evaluate(service, makeContext())
+    ).toBeNull();
   });
 
   it('should return null for service using encryption_enabled flag', () => {
@@ -74,17 +85,29 @@ describe('requireStorageEncryptionRule (enc-01)', () => {
       service: 'gcs',
       configuration: { encryption_enabled: true },
     } satisfies ServiceParam;
-    expect(requireStorageEncryptionRule.evaluate(service, makeContext())).toBeNull();
+    expect(
+      requireStorageEncryptionRule.evaluate(service, makeContext())
+    ).toBeNull();
   });
 
   it('should handle GCP services (cloud-sql, bigquery, firestore, bigtable)', () => {
-    const gcpServices = ['cloud-sql', 'bigquery', 'firestore', 'bigtable', 'cloud-spanner', 'cloudsql'];
+    const gcpServices = [
+      'cloud-sql',
+      'bigquery',
+      'firestore',
+      'bigtable',
+      'cloud-spanner',
+      'cloudsql',
+    ];
     for (const svc of gcpServices) {
       const service: AdacService = {
         id: `${svc}-1`,
         service: svc,
       } satisfies ServiceParam;
-      const result = requireStorageEncryptionRule.evaluate(service, makeContext());
+      const result = requireStorageEncryptionRule.evaluate(
+        service,
+        makeContext()
+      );
       expect(result?.id).toBe('enc-01');
     }
   });
@@ -95,7 +118,10 @@ describe('requireStorageEncryptionRule (enc-01)', () => {
       service: 'rds',
       config: {},
     } satisfies ServiceParam;
-    const result = requireStorageEncryptionRule.evaluate(service, makeContext());
+    const result = requireStorageEncryptionRule.evaluate(
+      service,
+      makeContext()
+    );
     expect(result?.remediation.id).toBe('rem-enc-01');
     expect(result?.remediation.actionableSteps.length).toBeGreaterThan(0);
     expect(result?.remediation.references.length).toBeGreaterThan(0);
@@ -108,7 +134,10 @@ describe('requireStorageEncryptionRule (enc-01)', () => {
       service: 's3',
       config: {},
     } satisfies ServiceParam;
-    const result = requireStorageEncryptionRule.evaluate(service, makeContext());
+    const result = requireStorageEncryptionRule.evaluate(
+      service,
+      makeContext()
+    );
     expect(result?.message).toContain('Production Bucket');
   });
 });

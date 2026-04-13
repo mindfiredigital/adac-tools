@@ -23,7 +23,9 @@ describe('commonSuggestions', () => {
   });
 
   it('privateSubnet suggestion should mention private subnet', () => {
-    expect(commonSuggestions.privateSubnet.toLowerCase()).toContain('private subnet');
+    expect(commonSuggestions.privateSubnet.toLowerCase()).toContain(
+      'private subnet'
+    );
   });
 
   it('enableLogging suggestion should mention access logs', () => {
@@ -32,6 +34,8 @@ describe('commonSuggestions', () => {
 
   it('leastPrivilege suggestion should mention wildcard or IAM policies', () => {
     const suggestion = commonSuggestions.leastPrivilege.toLowerCase();
-    expect(suggestion.includes('wildcard') || suggestion.includes('iam')).toBe(true);
+    expect(suggestion.includes('wildcard') || suggestion.includes('iam')).toBe(
+      true
+    );
   });
 });

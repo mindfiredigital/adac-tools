@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { runCLI, CostBreakdown } from '../src/index.js';
+import { runCLI } from '../src/index.js';
+import type { CostBreakdown } from '../src/index.js';
 
 describe('ADAC CLI', () => {
   const mockOptions = {
@@ -123,7 +124,9 @@ describe('ADAC CLI - cost command', () => {
     await runCLI(options);
 
     expect(mockExit).toHaveBeenCalledWith(1);
-    const errorLogs = consoleErrorSpy.mock.calls.map((c) => c.join(' ')).join('\n');
+    const errorLogs = consoleErrorSpy.mock.calls
+      .map((c) => c.join(' '))
+      .join('\n');
     expect(errorLogs).toContain('Cost calculation is not available');
   });
 
@@ -142,12 +145,16 @@ describe('ADAC CLI - cost command', () => {
     await runCLI(options);
 
     expect(mockExit).toHaveBeenCalledWith(1);
-    const errorLogs = consoleErrorSpy.mock.calls.map((c) => c.join(' ')).join('\n');
+    const errorLogs = consoleErrorSpy.mock.calls
+      .map((c) => c.join(' '))
+      .join('\n');
     expect(errorLogs).toContain('Pricing data unavailable');
   });
 
   it('should pass period and pricing options to calculateCostFromYaml', async () => {
-    const calculateCostFromYaml = vi.fn().mockReturnValue({ ...mockCostBreakdown, period: 'yearly' });
+    const calculateCostFromYaml = vi
+      .fn()
+      .mockReturnValue({ ...mockCostBreakdown, period: 'yearly' });
     const options = {
       generateDiagram: vi.fn().mockResolvedValue(undefined),
       parseAdac: vi.fn().mockReturnValue({}),
@@ -156,7 +163,16 @@ describe('ADAC CLI - cost command', () => {
       version: '1.0.0',
     };
 
-    process.argv = ['node', 'adac', 'cost', 'test.yaml', '--period', 'yearly', '--pricing', 'reserved'];
+    process.argv = [
+      'node',
+      'adac',
+      'cost',
+      'test.yaml',
+      '--period',
+      'yearly',
+      '--pricing',
+      'reserved',
+    ];
     await runCLI(options);
 
     expect(calculateCostFromYaml).toHaveBeenCalledWith(
@@ -244,7 +260,14 @@ describe('ADAC CLI - terraform command', () => {
       version: '1.0.0',
     };
 
-    process.argv = ['node', 'adac', 'terraform', 'test.yaml', '-o', 'tf-output'];
+    process.argv = [
+      'node',
+      'adac',
+      'terraform',
+      'test.yaml',
+      '-o',
+      'tf-output',
+    ];
     await runCLI(options);
 
     expect(generateTerraformFromYaml).toHaveBeenCalledWith(
@@ -267,7 +290,9 @@ describe('ADAC CLI - terraform command', () => {
     await runCLI(options);
 
     expect(mockExit).toHaveBeenCalledWith(1);
-    const errorLogs = consoleErrorSpy.mock.calls.map((c) => c.join(' ')).join('\n');
+    const errorLogs = consoleErrorSpy.mock.calls
+      .map((c) => c.join(' '))
+      .join('\n');
     expect(errorLogs).toContain('Terraform generation is not available');
   });
 
@@ -276,7 +301,9 @@ describe('ADAC CLI - terraform command', () => {
       generateDiagram: vi.fn().mockResolvedValue(undefined),
       parseAdac: vi.fn().mockReturnValue({}),
       validateAdacConfig: vi.fn().mockReturnValue({ valid: true }),
-      generateTerraformFromYaml: vi.fn().mockRejectedValue(new Error('Terraform error')),
+      generateTerraformFromYaml: vi
+        .fn()
+        .mockRejectedValue(new Error('Terraform error')),
       version: '1.0.0',
     };
 
@@ -284,7 +311,9 @@ describe('ADAC CLI - terraform command', () => {
     await runCLI(options);
 
     expect(mockExit).toHaveBeenCalledWith(1);
-    const errorLogs = consoleErrorSpy.mock.calls.map((c) => c.join(' ')).join('\n');
+    const errorLogs = consoleErrorSpy.mock.calls
+      .map((c) => c.join(' '))
+      .join('\n');
     expect(errorLogs).toContain('Terraform error');
   });
 
@@ -298,7 +327,14 @@ describe('ADAC CLI - terraform command', () => {
       version: '1.0.0',
     };
 
-    process.argv = ['node', 'adac', 'terraform', 'test.yaml', '-o', 'my-tf-dir'];
+    process.argv = [
+      'node',
+      'adac',
+      'terraform',
+      'test.yaml',
+      '-o',
+      'my-tf-dir',
+    ];
     await runCLI(options);
 
     const allLogs = consoleSpy.mock.calls.map((c) => c.join(' ')).join('\n');
@@ -368,14 +404,21 @@ describe('ADAC CLI - diagram command with --cost flag', () => {
 
     // Should still call generateDiagram (cost error is non-fatal in diagram command)
     expect(generateDiagram).toHaveBeenCalled();
-    const errorLogs = consoleErrorSpy.mock.calls.map((c) => c.join(' ')).join('\n');
+    const errorLogs = consoleErrorSpy.mock.calls
+      .map((c) => c.join(' '))
+      .join('\n');
     expect(errorLogs).toContain('Cost calculation is not available');
   });
 });
 
 describe('ADAC CLI - CostBreakdown type', () => {
   it('CostBreakdown should support all valid periods', () => {
-    const periods: CostBreakdown['period'][] = ['hourly', 'daily', 'monthly', 'yearly'];
+    const periods: CostBreakdown['period'][] = [
+      'hourly',
+      'daily',
+      'monthly',
+      'yearly',
+    ];
     for (const period of periods) {
       const breakdown: CostBreakdown = {
         compute: 1,
@@ -398,7 +441,11 @@ describe('ADAC CLI - CostBreakdown type', () => {
       total: 100,
       period: 'monthly',
     };
-    const calculatedTotal = breakdown.compute + breakdown.database + breakdown.storage + breakdown.networking;
+    const calculatedTotal =
+      breakdown.compute +
+      breakdown.database +
+      breakdown.storage +
+      breakdown.networking;
     expect(calculatedTotal).toBe(breakdown.total);
   });
 });
