@@ -105,6 +105,7 @@ reviews:
     - '!.next/**'
     - '!storybook-static/**'
     - '!packages/icons-*/**'
+    - '*test.*'
 
   # Path-specific review instructions
   path_instructions:

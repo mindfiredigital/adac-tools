@@ -1,15 +1,11 @@
-import ELK from "elkjs/lib/elk.bundled.js";
+import ELK from 'elkjs/lib/elk.bundled.js';
 import type {
   ElkNode,
   ElkExtendedEdge,
   ElkEdgeSection,
-} from "elkjs/lib/elk-api";
+} from 'elkjs/lib/elk-api';
 
-import {
-  LayoutEngine,
-  LayoutOptions,
-  LayoutResult,
-} from "./types.js";
+import { LayoutEngine, LayoutOptions, LayoutResult } from './types.js';
 
 export class ElkLayoutEngine implements LayoutEngine {
   private elk: InstanceType<typeof ELK>;
@@ -76,21 +72,22 @@ export class ElkLayoutEngine implements LayoutEngine {
 
   async layout(): Promise<LayoutResult> {
     const graph: ElkNode = {
-      id: "root",
+      id: 'root',
       children: Array.from(this.nodes.values()),
       edges: this.edges,
 
       layoutOptions: {
-        "elk.algorithm": "layered",
-        "elk.direction": this.options.rankdir === "LR" ? "RIGHT" : "DOWN",
+        'elk.algorithm': 'layered',
+        'elk.direction': this.options.rankdir === 'LR' ? 'RIGHT' : 'DOWN',
 
-        "elk.edgeRouting": "ORTHOGONAL",
-        "elk.layered.spacing.nodeNodeBetweenLayers":
-          String(this.options.ranksep ?? 80),
-        "elk.spacing.nodeNode": String(this.options.nodesep ?? 40),
+        'elk.edgeRouting': 'ORTHOGONAL',
+        'elk.layered.spacing.nodeNodeBetweenLayers': String(
+          this.options.ranksep ?? 80
+        ),
+        'elk.spacing.nodeNode': String(this.options.nodesep ?? 40),
 
-        "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
-        "elk.layered.crossingMinimization.strategy": "LAYER_SWEEP",
+        'elk.layered.nodePlacement.strategy': 'BRANDES_KOEPF',
+        'elk.layered.crossingMinimization.strategy': 'LAYER_SWEEP',
       },
     };
 

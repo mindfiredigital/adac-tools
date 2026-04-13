@@ -31,11 +31,15 @@ export async function createLayoutEngine(
   // ELK ENGINE (Optional install)
   if (resolvedType === 'elk') {
     try {
-      const { ElkLayoutEngine } = await import('@mindfiredigital/adac-layout-elk');
+      const { ElkLayoutEngine } =
+        await import('@mindfiredigital/adac-layout-elk');
       return new ElkLayoutEngine(options);
     } catch (error: unknown) {
       const errCode = (error as { code?: unknown })?.code;
-      if (errCode === 'ERR_MODULE_NOT_FOUND' || errCode === 'MODULE_NOT_FOUND') {
+      if (
+        errCode === 'ERR_MODULE_NOT_FOUND' ||
+        errCode === 'MODULE_NOT_FOUND'
+      ) {
         console.warn(
           'ELK layout engine is unavailable. Install @mindfiredigital/adac-layout-elk to use the elk engine. Falling back to custom engine.',
           error

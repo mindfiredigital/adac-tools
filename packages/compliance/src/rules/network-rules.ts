@@ -23,11 +23,17 @@ export const requirePrivateSubnetsRule: ComplianceRule = {
         string,
         unknown
       >;
-      if (
+      const isPublic =
         config?.publiclyAccessible === true ||
         config?.subnetType === 'public' ||
-        config?.public_ip_enabled === true
-      ) {
+        config?.public_ip_enabled === true;
+
+      const isMissingConfig =
+        config?.publiclyAccessible === undefined &&
+        config?.subnetType === undefined &&
+        config?.public_ip_enabled === undefined;
+
+      if (isPublic || isMissingConfig) {
         return {
           id: 'net-01',
           resourceId: service.id,
