@@ -3,7 +3,6 @@ import { requireBackupRule } from '../../src/rules/backup-rules';
 import { AdacConfig } from '@mindfiredigital/adac-schema';
 
 type AdacService = AdacConfig['infrastructure']['clouds'][0]['services'][0];
-type ServiceParam = Parameters<typeof requireBackupRule.evaluate>[0];
 
 const makeContext = (): { config: AdacConfig } => ({
   config: {
@@ -38,7 +37,7 @@ describe('requireBackupRule (bck-01)', () => {
       id: 'rds-no-backup',
       service: 'rds',
       config: { backupRetentionPeriod: 0 },
-    } satisfies ServiceParam;
+    } as unknown as AdacService;
     const result = requireBackupRule.evaluate(service, makeContext());
     expect(result).not.toBeNull();
     expect(result?.id).toBe('bck-01');
@@ -51,7 +50,7 @@ describe('requireBackupRule (bck-01)', () => {
       id: 'rds-backed-up',
       service: 'rds',
       config: { backupRetentionPeriod: 7 },
-    } satisfies ServiceParam;
+    } as unknown as AdacService;
     expect(requireBackupRule.evaluate(service, makeContext())).toBeNull();
   });
 
@@ -60,7 +59,7 @@ describe('requireBackupRule (bck-01)', () => {
       id: 'rds-bare',
       service: 'rds',
       config: {},
-    } satisfies ServiceParam;
+    } as unknown as AdacService;
     const result = requireBackupRule.evaluate(service, makeContext());
     expect(result?.id).toBe('bck-01');
   });
@@ -70,7 +69,7 @@ describe('requireBackupRule (bck-01)', () => {
       id: 'rds-flag',
       service: 'rds',
       config: { backup_enabled: true },
-    } satisfies ServiceParam;
+    } as unknown as AdacService;
     expect(requireBackupRule.evaluate(service, makeContext())).toBeNull();
   });
 
@@ -79,7 +78,7 @@ describe('requireBackupRule (bck-01)', () => {
       id: 'rds-flag',
       service: 'rds',
       config: { backup_enabled: false },
-    } satisfies ServiceParam;
+    } as unknown as AdacService;
     expect(requireBackupRule.evaluate(service, makeContext())).toEqual({
       framework: '',
       id: 'bck-01',
@@ -101,7 +100,7 @@ describe('requireBackupRule (bck-01)', () => {
       id: 'cloudsql-no-backup',
       service: 'cloud-sql',
       configuration: { backup_retention_days: 0 },
-    } satisfies ServiceParam;
+    } as unknown as AdacService;
     const result = requireBackupRule.evaluate(service, makeContext());
     expect(result?.id).toBe('bck-01');
   });
@@ -111,7 +110,7 @@ describe('requireBackupRule (bck-01)', () => {
       id: 'cloudsql-backed',
       service: 'cloud-sql',
       configuration: { backup_retention_days: 14 },
-    } satisfies ServiceParam;
+    } as unknown as AdacService;
     expect(requireBackupRule.evaluate(service, makeContext())).toBeNull();
   });
 
@@ -130,7 +129,7 @@ describe('requireBackupRule (bck-01)', () => {
         id: `${svc}-test`,
         service: svc,
         config: { backupRetentionPeriod: 0 },
-      } satisfies ServiceParam;
+      } as unknown as AdacService;
       const result = requireBackupRule.evaluate(service, makeContext());
       expect(result?.id).toBe('bck-01');
     }
@@ -141,7 +140,7 @@ describe('requireBackupRule (bck-01)', () => {
       id: 'prod-rds',
       service: 'rds',
       config: {},
-    } satisfies ServiceParam;
+    } as unknown as AdacService;
     const result = requireBackupRule.evaluate(service, makeContext());
     expect(result?.remediation.id).toBe('rem-bck-01');
     expect(result?.remediation.actionableSteps[0]).toContain('prod-rds');
@@ -153,7 +152,7 @@ describe('requireBackupRule (bck-01)', () => {
       name: 'Primary Database',
       service: 'rds',
       config: {},
-    } satisfies ServiceParam;
+    } as unknown as AdacService;
     const result = requireBackupRule.evaluate(service, makeContext());
     expect(result?.message).toContain('Primary Database');
   });

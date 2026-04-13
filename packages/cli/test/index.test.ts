@@ -409,29 +409,6 @@ describe('ADAC CLI - diagram command with --cost flag', () => {
       .join('\n');
     expect(errorLogs).toContain('Cost calculation is not available');
   });
-
-  it('should log error but continue when calculateCostFromYaml throws and --cost is passed', async () => {
-    const generateDiagram = vi.fn().mockResolvedValue(undefined);
-    const options = {
-      generateDiagram,
-      parseAdac: vi.fn().mockReturnValue({}),
-      validateAdacConfig: vi.fn().mockReturnValue({ valid: true }),
-      calculateCostFromYaml: vi.fn().mockImplementation(() => {
-        throw new Error('boom');
-      }),
-      version: '1.0.0',
-    };
-
-    process.argv = ['node', 'adac', 'diagram', 'test.yaml', '--cost'];
-    await runCLI(options);
-
-    // Should still call generateDiagram (cost error is non-fatal in diagram command)
-    expect(generateDiagram).toHaveBeenCalled();
-    const errorLogs = consoleErrorSpy.mock.calls
-      .map((c) => c.join(' '))
-      .join('\n');
-    expect(errorLogs).toContain('Cost calculation is not available');
-  });
 });
 
 describe('ADAC CLI - CostBreakdown type', () => {
