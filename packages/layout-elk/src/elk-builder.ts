@@ -22,6 +22,17 @@ try {
       'mappings',
       'icon-map.json'
     ),
+    // Try npm module location
+    path.resolve(
+      __dirname,
+      '..',
+      '..',
+      '..',
+      '@mindfiredigital',
+      'adac-icons-aws',
+      'mappings',
+      'icon-map.json'
+    ),
     // Relative to process cwd
     path.resolve(
       process.cwd(),
@@ -65,6 +76,17 @@ try {
       'mappings',
       'icon-map.json'
     ),
+    // Try npm module location
+    path.resolve(
+      __dirname,
+      '..',
+      '..',
+      '..',
+      '@mindfiredigital',
+      'adac-icons-gcp',
+      'mappings',
+      'icon-map.json'
+    ),
     // Relative to process cwd
     path.resolve(
       process.cwd(),
@@ -90,6 +112,58 @@ try {
   }
 } catch (e) {
   console.error('Failed to load GCP icon-map.json', e);
+}
+
+// Load Azure Icon Map
+let AZURE_ICON_MAP: Record<string, string> = {};
+
+try {
+  const azureMapPaths = [
+    // Two directories up from dist is packages
+    path.resolve(
+      __dirname,
+      '..',
+      '..',
+      'icons-azure',
+      'mappings',
+      'icon-map.json'
+    ),
+    // Try npm module location
+    path.resolve(
+      __dirname,
+      '..',
+      '..',
+      '..',
+      '@mindfiredigital',
+      'adac-icons-azure',
+      'mappings',
+      'icon-map.json'
+    ),
+    // Relative to process cwd
+    path.resolve(
+      process.cwd(),
+      'packages',
+      'icons-azure',
+      'mappings',
+      'icon-map.json'
+    ),
+    path.resolve(process.cwd(), 'icons-azure', 'mappings', 'icon-map.json'),
+  ];
+
+  for (const p of azureMapPaths) {
+    if (fs.existsSync(p)) {
+      AZURE_ICON_MAP = JSON.parse(fs.readFileSync(p, 'utf8'));
+      break;
+    }
+  }
+
+  if (Object.keys(AZURE_ICON_MAP).length === 0) {
+    console.warn(
+      'Warning: Could not find Azure icon-map.json. Run: pnpm --filter @mindfiredigital/adac-icons-azure setup-icons'
+    );
+  }
+} catch (e) {
+  console.error('Failed to load Azure icon-map.json', e);
 }
 
 // AWS Colors matching AWS Diagrams
@@ -133,6 +207,32 @@ const GCP_STYLES = {
     cssClass: 'gcp-compute-cluster',
   },
   service: { type: 'node', style: 'gcp-service' },
+  app: { type: 'node', style: 'app' },
+};
+
+// Azure Container Styles — uses Microsoft Azure color palette (blue)
+const AZURE_STYLES = {
+  // Azure Resource Group (blue border)
+  vpc: { type: 'container', style: 'azure-rg', cssClass: 'azure-rg' },
+  // Azure Subscription (lighter blue)
+  region: {
+    type: 'container',
+    style: 'azure-subscription',
+    cssClass: 'azure-subscription',
+  },
+  // Azure container
+  subnet: {
+    type: 'container',
+    style: 'azure-container',
+    cssClass: 'azure-container',
+  },
+  // Azure compute cluster/group
+  compute: {
+    type: 'container',
+    style: 'azure-compute-cluster',
+    cssClass: 'azure-compute-cluster',
+  },
+  service: { type: 'node', style: 'azure-service' },
   app: { type: 'node', style: 'app' },
 };
 
@@ -284,14 +384,22 @@ export function buildElkGraph(adac: AdacConfig): ElkNode {
     )
   );
   const isGcp = providers.has('gcp');
+  const isAzure = providers.has('azure');
 
   // Helper to get icon map key for the active provider
-  const getIconPath = (key: string, forceProvider?: 'aws' | 'gcp') => {
+  const getIconPath = (
+    key: string,
+    forceProvider?: 'aws' | 'gcp' | 'azure'
+  ) => {
     if (!key) return undefined;
-    const provider = forceProvider || (isGcp ? 'gcp' : 'aws');
+    const provider =
+      forceProvider || (isAzure ? 'azure' : isGcp ? 'gcp' : 'aws');
 
     if (provider === 'gcp') {
       return getGcpIconPath(key);
+    }
+    if (provider === 'azure') {
+      return getAzureIconPath(key);
     }
     return getAwsIconPath(key);
   };
@@ -364,6 +472,31 @@ export function buildElkGraph(adac: AdacConfig): ElkNode {
     return undefined;
   };
 
+  // --- Azure Icon resolution ---
+  const getAzureIconPath = (key: string) => {
+    if (!key) return undefined;
+
+    // 1. Direct lookup in Azure map
+    if (AZURE_ICON_MAP[key]) return resolveAzureAssetPath(AZURE_ICON_MAP[key]);
+
+    const lowerKey = normalizeKey(key);
+
+    // 2. Normalized lookup
+    if (AZURE_ICON_MAP[lowerKey]) {
+      return resolveAzureAssetPath(AZURE_ICON_MAP[lowerKey]);
+    }
+
+    // 3. Fuzzy / partial match
+    for (const [originalKey, iconPath] of Object.entries(AZURE_ICON_MAP)) {
+      const normalized = normalizeKey(originalKey);
+      if (normalized.includes(lowerKey) || lowerKey.includes(normalized)) {
+        return resolveAzureAssetPath(iconPath);
+      }
+    }
+
+    return undefined;
+  };
+
   // Helper to resolve an AWS icon relative path to an absolute file path
   const resolveAwsAssetPath = (relativePath?: string) => {
     if (!relativePath) return undefined;
@@ -371,6 +504,17 @@ export function buildElkGraph(adac: AdacConfig): ElkNode {
     const searchPaths = [
       path.resolve(__dirname, 'assets', relativePath),
       path.resolve(__dirname, '..', '..', 'icons-aws', 'assets', relativePath),
+      // Try npm module location
+      path.resolve(
+        __dirname,
+        '..',
+        '..',
+        '..',
+        '@mindfiredigital',
+        'adac-icons-aws',
+        'assets',
+        relativePath
+      ),
       path.resolve(
         process.cwd(),
         'packages',
@@ -396,6 +540,17 @@ export function buildElkGraph(adac: AdacConfig): ElkNode {
 
     const searchPaths = [
       path.resolve(__dirname, '..', '..', 'icons-gcp', 'assets', relativePath),
+      // Try npm module location
+      path.resolve(
+        __dirname,
+        '..',
+        '..',
+        '..',
+        '@mindfiredigital',
+        'adac-icons-gcp',
+        'assets',
+        relativePath
+      ),
       path.resolve(
         process.cwd(),
         'packages',
@@ -415,6 +570,49 @@ export function buildElkGraph(adac: AdacConfig): ElkNode {
     return undefined;
   };
 
+  // Helper to resolve an Azure icon relative path to an absolute file path
+  const resolveAzureAssetPath = (relativePath?: string) => {
+    if (!relativePath) return undefined;
+
+    const searchPaths = [
+      path.resolve(
+        __dirname,
+        '..',
+        '..',
+        'icons-azure',
+        'assets',
+        relativePath
+      ),
+      // Try npm module location
+      path.resolve(
+        __dirname,
+        '..',
+        '..',
+        '..',
+        '@mindfiredigital',
+        'adac-icons-azure',
+        'assets',
+        relativePath
+      ),
+      path.resolve(
+        process.cwd(),
+        'packages',
+        'icons-azure',
+        'assets',
+        relativePath
+      ),
+      path.resolve(process.cwd(), 'icons-azure', 'assets', relativePath),
+      path.resolve(process.cwd(), 'assets', relativePath),
+    ];
+
+    for (const p of searchPaths) {
+      if (fs.existsSync(p)) return p;
+    }
+
+    console.warn('Could not resolve Azure icon path:', relativePath);
+    return undefined;
+  };
+
   // Backwards-compat helper (picks the right resolver based on current context)
   const resolveAssetPath = (relativePath?: string) => {
     return isGcp
@@ -431,9 +629,16 @@ export function buildElkGraph(adac: AdacConfig): ElkNode {
   const isGcpCloud = (cloud: AdacCloud) =>
     (cloud.provider || '').toLowerCase() === 'gcp';
 
+  // Detect if a cloud is Azure-based
+  const isAzureCloud = (cloud: AdacCloud) =>
+    (cloud.provider || '').toLowerCase() === 'azure';
+
   // Select STYLES based on cloud provider
-  const getStylesForCloud = (cloud: AdacCloud) =>
-    isGcpCloud(cloud) ? GCP_STYLES : STYLES;
+  const getStylesForCloud = (cloud: AdacCloud) => {
+    if (isAzureCloud(cloud)) return AZURE_STYLES;
+    if (isGcpCloud(cloud)) return GCP_STYLES;
+    return STYLES;
+  };
 
   const detectIconForApp = (app: AdacApplication) => {
     // 1. Prefer AI Inference

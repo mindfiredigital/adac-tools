@@ -13,7 +13,10 @@
   "dependencies": {
     "elkjs": "^0.11.0",
     "@mindfiredigital/adac-layout-core": "workspace:*",
-    "@mindfiredigital/adac-schema": "workspace:*"
+    "@mindfiredigital/adac-schema": "workspace:*",
+    "@mindfiredigital/adac-icons-aws": "workspace:*",
+    "@mindfiredigital/adac-icons-gcp": "workspace:*",
+    "@mindfiredigital/adac-icons-azure": "workspace:*"
   },
   "license": "ISC",
   "repository": {
