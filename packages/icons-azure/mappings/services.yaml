@@ -1,0 +1,389 @@
+# Azure Service Mapping
+# This file maps ADAC service keys to Azure Product Names, Categories and Colors
+# Used by icon-setup.ts to download/map icons or generate placeholders
+
+# Compute
+virtual-machines:
+  name: "Virtual Machines"
+  category: "Compute"
+  color: "#0078D4"
+app-service:
+  name: "App Service"
+  category: "Web"
+  color: "#0078D4"
+azure-functions:
+  name: "Azure Functions"
+  category: "Compute"
+  color: "#0078D4"
+container-instances:
+  name: "Container Instances"
+  category: "Containers"
+  color: "#0078D4"
+azure-kubernetes-service:
+  name: "Azure Kubernetes Service"
+  category: "Containers"
+  color: "#326CE5"
+aks:
+  name: "Azure Kubernetes Service"
+  category: "Containers"
+  color: "#326CE5"
+azure-batch:
+  name: "Azure Batch"
+  category: "Compute"
+  color: "#0078D4"
+azure-spring-apps:
+  name: "Azure Spring Apps"
+  category: "Compute"
+  color: "#0078D4"
+virtual-machine-scale-sets:
+  name: "Virtual Machine Scale Sets"
+  category: "Compute"
+  color: "#0078D4"
+azure-vmware-solution:
+  name: "Azure VMware Solution"
+  category: "Compute"
+  color: "#0078D4"
+
+# Databases
+azure-sql-database:
+  name: "Azure SQL Database"
+  category: "Databases"
+  color: "#0078D4"
+cosmos-db:
+  name: "Azure Cosmos DB"
+  category: "Databases"
+  color: "#0078D4"
+azure-database-for-mysql:
+  name: "Azure Database for MySQL"
+  category: "Databases"
+  color: "#0078D4"
+azure-database-for-postgresql:
+  name: "Azure Database for PostgreSQL"
+  category: "Databases"
+  color: "#0078D4"
+azure-cache-for-redis:
+  name: "Azure Cache for Redis"
+  category: "Databases"
+  color: "#D82C20"
+azure-sql-managed-instance:
+  name: "Azure SQL Managed Instance"
+  category: "Databases"
+  color: "#0078D4"
+azure-database-for-mariadb:
+  name: "Azure Database for MariaDB"
+  category: "Databases"
+  color: "#0078D4"
+azure-table-storage:
+  name: "Azure Table Storage"
+  category: "Databases"
+  color: "#0078D4"
+
+# Storage
+azure-blob-storage:
+  name: "Azure Blob Storage"
+  category: "Storage"
+  color: "#0078D4"
+blob-storage:
+  name: "Azure Blob Storage"
+  category: "Storage"
+  color: "#0078D4"
+azure-files:
+  name: "Azure Files"
+  category: "Storage"
+  color: "#0078D4"
+azure-data-lake-storage:
+  name: "Azure Data Lake Storage"
+  category: "Storage"
+  color: "#0078D4"
+azure-managed-disks:
+  name: "Azure Managed Disks"
+  category: "Storage"
+  color: "#0078D4"
+azure-queue-storage:
+  name: "Azure Queue Storage"
+  category: "Storage"
+  color: "#0078D4"
+azure-storage-account:
+  name: "Azure Storage Account"
+  category: "Storage"
+  color: "#0078D4"
+azure-netapp-files:
+  name: "Azure NetApp Files"
+  category: "Storage"
+  color: "#0078D4"
+
+# Networking
+virtual-network:
+  name: "Virtual Network"
+  category: "Networking"
+  color: "#0078D4"
+vnet:
+  name: "Virtual Network"
+  category: "Networking"
+  color: "#0078D4"
+azure-load-balancer:
+  name: "Azure Load Balancer"
+  category: "Networking"
+  color: "#0078D4"
+application-gateway:
+  name: "Application Gateway"
+  category: "Networking"
+  color: "#0078D4"
+azure-dns:
+  name: "Azure DNS"
+  category: "Networking"
+  color: "#0078D4"
+azure-cdn:
+  name: "Azure CDN"
+  category: "Networking"
+  color: "#0078D4"
+azure-front-door:
+  name: "Azure Front Door"
+  category: "Networking"
+  color: "#0078D4"
+azure-firewall:
+  name: "Azure Firewall"
+  category: "Networking"
+  color: "#FF6D00"
+vpn-gateway:
+  name: "VPN Gateway"
+  category: "Networking"
+  color: "#0078D4"
+azure-expressroute:
+  name: "Azure ExpressRoute"
+  category: "Networking"
+  color: "#0078D4"
+azure-bastion:
+  name: "Azure Bastion"
+  category: "Networking"
+  color: "#0078D4"
+azure-ddos-protection:
+  name: "Azure DDoS Protection"
+  category: "Networking"
+  color: "#0078D4"
+network-security-group:
+  name: "Network Security Group"
+  category: "Networking"
+  color: "#0078D4"
+azure-private-link:
+  name: "Azure Private Link"
+  category: "Networking"
+  color: "#0078D4"
+traffic-manager:
+  name: "Traffic Manager"
+  category: "Networking"
+  color: "#0078D4"
+
+# Integration
+azure-service-bus:
+  name: "Azure Service Bus"
+  category: "Integration"
+  color: "#0078D4"
+azure-event-grid:
+  name: "Azure Event Grid"
+  category: "Integration"
+  color: "#0078D4"
+azure-event-hubs:
+  name: "Azure Event Hubs"
+  category: "Integration"
+  color: "#0078D4"
+azure-logic-apps:
+  name: "Azure Logic Apps"
+  category: "Integration"
+  color: "#0078D4"
+azure-api-management:
+  name: "Azure API Management"
+  category: "Integration"
+  color: "#68217A"
+
+# Data & Analytics
+azure-synapse-analytics:
+  name: "Azure Synapse Analytics"
+  category: "Analytics"
+  color: "#0078D4"
+azure-databricks:
+  name: "Azure Databricks"
+  category: "Analytics"
+  color: "#FF3621"
+azure-data-factory:
+  name: "Azure Data Factory"
+  category: "Analytics"
+  color: "#0078D4"
+azure-stream-analytics:
+  name: "Azure Stream Analytics"
+  category: "Analytics"
+  color: "#0078D4"
+azure-data-explorer:
+  name: "Azure Data Explorer"
+  category: "Analytics"
+  color: "#0078D4"
+azure-hdinsight:
+  name: "Azure HDInsight"
+  category: "Analytics"
+  color: "#0078D4"
+azure-analysis-services:
+  name: "Azure Analysis Services"
+  category: "Analytics"
+  color: "#0078D4"
+power-bi:
+  name: "Power BI"
+  category: "Analytics"
+  color: "#F2C811"
+azure-purview:
+  name: "Azure Purview"
+  category: "Analytics"
+  color: "#0078D4"
+
+# AI & Machine Learning
+azure-machine-learning:
+  name: "Azure Machine Learning"
+  category: "AI + Machine Learning"
+  color: "#0078D4"
+azure-cognitive-services:
+  name: "Azure Cognitive Services"
+  category: "AI + Machine Learning"
+  color: "#0078D4"
+azure-openai-service:
+  name: "Azure OpenAI Service"
+  category: "AI + Machine Learning"
+  color: "#10A37F"
+azure-bot-service:
+  name: "Azure Bot Service"
+  category: "AI + Machine Learning"
+  color: "#0078D4"
+azure-ai-search:
+  name: "Azure AI Search"
+  category: "AI + Machine Learning"
+  color: "#0078D4"
+azure-ai-studio:
+  name: "Azure AI Studio"
+  category: "AI + Machine Learning"
+  color: "#0078D4"
+
+# Security & Identity
+azure-active-directory:
+  name: "Azure Active Directory"
+  category: "Identity"
+  color: "#0078D4"
+entra-id:
+  name: "Microsoft Entra ID"
+  category: "Identity"
+  color: "#0078D4"
+azure-key-vault:
+  name: "Azure Key Vault"
+  category: "Security"
+  color: "#0078D4"
+microsoft-defender-for-cloud:
+  name: "Microsoft Defender for Cloud"
+  category: "Security"
+  color: "#0078D4"
+azure-sentinel:
+  name: "Microsoft Sentinel"
+  category: "Security"
+  color: "#0078D4"
+azure-information-protection:
+  name: "Azure Information Protection"
+  category: "Security"
+  color: "#0078D4"
+
+# Monitoring & Management
+azure-monitor:
+  name: "Azure Monitor"
+  category: "Management + Governance"
+  color: "#0078D4"
+azure-log-analytics:
+  name: "Azure Log Analytics"
+  category: "Management + Governance"
+  color: "#0078D4"
+azure-application-insights:
+  name: "Application Insights"
+  category: "Management + Governance"
+  color: "#68217A"
+azure-policy:
+  name: "Azure Policy"
+  category: "Management + Governance"
+  color: "#0078D4"
+azure-resource-manager:
+  name: "Azure Resource Manager"
+  category: "Management + Governance"
+  color: "#0078D4"
+azure-automation:
+  name: "Azure Automation"
+  category: "Management + Governance"
+  color: "#0078D4"
+azure-advisor:
+  name: "Azure Advisor"
+  category: "Management + Governance"
+  color: "#0078D4"
+
+# DevOps / CI-CD
+azure-devops:
+  name: "Azure DevOps"
+  category: "DevOps"
+  color: "#0078D4"
+azure-repos:
+  name: "Azure Repos"
+  category: "DevOps"
+  color: "#0078D4"
+azure-pipelines:
+  name: "Azure Pipelines"
+  category: "DevOps"
+  color: "#0078D4"
+azure-container-registry:
+  name: "Azure Container Registry"
+  category: "Containers"
+  color: "#0078D4"
+azure-artifacts:
+  name: "Azure Artifacts"
+  category: "DevOps"
+  color: "#0078D4"
+
+# Web
+azure-signalr-service:
+  name: "Azure SignalR Service"
+  category: "Web"
+  color: "#0078D4"
+azure-static-web-apps:
+  name: "Azure Static Web Apps"
+  category: "Web"
+  color: "#0078D4"
+
+# IoT
+azure-iot-hub:
+  name: "Azure IoT Hub"
+  category: "Internet of Things"
+  color: "#0078D4"
+azure-iot-central:
+  name: "Azure IoT Central"
+  category: "Internet of Things"
+  color: "#0078D4"
+azure-iot-edge:
+  name: "Azure IoT Edge"
+  category: "Internet of Things"
+  color: "#0078D4"
+azure-digital-twins:
+  name: "Azure Digital Twins"
+  category: "Internet of Things"
+  color: "#0078D4"
+
+# Network topology containers
+subnet:
+  name: "Subnet"
+  category: "Networking"
+  color: "#0078D4"
+resource-group:
+  name: "Resource Group"
+  category: "Management + Governance"
+  color: "#0078D4"
+region:
+  name: "Region"
+  category: "Management + Governance"
+  color: "#0078D4"
+subscription:
+  name: "Subscription"
+  category: "Management + Governance"
+  color: "#0078D4"
+availability-zone:
+  name: "Availability Zone"
+  category: "Management + Governance"
+  color: "#0078D4"

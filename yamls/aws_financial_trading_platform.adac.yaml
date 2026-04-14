@@ -1,0 +1,632 @@
+version: '0.1'
+
+metadata:
+  name: 'AWS Multi-Region Financial Trading Platform'
+  author: 'ADAC Team'
+  description: >
+    A mission-critical financial trading platform with multi-AZ high
+    availability, real-time streaming via Kinesis and MSK, CQRS pattern
+    with DynamoDB and Aurora, AI-powered fraud detection via SageMaker,
+    and full PCI-DSS/SOC2 compliance across all tiers.
+  created: '2026-04-14'
+  environment: production
+
+applications:
+  - id: 'trading-ui'
+    name: 'Trading Dashboard'
+    type: 'frontend'
+    technology: 'React + TypeScript'
+    owner: 'frontend-team'
+    sla:
+      availability_percent: 99.99
+      max_latency_ms: 50
+
+  - id: 'order-matching-engine'
+    name: 'Order Matching Engine'
+    type: 'backend'
+    technology: 'Rust'
+    owner: 'core-trading-team'
+    sla:
+      availability_percent: 99.999
+      max_latency_ms: 1
+
+  - id: 'risk-engine'
+    name: 'Risk Engine'
+    type: 'microservice'
+    technology: 'C++'
+    owner: 'risk-team'
+
+  - id: 'market-data-feed'
+    name: 'Market Data Aggregator'
+    type: 'data-pipeline'
+    technology: 'Java'
+    owner: 'data-team'
+
+  - id: 'fraud-detector'
+    name: 'Fraud Detection Model'
+    type: 'ml-model'
+    technology: 'Python + XGBoost'
+    owner: 'ml-team'
+
+  - id: 'settlement-service'
+    name: 'Settlement Processor'
+    type: 'worker'
+    technology: 'Java'
+    owner: 'settlement-team'
+
+  - id: 'compliance-reporter'
+    name: 'Compliance Reporter'
+    type: 'batch-job'
+    technology: 'Python'
+    owner: 'compliance-team'
+
+  - id: 'portfolio-tracker'
+    name: 'Portfolio Tracker API'
+    type: 'api'
+    technology: 'Go'
+    owner: 'platform-team'
+
+infrastructure:
+  clouds:
+    - id: 'aws-primary'
+      provider: 'aws'
+      region: 'us-east-1'
+      tier: 'primary'
+      services:
+        # ── Networking ────────────────────────────────────────────────
+        - id: 'trading-vpc'
+          service: 'vpc'
+          name: 'Trading VPC'
+          config:
+            cidr: '10.100.0.0/16'
+
+        - id: 'dmz-subnet-a'
+          service: 'subnet'
+          name: 'DMZ Subnet AZ-A'
+          config:
+            vpc: 'trading-vpc'
+            cidr: '10.100.1.0/24'
+            availability_zone: 'us-east-1a'
+            public: true
+
+        - id: 'dmz-subnet-b'
+          service: 'subnet'
+          name: 'DMZ Subnet AZ-B'
+          config:
+            vpc: 'trading-vpc'
+            cidr: '10.100.2.0/24'
+            availability_zone: 'us-east-1b'
+            public: true
+
+        - id: 'app-subnet-a'
+          service: 'subnet'
+          name: 'App Subnet AZ-A'
+          config:
+            vpc: 'trading-vpc'
+            cidr: '10.100.10.0/24'
+            availability_zone: 'us-east-1a'
+
+        - id: 'app-subnet-b'
+          service: 'subnet'
+          name: 'App Subnet AZ-B'
+          config:
+            vpc: 'trading-vpc'
+            cidr: '10.100.11.0/24'
+            availability_zone: 'us-east-1b'
+
+        - id: 'data-subnet-a'
+          service: 'subnet'
+          name: 'Data Subnet AZ-A'
+          config:
+            vpc: 'trading-vpc'
+            cidr: '10.100.20.0/24'
+            availability_zone: 'us-east-1a'
+
+        - id: 'data-subnet-b'
+          service: 'subnet'
+          name: 'Data Subnet AZ-B'
+          config:
+            vpc: 'trading-vpc'
+            cidr: '10.100.21.0/24'
+            availability_zone: 'us-east-1b'
+
+        - id: 'transit-gw'
+          service: 'transit-gateway'
+          name: 'Transit Gateway'
+          description: 'Hub for cross-VPC and cross-region networking'
+
+        - id: 'direct-connect-link'
+          service: 'direct-connect'
+          name: 'Direct Connect'
+          description: 'Dedicated 10Gbps link to exchange co-lo'
+
+        - id: 'igw-primary'
+          service: 'internet-gateway'
+          name: 'Internet Gateway'
+
+        - id: 'nat-primary-a'
+          service: 'nat-gateway'
+          name: 'NAT Gateway AZ-A'
+
+        - id: 'nat-primary-b'
+          service: 'nat-gateway'
+          name: 'NAT Gateway AZ-B'
+
+        # ── Edge & Security ───────────────────────────────────────────
+        - id: 'route53-global'
+          service: 'route53'
+          name: 'Route 53 (Failover)'
+          description: 'DNS with latency-based routing and health checks'
+
+        - id: 'cloudfront-static'
+          service: 'cloudfront'
+          name: 'CloudFront CDN'
+          description: 'Static assets and WebSocket acceleration'
+
+        - id: 'waf-trading'
+          service: 'waf'
+          name: 'AWS WAF'
+          compliance:
+            - pci-dss
+
+        - id: 'shield-advanced'
+          service: 'shield'
+          name: 'Shield Advanced'
+          description: 'DDoS protection for financial services'
+
+        - id: 'cognito-traders'
+          service: 'cognito'
+          name: 'Cognito (Traders)'
+          description: 'MFA-enabled authentication for traders'
+
+        - id: 'kms-trading'
+          service: 'kms'
+          name: 'KMS Keys'
+          compliance:
+            - pci-dss
+            - hipaa
+
+        - id: 'secrets-vault'
+          service: 'secrets-manager'
+          name: 'Secrets Manager'
+          compliance:
+            - pci-dss
+
+        - id: 'iam-trading'
+          service: 'iam'
+          name: 'IAM'
+
+        - id: 'guardduty-trading'
+          service: 'guardduty'
+          name: 'GuardDuty'
+
+        - id: 'inspector-scans'
+          service: 'inspector'
+          name: 'Inspector'
+          description: 'Container and EC2 vulnerability scanning'
+
+        - id: 'macie-pii'
+          service: 'macie'
+          name: 'Macie PII Scanner'
+          description: 'Scans S3 for sensitive financial data'
+
+        - id: 'acm-certs'
+          service: 'acm'
+          name: 'ACM Certificates'
+
+        # ── Load Balancers ────────────────────────────────────────────
+        - id: 'nlb-matching'
+          service: 'nlb'
+          name: 'NLB (Matching Engine)'
+          description: 'Ultra-low-latency NLB for order matching'
+          config:
+            subnets:
+              - 'app-subnet-a'
+              - 'app-subnet-b'
+            cross_zone: true
+
+        - id: 'alb-api'
+          service: 'alb'
+          name: 'ALB (API Tier)'
+          config:
+            subnets:
+              - 'dmz-subnet-a'
+              - 'dmz-subnet-b'
+            scheme: 'internet-facing'
+
+        - id: 'alb-internal'
+          service: 'alb'
+          name: 'ALB (Internal Services)'
+          config:
+            scheme: 'internal'
+
+        # ── Compute ───────────────────────────────────────────────────
+        - id: 'eks-trading'
+          service: 'eks'
+          name: 'EKS Trading Cluster'
+          runs: ['order-matching-engine', 'risk-engine', 'portfolio-tracker']
+          description: 'Kubernetes cluster for low-latency trading services'
+          config:
+            node_groups:
+              - name: 'matching-nodes'
+                instance_type: 'c7g.8xlarge'
+                count: 6
+              - name: 'risk-nodes'
+                instance_type: 'r7g.4xlarge'
+                count: 4
+
+        - id: 'ecs-settlement'
+          service: 'ecs-fargate'
+          name: 'ECS Settlement Service'
+          runs: ['settlement-service']
+          config:
+            cpu: 2048
+            memory: 4096
+
+        - id: 'lambda-compliance'
+          service: 'lambda'
+          name: 'Compliance Lambda'
+          runs: ['compliance-reporter']
+          configuration:
+            memory_mb: 512
+            timeout_seconds: 900
+
+        - id: 'lambda-notifications'
+          service: 'lambda'
+          name: 'Trade Notifications'
+          configuration:
+            memory_mb: 256
+            timeout_seconds: 30
+
+        - id: 'batch-eod'
+          service: 'batch'
+          name: 'End-of-Day Batch'
+          description: 'End-of-day settlement and reconciliation'
+
+        - id: 'ecr-images'
+          service: 'ecr'
+          name: 'ECR Registry'
+
+        # ── Streaming & Messaging ─────────────────────────────────────
+        - id: 'msk-cluster'
+          service: 'msk'
+          name: 'MSK Cluster'
+          runs: ['market-data-feed']
+          description: 'Apache Kafka for market data and trade events'
+          config:
+            broker_count: 6
+            broker_type: 'kafka.m5.4xlarge'
+
+        - id: 'kinesis-trades'
+          service: 'kinesis-streams'
+          name: 'Kinesis Trade Stream'
+          description: 'Real-time trade execution events'
+          config:
+            shard_count: 16
+
+        - id: 'kinesis-market-data'
+          service: 'kinesis-streams'
+          name: 'Kinesis Market Data'
+          description: 'Incoming market data feed'
+          config:
+            shard_count: 32
+
+        - id: 'sqs-settlement'
+          service: 'sqs'
+          name: 'SQS Settlement Queue'
+
+        - id: 'sns-trade-alerts'
+          service: 'sns'
+          name: 'SNS Trade Alerts'
+          description: 'Real-time trade execution notifications'
+
+        - id: 'eventbridge-trades'
+          service: 'eventbridge'
+          name: 'EventBridge (Trades)'
+
+        # ── Databases ─────────────────────────────────────────────────
+        - id: 'aurora-trades'
+          service: 'rds-aurora-postgres'
+          name: 'Aurora (Trades Ledger)'
+          description: 'ACID-compliant trade ledger'
+          compliance:
+            - pci-dss
+            - soc2
+          configuration:
+            instance_type: 'db.r7g.4xlarge'
+            instance_count: 5
+            multi_az: true
+            encryption_enabled: true
+            backup_enabled: true
+            backup_retention_days: 35
+
+        - id: 'dynamodb-positions'
+          service: 'dynamodb'
+          name: 'DynamoDB (Positions)'
+          description: 'Real-time position tracking with single-digit ms reads'
+          config:
+            billing_mode: 'PROVISIONED'
+            read_capacity: 25000
+            write_capacity: 10000
+            global_tables: true
+
+        - id: 'dynamodb-orders'
+          service: 'dynamodb'
+          name: 'DynamoDB (Orders)'
+          description: 'Hot order book with TTL cleanup'
+          config:
+            billing_mode: 'PAY_PER_REQUEST'
+
+        - id: 'elasticache-orderbook'
+          service: 'elasticache-redis'
+          name: 'Redis (Order Book Cache)'
+          config:
+            node_type: 'cache.r7g.2xlarge'
+            num_replicas: 3
+            multi_az: true
+
+        - id: 'timestream-metrics'
+          service: 'timestream'
+          name: 'Timestream (Metrics)'
+          description: 'Time-series trading metrics and latency data'
+
+        # ── Storage ───────────────────────────────────────────────────
+        - id: 's3-trade-archive'
+          service: 's3'
+          name: 'S3 Trade Archive'
+          description: 'Immutable trade record archive (7yr retention)'
+          runs: ['trading-ui']
+          compliance:
+            - pci-dss
+            - soc2
+
+        - id: 's3-market-data'
+          service: 's3'
+          name: 'S3 Market Data Archive'
+
+        - id: 's3-compliance-reports'
+          service: 's3'
+          name: 'S3 Compliance Reports'
+
+        # ── Analytics ─────────────────────────────────────────────────
+        - id: 'redshift-dw'
+          service: 'redshift'
+          name: 'Redshift (Analytics DW)'
+          config:
+            node_type: 'ra3.4xlarge'
+            number_of_nodes: 8
+
+        - id: 'glue-etl'
+          service: 'glue'
+          name: 'Glue ETL'
+
+        - id: 'athena-analysis'
+          service: 'athena'
+          name: 'Athena Queries'
+
+        - id: 'quicksight-trading'
+          service: 'quicksight'
+          name: 'QuickSight Dashboards'
+
+        # ── AI/ML ─────────────────────────────────────────────────────
+        - id: 'sagemaker-fraud'
+          service: 'sagemaker'
+          name: 'SageMaker (Fraud Detection)'
+          runs: ['fraud-detector']
+          config:
+            instance_type: 'ml.p4d.24xlarge'
+            endpoint_instances: 4
+
+        # ── Observability ─────────────────────────────────────────────
+        - id: 'cw-dashboard'
+          service: 'cloudwatch'
+          name: 'CloudWatch Dashboards'
+          monitoring:
+            enabled: true
+
+        - id: 'cw-logs'
+          service: 'cloudwatch-logs'
+          name: 'CloudWatch Logs'
+
+        - id: 'xray-traces'
+          service: 'x-ray'
+          name: 'X-Ray Tracing'
+
+        - id: 'cloudtrail-log'
+          service: 'cloudtrail'
+          name: 'CloudTrail'
+          compliance:
+            - pci-dss
+            - soc2
+
+        - id: 'config-rules'
+          service: 'config'
+          name: 'AWS Config'
+          description: 'Compliance rule evaluation'
+
+connections:
+  # Edge
+  - id: 'user-to-dns'
+    from: 'User'
+    to: 'route53-global'
+    type: 'dns-resolution'
+  - id: 'dns-to-cdn'
+    from: 'route53-global'
+    to: 'cloudfront-static'
+    type: 'dns-resolution'
+  - id: 'cdn-to-waf'
+    from: 'cloudfront-static'
+    to: 'waf-trading'
+    type: 'api-call'
+  - id: 'cdn-to-s3'
+    from: 'cloudfront-static'
+    to: 's3-trade-archive'
+    type: 'cdn-origin'
+  - id: 'cdn-to-alb'
+    from: 'cloudfront-static'
+    to: 'alb-api'
+    type: 'api-call'
+    protocol: 'HTTPS'
+
+  # Auth
+  - id: 'ui-to-cognito'
+    from: 'trading-ui'
+    to: 'cognito-traders'
+    type: 'authentication'
+
+  # Load balancer to compute
+  - id: 'alb-to-eks'
+    from: 'alb-api'
+    to: 'eks-trading'
+    type: 'load-balancing'
+  - id: 'nlb-to-eks'
+    from: 'nlb-matching'
+    to: 'eks-trading'
+    type: 'load-balancing'
+  - id: 'alb-int-to-ecs'
+    from: 'alb-internal'
+    to: 'ecs-settlement'
+    type: 'load-balancing'
+
+  # Matching engine data flow
+  - id: 'matching-to-kinesis'
+    from: 'order-matching-engine'
+    to: 'kinesis-trades'
+    type: 'stream-write'
+  - id: 'matching-to-redis'
+    from: 'order-matching-engine'
+    to: 'elasticache-orderbook'
+    type: 'cache-write'
+    protocol: 'Redis'
+  - id: 'matching-to-dynamo-orders'
+    from: 'order-matching-engine'
+    to: 'dynamodb-orders'
+    type: 'database-query'
+  - id: 'matching-to-aurora'
+    from: 'order-matching-engine'
+    to: 'aurora-trades'
+    type: 'database-query'
+    protocol: 'PostgreSQL'
+  - id: 'matching-to-eventbridge'
+    from: 'order-matching-engine'
+    to: 'eventbridge-trades'
+    type: 'message-publish'
+
+  # Risk engine
+  - id: 'risk-from-kinesis'
+    from: 'kinesis-trades'
+    to: 'risk-engine'
+    type: 'stream-read'
+  - id: 'risk-to-dynamo-positions'
+    from: 'risk-engine'
+    to: 'dynamodb-positions'
+    type: 'database-query'
+  - id: 'risk-to-sagemaker'
+    from: 'risk-engine'
+    to: 'sagemaker-fraud'
+    type: 'api-call'
+    protocol: 'HTTPS'
+
+  # Market data
+  - id: 'exchange-to-dc'
+    from: 'Exchange'
+    to: 'direct-connect-link'
+    type: 'direct-connect'
+  - id: 'dc-to-msk'
+    from: 'direct-connect-link'
+    to: 'msk-cluster'
+    type: 'stream-write'
+  - id: 'msk-to-kinesis-market'
+    from: 'msk-cluster'
+    to: 'kinesis-market-data'
+    type: 'stream-write'
+  - id: 'kinesis-market-to-matching'
+    from: 'kinesis-market-data'
+    to: 'eks-trading'
+    type: 'stream-read'
+
+  # Settlement
+  - id: 'eb-to-sqs-settlement'
+    from: 'eventbridge-trades'
+    to: 'sqs-settlement'
+    type: 'message-publish'
+  - id: 'sqs-to-settlement'
+    from: 'sqs-settlement'
+    to: 'ecs-settlement'
+    type: 'message-consume'
+  - id: 'settlement-to-aurora'
+    from: 'settlement-service'
+    to: 'aurora-trades'
+    type: 'database-query'
+    protocol: 'PostgreSQL'
+  - id: 'settlement-to-sns'
+    from: 'settlement-service'
+    to: 'sns-trade-alerts'
+    type: 'message-publish'
+
+  # Notifications
+  - id: 'sns-to-lambda-notifs'
+    from: 'sns-trade-alerts'
+    to: 'lambda-notifications'
+    type: 'message-consume'
+
+  # Portfolio
+  - id: 'portfolio-to-dynamo'
+    from: 'portfolio-tracker'
+    to: 'dynamodb-positions'
+    type: 'database-query'
+  - id: 'portfolio-to-redis'
+    from: 'portfolio-tracker'
+    to: 'elasticache-orderbook'
+    type: 'cache-read'
+    protocol: 'Redis'
+  - id: 'portfolio-to-timestream'
+    from: 'portfolio-tracker'
+    to: 'timestream-metrics'
+    type: 'database-query'
+
+  # Analytics
+  - id: 'kinesis-to-glue'
+    from: 'kinesis-trades'
+    to: 'glue-etl'
+    type: 'stream-read'
+  - id: 'glue-to-s3-archive'
+    from: 'glue-etl'
+    to: 's3-market-data'
+    type: 'file-upload'
+  - id: 'glue-to-redshift'
+    from: 'glue-etl'
+    to: 'redshift-dw'
+    type: 'stream-write'
+  - id: 'athena-to-s3'
+    from: 'athena-analysis'
+    to: 's3-market-data'
+    type: 'database-query'
+  - id: 'redshift-to-qs'
+    from: 'redshift-dw'
+    to: 'quicksight-trading'
+    type: 'api-call'
+
+  # Compliance
+  - id: 'lambda-compliance-to-s3'
+    from: 'lambda-compliance'
+    to: 's3-compliance-reports'
+    type: 'file-upload'
+  - id: 'lambda-compliance-to-aurora'
+    from: 'lambda-compliance'
+    to: 'aurora-trades'
+    type: 'database-query'
+
+  # Security
+  - id: 'eks-to-secrets'
+    from: 'eks-trading'
+    to: 'secrets-vault'
+    type: 'api-call'
+  - id: 'kms-to-aurora'
+    from: 'kms-trading'
+    to: 'aurora-trades'
+    type: 'api-call'
+  - id: 'kms-to-s3'
+    from: 'kms-trading'
+    to: 's3-trade-archive'
+    type: 'api-call'
