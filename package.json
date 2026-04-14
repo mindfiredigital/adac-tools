@@ -18,6 +18,7 @@
     "prepare": "husky",
     "cli": "node packages/diagram/dist/cli.js",
     "setup:icons": "pnpm --filter @mindfiredigital/adac-icons-aws run setup-icons && pnpm --filter @mindfiredigital/adac-icons-gcp run setup-icons && pnpm --filter @mindfiredigital/adac-icons-azure run setup-icons",
+    "prerelease:pack": "pnpm setup:icons && pnpm build",
     "release:pack": "node scripts/pack-release.js",
     "release:publish": "node scripts/publish-packages.mjs",
     "release:publish:dry-run": "node scripts/publish-packages.mjs --dry-run",
