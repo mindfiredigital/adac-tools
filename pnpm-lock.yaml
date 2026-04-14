@@ -324,7 +324,32 @@ importers:
         specifier: ^10.9.2
         version: 10.9.2(@types/node@25.3.0)(typescript@5.9.3)
 
-  packages/icons-azure: {}
+  packages/icons-azure:
+    devDependencies:
+      '@types/adm-zip':
+        specifier: ^0.5.5
+        version: 0.5.7
+      '@types/fs-extra':
+        specifier: ^11.0.4
+        version: 11.0.4
+      '@types/js-yaml':
+        specifier: ^4.0.9
+        version: 4.0.9
+      adm-zip:
+        specifier: ^0.5.10
+        version: 0.5.16
+      axios:
+        specifier: ^1.6.2
+        version: 1.13.5
+      fs-extra:
+        specifier: ^11.2.0
+        version: 11.3.3
+      js-yaml:
+        specifier: ^4.1.0
+        version: 4.1.1
+      ts-node:
+        specifier: ^10.9.2
+        version: 10.9.2(@types/node@25.3.0)(typescript@5.9.3)
 
   packages/icons-gcp:
     devDependencies:

@@ -1,0 +1,796 @@
+version: '0.1'
+
+metadata:
+  name: 'Azure Enterprise SaaS Platform'
+  author: 'ADAC Team'
+  description: >
+    A production-grade Azure enterprise SaaS platform featuring AKS
+    microservices, Azure SQL and Cosmos DB, event-driven architecture
+    with Service Bus and Event Grid, AI-powered features with Azure
+    OpenAI, comprehensive security with Entra ID and Key Vault,
+    and full observability with Azure Monitor and Application Insights.
+  created: '2026-04-14'
+  environment: production
+
+applications:
+  - id: 'web-portal'
+    name: 'SaaS Web Portal'
+    type: 'frontend'
+    technology: 'Angular'
+    owner: 'frontend-team'
+    description: 'Multi-tenant customer-facing web portal'
+
+  - id: 'tenant-api'
+    name: 'Tenant API'
+    type: 'backend'
+    technology: '.NET 8'
+    owner: 'platform-team'
+    description: 'Multi-tenant REST API with tenant isolation'
+
+  - id: 'billing-service'
+    name: 'Billing Service'
+    type: 'microservice'
+    technology: 'Go'
+    owner: 'billing-team'
+    description: 'Subscription and usage-based billing'
+
+  - id: 'notification-service'
+    name: 'Notification Service'
+    type: 'microservice'
+    technology: 'Node.js'
+    owner: 'platform-team'
+    description: 'Email, SMS, and push notification delivery'
+
+  - id: 'analytics-engine'
+    name: 'Analytics Engine'
+    type: 'data-pipeline'
+    technology: 'Python + PySpark'
+    owner: 'data-team'
+    description: 'Tenant usage analytics and reporting'
+
+  - id: 'ai-assistant'
+    name: 'AI Assistant'
+    type: 'backend'
+    technology: 'Python FastAPI'
+    owner: 'ml-team'
+    description: 'Azure OpenAI-powered intelligent assistant'
+
+  - id: 'document-processor'
+    name: 'Document Processor'
+    type: 'worker'
+    technology: 'Python'
+    owner: 'ml-team'
+    description: 'OCR and document intelligence pipeline'
+
+  - id: 'admin-portal'
+    name: 'Admin Dashboard'
+    type: 'frontend'
+    technology: 'React'
+    owner: 'internal-tools-team'
+    description: 'Internal operations and tenant management portal'
+
+infrastructure:
+  clouds:
+    - id: 'azure-prod'
+      provider: 'azure'
+      region: 'eastus2'
+      tier: 'primary'
+      services:
+        # ── Networking Layer ──────────────────────────────────────────
+        - id: 'main-vnet'
+          service: 'virtual-network'
+          name: 'Production VNet'
+          description: 'Hub VNet for all production workloads'
+          config:
+            address_space: '10.0.0.0/16'
+            enable_ddos_protection: true
+
+        - id: 'dmz-subnet'
+          service: 'subnet'
+          name: 'DMZ Subnet'
+          config:
+            vnet: 'main-vnet'
+            cidr: '10.0.1.0/24'
+            nsg: 'nsg-dmz'
+
+        - id: 'aks-subnet'
+          service: 'subnet'
+          name: 'AKS Subnet'
+          config:
+            vnet: 'main-vnet'
+            cidr: '10.0.10.0/22'
+            nsg: 'nsg-aks'
+
+        - id: 'data-subnet'
+          service: 'subnet'
+          name: 'Data Subnet'
+          config:
+            vnet: 'main-vnet'
+            cidr: '10.0.20.0/24'
+            nsg: 'nsg-data'
+            service_endpoints:
+              - 'Microsoft.Sql'
+              - 'Microsoft.Storage'
+              - 'Microsoft.KeyVault'
+
+        - id: 'integration-subnet'
+          service: 'subnet'
+          name: 'Integration Subnet'
+          config:
+            vnet: 'main-vnet'
+            cidr: '10.0.30.0/24'
+
+        - id: 'bastion-subnet'
+          service: 'subnet'
+          name: 'AzureBastionSubnet'
+          config:
+            vnet: 'main-vnet'
+            cidr: '10.0.254.0/26'
+
+        - id: 'nsg-dmz'
+          service: 'network-security-group'
+          name: 'NSG DMZ'
+          config:
+            rules:
+              - name: 'AllowHTTPS'
+                priority: 100
+                direction: 'Inbound'
+                access: 'Allow'
+                protocol: 'Tcp'
+                destination_port: 443
+
+        - id: 'nsg-aks'
+          service: 'network-security-group'
+          name: 'NSG AKS'
+
+        - id: 'nsg-data'
+          service: 'network-security-group'
+          name: 'NSG Data'
+
+        - id: 'azure-firewall-prod'
+          service: 'azure-firewall'
+          name: 'Azure Firewall'
+          description: 'Central egress firewall with threat intelligence'
+          config:
+            sku: 'Premium'
+            threat_intel_mode: 'Deny'
+
+        - id: 'azure-bastion-prod'
+          service: 'azure-bastion'
+          name: 'Azure Bastion'
+          description: 'Secure RDP/SSH access without public IPs'
+
+        - id: 'ddos-protection'
+          service: 'azure-ddos-protection'
+          name: 'DDoS Protection Plan'
+
+        - id: 'private-link-sql'
+          service: 'azure-private-link'
+          name: 'Private Link (SQL)'
+          description: 'Private endpoint for Azure SQL Database'
+
+        - id: 'private-link-cosmos'
+          service: 'azure-private-link'
+          name: 'Private Link (Cosmos)'
+          description: 'Private endpoint for Cosmos DB'
+
+        # ── Edge / DNS / CDN ──────────────────────────────────────────
+        - id: 'front-door'
+          service: 'azure-front-door'
+          name: 'Azure Front Door'
+          description: 'Global load balancing, WAF, and CDN'
+          config:
+            waf_policy: 'prevention-mode'
+            ssl_policy: 'TLS 1.2+'
+            routing_rules:
+              - pattern: '/api/*'
+                backend: 'aks-ingress'
+              - pattern: '/*'
+                backend: 'static-web-app'
+
+        - id: 'azure-dns-zones'
+          service: 'azure-dns'
+          name: 'Azure DNS'
+          description: 'Public and private DNS zones'
+
+        - id: 'cdn-profile'
+          service: 'azure-cdn'
+          name: 'Azure CDN'
+          description: 'Static content acceleration'
+
+        - id: 'traffic-mgr'
+          service: 'traffic-manager'
+          name: 'Traffic Manager'
+          description: 'DNS-based traffic routing for multi-region'
+
+        # ── Security & Identity ───────────────────────────────────────
+        - id: 'entra-id'
+          service: 'entra-id'
+          name: 'Microsoft Entra ID'
+          description: 'Identity platform with SSO and conditional access'
+          config:
+            features:
+              - 'Conditional Access'
+              - 'Privileged Identity Management'
+              - 'Multi-Factor Authentication'
+
+        - id: 'key-vault'
+          service: 'azure-key-vault'
+          name: 'Azure Key Vault'
+          description: 'Secrets, certificates, and encryption keys'
+          compliance:
+            - pci-dss
+            - soc2
+
+        - id: 'defender-cloud'
+          service: 'microsoft-defender-for-cloud'
+          name: 'Microsoft Defender for Cloud'
+          description: 'Cloud security posture management'
+
+        - id: 'sentinel-siem'
+          service: 'azure-sentinel'
+          name: 'Microsoft Sentinel'
+          description: 'SIEM and SOAR for security operations'
+
+        - id: 'info-protection'
+          service: 'azure-information-protection'
+          name: 'Azure Information Protection'
+          description: 'Data classification and protection'
+
+        # ── Compute — AKS ─────────────────────────────────────────────
+        - id: 'aks-cluster'
+          service: 'azure-kubernetes-service'
+          name: 'AKS Production Cluster'
+          runs:
+            [
+              'tenant-api',
+              'billing-service',
+              'notification-service',
+              'ai-assistant',
+            ]
+          description: 'Managed Kubernetes with auto-scaling and RBAC'
+          config:
+            kubernetes_version: '1.30'
+            node_pools:
+              - name: 'system'
+                vm_size: 'Standard_D4s_v5'
+                min_count: 3
+                max_count: 6
+              - name: 'workload'
+                vm_size: 'Standard_D8s_v5'
+                min_count: 4
+                max_count: 20
+              - name: 'gpu'
+                vm_size: 'Standard_NC6s_v3'
+                min_count: 0
+                max_count: 4
+
+        - id: 'acr-registry'
+          service: 'azure-container-registry'
+          name: 'Azure Container Registry'
+          description: 'Premium tier with geo-replication'
+          config:
+            sku: 'Premium'
+            geo_replication:
+              - 'westus2'
+              - 'westeurope'
+
+        # ── Serverless / Functions ────────────────────────────────────
+        - id: 'func-document-processor'
+          service: 'azure-functions'
+          name: 'Document Processing Functions'
+          runs: ['document-processor']
+          config:
+            runtime: 'python'
+            plan: 'Premium'
+            max_instances: 20
+
+        - id: 'func-webhooks'
+          service: 'azure-functions'
+          name: 'Webhook Handlers'
+          description: 'Stripe, SendGrid, and third-party webhooks'
+          config:
+            runtime: 'node'
+            plan: 'Consumption'
+
+        - id: 'logic-app-billing'
+          service: 'azure-logic-apps'
+          name: 'Billing Workflow'
+          description: 'Automated billing cycle and invoice generation'
+
+        # ── Web Hosting ───────────────────────────────────────────────
+        - id: 'static-web-app'
+          service: 'azure-static-web-apps'
+          name: 'Static Web App'
+          runs: ['web-portal']
+          description: 'Angular SPA with integrated API'
+
+        - id: 'admin-app-service'
+          service: 'app-service'
+          name: 'Admin App Service'
+          runs: ['admin-portal']
+          description: 'Internal admin dashboard'
+
+        - id: 'signalr-realtime'
+          service: 'azure-signalr-service'
+          name: 'Azure SignalR'
+          description: 'Real-time notifications and live updates'
+
+        # ── Integration / Messaging ───────────────────────────────────
+        - id: 'service-bus'
+          service: 'azure-service-bus'
+          name: 'Azure Service Bus'
+          description: 'Enterprise messaging with topics and queues'
+          config:
+            sku: 'Premium'
+            topics:
+              - 'tenant-events'
+              - 'billing-events'
+              - 'notification-events'
+            queues:
+              - 'document-processing'
+              - 'webhook-delivery'
+
+        - id: 'event-grid'
+          service: 'azure-event-grid'
+          name: 'Azure Event Grid'
+          description: 'Event routing for resource and custom events'
+
+        - id: 'event-hubs'
+          service: 'azure-event-hubs'
+          name: 'Azure Event Hubs'
+          description: 'High-throughput telemetry and event streaming'
+          config:
+            throughput_units: 20
+            partitions: 32
+            capture_enabled: true
+
+        - id: 'api-management'
+          service: 'azure-api-management'
+          name: 'API Management'
+          description: 'API gateway with rate limiting and developer portal'
+          config:
+            sku: 'Premium'
+            apis:
+              - 'Tenant API v2'
+              - 'Billing API v1'
+              - 'Analytics API v1'
+
+        # ── Databases ─────────────────────────────────────────────────
+        - id: 'sql-database-tenants'
+          service: 'azure-sql-database'
+          name: 'Azure SQL (Tenants)'
+          description: 'Multi-tenant relational data with elastic pools'
+          compliance:
+            - pci-dss
+            - soc2
+          config:
+            tier: 'BusinessCritical'
+            vCores: 8
+            max_size_gb: 500
+            geo_replication: true
+            tde_enabled: true
+            audit_enabled: true
+
+        - id: 'cosmos-db-app'
+          service: 'cosmos-db'
+          name: 'Cosmos DB (App Data)'
+          description: 'Multi-model DB for tenant configs and preferences'
+          config:
+            consistency_level: 'Session'
+            multi_region_writes: true
+            regions:
+              - 'East US 2'
+              - 'West US 2'
+              - 'West Europe'
+
+        - id: 'redis-cache'
+          service: 'azure-cache-for-redis'
+          name: 'Azure Cache for Redis'
+          description: 'API response caching and session management'
+          config:
+            sku: 'Premium'
+            capacity: 'P3'
+            cluster_enabled: true
+            shard_count: 3
+
+        - id: 'pgsql-analytics'
+          service: 'azure-database-for-postgresql'
+          name: 'PostgreSQL (Analytics)'
+          description: 'Analytics and reporting database'
+
+        # ── Storage ───────────────────────────────────────────────────
+        - id: 'storage-account'
+          service: 'azure-storage-account'
+          name: 'Storage Account'
+          description: 'General-purpose storage for blobs, files, and queues'
+
+        - id: 'blob-documents'
+          service: 'azure-blob-storage'
+          name: 'Blob Storage (Documents)'
+          description: 'Tenant document uploads and processing'
+          config:
+            access_tier: 'Hot'
+            versioning: true
+            soft_delete_days: 30
+
+        - id: 'blob-backups'
+          service: 'azure-blob-storage'
+          name: 'Blob Storage (Backups)'
+          description: 'Database backups and disaster recovery'
+          config:
+            access_tier: 'Cool'
+            immutable_storage: true
+
+        - id: 'data-lake'
+          service: 'azure-data-lake-storage'
+          name: 'Data Lake Storage Gen2'
+          description: 'Raw and processed analytics data'
+
+        - id: 'azure-files-share'
+          service: 'azure-files'
+          name: 'Azure Files'
+          description: 'Shared file storage for AKS pods'
+
+        # ── Data & Analytics ──────────────────────────────────────────
+        - id: 'synapse-workspace'
+          service: 'azure-synapse-analytics'
+          name: 'Synapse Analytics'
+          runs: ['analytics-engine']
+          description: 'Unified analytics workspace'
+
+        - id: 'databricks-workspace'
+          service: 'azure-databricks'
+          name: 'Azure Databricks'
+          description: 'Advanced analytics and ML feature engineering'
+
+        - id: 'data-factory'
+          service: 'azure-data-factory'
+          name: 'Data Factory'
+          description: 'ETL pipelines and data movement'
+
+        - id: 'stream-analytics'
+          service: 'azure-stream-analytics'
+          name: 'Stream Analytics'
+          description: 'Real-time stream processing'
+
+        - id: 'power-bi-embedded'
+          service: 'power-bi'
+          name: 'Power BI Embedded'
+          description: 'Embedded analytics for tenant dashboards'
+
+        - id: 'purview-governance'
+          service: 'azure-purview'
+          name: 'Microsoft Purview'
+          description: 'Data governance and catalog'
+
+        # ── AI & Machine Learning ─────────────────────────────────────
+        - id: 'openai-service'
+          service: 'azure-openai-service'
+          name: 'Azure OpenAI Service'
+          description: 'GPT-4o for intelligent assistant and content generation'
+          config:
+            models:
+              - 'gpt-4o'
+              - 'text-embedding-3-large'
+            deployments:
+              - name: 'chat-completion'
+                capacity: 120
+
+        - id: 'cognitive-services'
+          service: 'azure-cognitive-services'
+          name: 'Cognitive Services'
+          description: 'OCR, translation, and language understanding'
+
+        - id: 'ai-search'
+          service: 'azure-ai-search'
+          name: 'Azure AI Search'
+          description: 'Vector + semantic search for tenant content'
+          config:
+            sku: 'S2'
+            replicas: 3
+            partitions: 2
+
+        - id: 'ml-workspace'
+          service: 'azure-machine-learning'
+          name: 'Azure ML Workspace'
+          description: 'MLOps for custom tenant models'
+
+        - id: 'bot-service'
+          service: 'azure-bot-service'
+          name: 'Azure Bot Service'
+          description: 'Conversational AI for customer support'
+
+        # ── Monitoring & Management ───────────────────────────────────
+        - id: 'azure-monitor-ws'
+          service: 'azure-monitor'
+          name: 'Azure Monitor'
+          description: 'Metrics, alerts, and auto-scaling rules'
+
+        - id: 'app-insights'
+          service: 'azure-application-insights'
+          name: 'Application Insights'
+          description: 'APM with distributed tracing and smart detection'
+
+        - id: 'log-analytics'
+          service: 'azure-log-analytics'
+          name: 'Log Analytics Workspace'
+          description: 'Centralized log aggregation and KQL queries'
+
+        - id: 'azure-policy-prod'
+          service: 'azure-policy'
+          name: 'Azure Policy'
+          description: 'Governance policies and compliance auditing'
+
+        - id: 'advisor'
+          service: 'azure-advisor'
+          name: 'Azure Advisor'
+          description: 'Cost and performance recommendations'
+
+        - id: 'automation-acct'
+          service: 'azure-automation'
+          name: 'Azure Automation'
+          description: 'Runbooks for operational tasks'
+
+        # ── DevOps ────────────────────────────────────────────────────
+        - id: 'azure-devops-org'
+          service: 'azure-devops'
+          name: 'Azure DevOps'
+          description: 'Project management and CI/CD'
+
+        - id: 'azure-pipelines-ci'
+          service: 'azure-pipelines'
+          name: 'Azure Pipelines'
+          description: 'Multi-stage CI/CD with approvals'
+
+        - id: 'azure-repos-git'
+          service: 'azure-repos'
+          name: 'Azure Repos'
+          description: 'Git repositories for all services'
+
+        - id: 'azure-artifacts-feed'
+          service: 'azure-artifacts'
+          name: 'Azure Artifacts'
+          description: 'NuGet, npm, and Maven package feeds'
+
+        # ── IoT (for telemetry) ───────────────────────────────────────
+        - id: 'iot-hub-telemetry'
+          service: 'azure-iot-hub'
+          name: 'IoT Hub'
+          description: 'Device telemetry ingestion for IoT tenants'
+
+connections:
+  # ── Edge to Application ─────────────────────────────────────────
+  - id: 'user-to-frontdoor'
+    from: 'User'
+    to: 'front-door'
+    type: 'api-call'
+    protocol: 'HTTPS'
+  - id: 'frontdoor-to-static'
+    from: 'front-door'
+    to: 'static-web-app'
+    type: 'cdn-origin'
+  - id: 'frontdoor-to-apim'
+    from: 'front-door'
+    to: 'api-management'
+    type: 'api-call'
+    protocol: 'HTTPS'
+  - id: 'dns-to-frontdoor'
+    from: 'azure-dns-zones'
+    to: 'front-door'
+    type: 'dns-resolution'
+
+  # ── API Layer ───────────────────────────────────────────────────
+  - id: 'apim-to-aks'
+    from: 'api-management'
+    to: 'aks-cluster'
+    type: 'api-call'
+    protocol: 'HTTPS'
+  - id: 'apim-to-functions'
+    from: 'api-management'
+    to: 'func-webhooks'
+    type: 'api-call'
+
+  # ── Authentication ──────────────────────────────────────────────
+  - id: 'portal-to-entra'
+    from: 'web-portal'
+    to: 'entra-id'
+    type: 'authentication'
+  - id: 'admin-to-entra'
+    from: 'admin-portal'
+    to: 'entra-id'
+    type: 'authentication'
+  - id: 'aks-to-entra'
+    from: 'aks-cluster'
+    to: 'entra-id'
+    type: 'authorization'
+
+  # ── Application to Database ─────────────────────────────────────
+  - id: 'tenant-api-to-sql'
+    from: 'tenant-api'
+    to: 'sql-database-tenants'
+    type: 'database-query'
+    protocol: 'SQL'
+  - id: 'tenant-api-to-cosmos'
+    from: 'tenant-api'
+    to: 'cosmos-db-app'
+    type: 'database-query'
+  - id: 'tenant-api-to-redis'
+    from: 'tenant-api'
+    to: 'redis-cache'
+    type: 'cache-read'
+    protocol: 'Redis'
+  - id: 'billing-to-sql'
+    from: 'billing-service'
+    to: 'sql-database-tenants'
+    type: 'database-query'
+    protocol: 'SQL'
+  - id: 'billing-to-cosmos'
+    from: 'billing-service'
+    to: 'cosmos-db-app'
+    type: 'database-query'
+
+  # ── Messaging ───────────────────────────────────────────────────
+  - id: 'tenant-api-to-servicebus'
+    from: 'tenant-api'
+    to: 'service-bus'
+    type: 'message-publish'
+  - id: 'billing-to-servicebus'
+    from: 'billing-service'
+    to: 'service-bus'
+    type: 'message-publish'
+  - id: 'servicebus-to-notification'
+    from: 'service-bus'
+    to: 'notification-service'
+    type: 'message-consume'
+  - id: 'servicebus-to-func-doc'
+    from: 'service-bus'
+    to: 'func-document-processor'
+    type: 'message-consume'
+  - id: 'eventgrid-to-func'
+    from: 'event-grid'
+    to: 'func-webhooks'
+    type: 'message-consume'
+  - id: 'billing-to-logicapp'
+    from: 'billing-service'
+    to: 'logic-app-billing'
+    type: 'api-call'
+
+  # ── Real-time ───────────────────────────────────────────────────
+  - id: 'aks-to-signalr'
+    from: 'aks-cluster'
+    to: 'signalr-realtime'
+    type: 'api-call'
+  - id: 'portal-to-signalr'
+    from: 'web-portal'
+    to: 'signalr-realtime'
+    type: 'api-call'
+
+  # ── Storage ─────────────────────────────────────────────────────
+  - id: 'doc-processor-to-blob'
+    from: 'document-processor'
+    to: 'blob-documents'
+    type: 'file-upload'
+  - id: 'doc-processor-to-cognitive'
+    from: 'document-processor'
+    to: 'cognitive-services'
+    type: 'api-call'
+
+  # ── AI/ML Pipeline ─────────────────────────────────────────────
+  - id: 'ai-assistant-to-openai'
+    from: 'ai-assistant'
+    to: 'openai-service'
+    type: 'api-call'
+    protocol: 'HTTPS'
+  - id: 'ai-assistant-to-search'
+    from: 'ai-assistant'
+    to: 'ai-search'
+    type: 'api-call'
+  - id: 'ai-assistant-to-cosmos'
+    from: 'ai-assistant'
+    to: 'cosmos-db-app'
+    type: 'database-query'
+  - id: 'bot-to-openai'
+    from: 'bot-service'
+    to: 'openai-service'
+    type: 'api-call'
+
+  # ── Analytics Pipeline ──────────────────────────────────────────
+  - id: 'eventhubs-to-stream'
+    from: 'event-hubs'
+    to: 'stream-analytics'
+    type: 'stream-read'
+  - id: 'stream-to-datalake'
+    from: 'stream-analytics'
+    to: 'data-lake'
+    type: 'file-upload'
+  - id: 'datafactory-to-synapse'
+    from: 'data-factory'
+    to: 'synapse-workspace'
+    type: 'api-call'
+  - id: 'datafactory-to-datalake'
+    from: 'data-factory'
+    to: 'data-lake'
+    type: 'file-download'
+  - id: 'synapse-to-powerbi'
+    from: 'synapse-workspace'
+    to: 'power-bi-embedded'
+    type: 'api-call'
+  - id: 'databricks-to-datalake'
+    from: 'databricks-workspace'
+    to: 'data-lake'
+    type: 'file-download'
+  - id: 'purview-to-sql'
+    from: 'purview-governance'
+    to: 'sql-database-tenants'
+    type: 'api-call'
+  - id: 'purview-to-datalake'
+    from: 'purview-governance'
+    to: 'data-lake'
+    type: 'api-call'
+  - id: 'tenant-api-to-eventhubs'
+    from: 'tenant-api'
+    to: 'event-hubs'
+    type: 'stream-write'
+
+  # ── IoT ─────────────────────────────────────────────────────────
+  - id: 'iot-to-eventhubs'
+    from: 'iot-hub-telemetry'
+    to: 'event-hubs'
+    type: 'stream-write'
+
+  # ── Security ────────────────────────────────────────────────────
+  - id: 'aks-to-keyvault'
+    from: 'aks-cluster'
+    to: 'key-vault'
+    type: 'api-call'
+  - id: 'func-to-keyvault'
+    from: 'func-document-processor'
+    to: 'key-vault'
+    type: 'api-call'
+  - id: 'sentinel-to-log-analytics'
+    from: 'sentinel-siem'
+    to: 'log-analytics'
+    type: 'api-call'
+  - id: 'defender-to-sentinel'
+    from: 'defender-cloud'
+    to: 'sentinel-siem'
+    type: 'api-call'
+
+  # ── Monitoring ──────────────────────────────────────────────────
+  - id: 'aks-to-appinsights'
+    from: 'aks-cluster'
+    to: 'app-insights'
+    type: 'stream-write'
+  - id: 'func-to-appinsights'
+    from: 'func-document-processor'
+    to: 'app-insights'
+    type: 'stream-write'
+  - id: 'appinsights-to-loganalytics'
+    from: 'app-insights'
+    to: 'log-analytics'
+    type: 'stream-write'
+  - id: 'monitor-to-loganalytics'
+    from: 'azure-monitor-ws'
+    to: 'log-analytics'
+    type: 'api-call'
+
+  # ── CI/CD Pipeline ─────────────────────────────────────────────
+  - id: 'repos-to-pipelines'
+    from: 'azure-repos-git'
+    to: 'azure-pipelines-ci'
+    type: 'api-call'
+  - id: 'pipelines-to-acr'
+    from: 'azure-pipelines-ci'
+    to: 'acr-registry'
+    type: 'file-upload'
+  - id: 'pipelines-to-aks'
+    from: 'azure-pipelines-ci'
+    to: 'aks-cluster'
+    type: 'api-call'
+
+  # ── Backup ─────────────────────────────────────────────────────
+  - id: 'sql-to-blob-backup'
+    from: 'sql-database-tenants'
+    to: 'blob-backups'
+    type: 'backup'

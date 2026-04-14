@@ -1,0 +1,606 @@
+version: '0.1'
+
+metadata:
+  name: 'Azure IoT Smart Factory & Analytics Platform'
+  author: 'ADAC Team'
+  description: >
+    An Azure-native IoT platform for smart factory operations featuring
+    IoT Hub device management, real-time stream processing with Stream
+    Analytics and Event Hubs, predictive maintenance with Azure Machine
+    Learning, operational dashboards with Power BI, and end-to-end
+    security with Defender for IoT and Sentinel.
+  created: '2026-04-14'
+  environment: production
+
+applications:
+  - id: 'factory-dashboard'
+    name: 'Factory Operations Dashboard'
+    type: 'frontend'
+    technology: 'React + D3.js'
+    owner: 'factory-ops-team'
+
+  - id: 'device-management-api'
+    name: 'Device Management API'
+    type: 'backend'
+    technology: '.NET 8'
+    owner: 'iot-team'
+
+  - id: 'telemetry-processor'
+    name: 'Telemetry Processor'
+    type: 'data-pipeline'
+    technology: 'Python'
+    owner: 'data-team'
+
+  - id: 'predictive-maintenance'
+    name: 'Predictive Maintenance Model'
+    type: 'ml-model'
+    technology: 'Python + scikit-learn'
+    owner: 'ml-team'
+
+  - id: 'alert-handler'
+    name: 'Alert Handler'
+    type: 'worker'
+    technology: 'Node.js'
+    owner: 'platform-team'
+
+  - id: 'digital-twin-service'
+    name: 'Digital Twin Service'
+    type: 'microservice'
+    technology: 'C#'
+    owner: 'iot-team'
+
+  - id: 'reporting-batch'
+    name: 'Report Generator'
+    type: 'batch-job'
+    technology: 'Python'
+    owner: 'analytics-team'
+
+infrastructure:
+  clouds:
+    - id: 'azure-factory'
+      provider: 'azure'
+      region: 'westeurope'
+      tier: 'primary'
+      services:
+        # ── Networking ────────────────────────────────────────────────
+        - id: 'factory-vnet'
+          service: 'virtual-network'
+          name: 'Factory VNet'
+          config:
+            address_space: '172.16.0.0/16'
+
+        - id: 'iot-subnet'
+          service: 'subnet'
+          name: 'IoT Subnet'
+          config:
+            vnet: 'factory-vnet'
+            cidr: '172.16.1.0/24'
+
+        - id: 'compute-subnet'
+          service: 'subnet'
+          name: 'Compute Subnet'
+          config:
+            vnet: 'factory-vnet'
+            cidr: '172.16.10.0/24'
+
+        - id: 'data-subnet'
+          service: 'subnet'
+          name: 'Data Subnet'
+          config:
+            vnet: 'factory-vnet'
+            cidr: '172.16.20.0/24'
+
+        - id: 'factory-nsg'
+          service: 'network-security-group'
+          name: 'Factory NSG'
+
+        - id: 'vpn-to-factory'
+          service: 'vpn-gateway'
+          name: 'VPN Gateway'
+          description: 'Site-to-site VPN to factory floor network'
+
+        - id: 'expressroute-dc'
+          service: 'azure-expressroute'
+          name: 'ExpressRoute'
+          description: 'Dedicated link to central data center'
+
+        - id: 'factory-firewall'
+          service: 'azure-firewall'
+          name: 'Azure Firewall'
+          config:
+            sku: 'Standard'
+
+        - id: 'private-link-iot'
+          service: 'azure-private-link'
+          name: 'Private Link (IoT Hub)'
+
+        - id: 'factory-lb'
+          service: 'azure-load-balancer'
+          name: 'Internal Load Balancer'
+
+        - id: 'app-gateway'
+          service: 'application-gateway'
+          name: 'Application Gateway'
+          description: 'WAF v2 for API tier'
+
+        # ── IoT Layer ─────────────────────────────────────────────────
+        - id: 'iot-hub-factory'
+          service: 'azure-iot-hub'
+          name: 'IoT Hub (Factory)'
+          description: 'Central device management and telemetry ingestion'
+          config:
+            sku: 'S3'
+            units: 10
+            device_provisioning: true
+            message_routing:
+              - name: 'telemetry-route'
+                source: 'DeviceMessages'
+                endpoint: 'event-hubs-telemetry'
+              - name: 'alerts-route'
+                source: 'DeviceMessages'
+                condition: 'severity = "critical"'
+                endpoint: 'service-bus-alerts'
+
+        - id: 'iot-edge-gateway'
+          service: 'azure-iot-edge'
+          name: 'IoT Edge Gateway'
+          description: 'Edge computing for factory floor devices'
+          config:
+            modules:
+              - 'OPC-UA adapter'
+              - 'Local ML inference'
+              - 'Protocol translation'
+
+        - id: 'iot-central-monitoring'
+          service: 'azure-iot-central'
+          name: 'IoT Central'
+          description: 'No-code device monitoring and management'
+
+        - id: 'digital-twins-instance'
+          service: 'azure-digital-twins'
+          name: 'Azure Digital Twins'
+          runs: ['digital-twin-service']
+          description: 'Factory floor digital twin model'
+          config:
+            models:
+              - 'Assembly Line'
+              - 'Robot Arm'
+              - 'Conveyor Belt'
+              - 'Quality Station'
+              - 'Environmental Sensor'
+
+        # ── Event Streaming ───────────────────────────────────────────
+        - id: 'event-hubs-telemetry'
+          service: 'azure-event-hubs'
+          name: 'Event Hubs (Telemetry)'
+          description: 'High-throughput sensor data ingestion'
+          config:
+            throughput_units: 40
+            partitions: 64
+            capture_enabled: true
+            capture_destination: 'data-lake-raw'
+
+        - id: 'event-hubs-processed'
+          service: 'azure-event-hubs'
+          name: 'Event Hubs (Processed)'
+          description: 'Cleaned and enriched telemetry stream'
+
+        - id: 'service-bus-alerts'
+          service: 'azure-service-bus'
+          name: 'Service Bus (Alerts)'
+          description: 'Critical alert queue with dead-letter'
+          config:
+            sku: 'Premium'
+
+        - id: 'service-bus-commands'
+          service: 'azure-service-bus'
+          name: 'Service Bus (Commands)'
+          description: 'Device command queue (cloud-to-device)'
+
+        - id: 'event-grid-factory'
+          service: 'azure-event-grid'
+          name: 'Event Grid'
+          description: 'Resource events and custom domain events'
+
+        # ── Compute ───────────────────────────────────────────────────
+        - id: 'aks-factory'
+          service: 'aks'
+          name: 'AKS Factory Cluster'
+          runs: ['device-management-api', 'digital-twin-service']
+          config:
+            node_pools:
+              - name: 'system'
+                vm_size: 'Standard_D4s_v5'
+                count: 3
+              - name: 'api'
+                vm_size: 'Standard_D8s_v5'
+                min_count: 2
+                max_count: 10
+
+        - id: 'func-telemetry'
+          service: 'azure-functions'
+          name: 'Telemetry Functions'
+          runs: ['telemetry-processor']
+          config:
+            runtime: 'python'
+            plan: 'Premium'
+
+        - id: 'func-alerts'
+          service: 'azure-functions'
+          name: 'Alert Functions'
+          runs: ['alert-handler']
+          config:
+            runtime: 'node'
+            plan: 'Premium'
+
+        - id: 'vm-scale-set'
+          service: 'virtual-machine-scale-sets'
+          name: 'VM Scale Set (Edge Proxy)'
+          description: 'Proxy VMs for legacy OPC-UA equipment'
+
+        - id: 'batch-reporting'
+          service: 'azure-batch'
+          name: 'Azure Batch (Reports)'
+          runs: ['reporting-batch']
+
+        - id: 'container-instances-test'
+          service: 'container-instances'
+          name: 'Container Instances (Test)'
+          description: 'Short-lived test containers'
+
+        - id: 'acr-factory'
+          service: 'azure-container-registry'
+          name: 'Container Registry'
+
+        - id: 'app-svc-dashboard'
+          service: 'app-service'
+          name: 'Dashboard App Service'
+          runs: ['factory-dashboard']
+
+        # ── Stream Processing ─────────────────────────────────────────
+        - id: 'stream-analytics-realtime'
+          service: 'azure-stream-analytics'
+          name: 'Stream Analytics (Real-time)'
+          description: 'Real-time anomaly detection and aggregation'
+          config:
+            streaming_units: 12
+            windows:
+              - type: 'tumbling'
+                duration: '1 minute'
+              - type: 'sliding'
+                duration: '5 minutes'
+
+        - id: 'stream-analytics-batch'
+          service: 'azure-stream-analytics'
+          name: 'Stream Analytics (Batch)'
+          description: 'Hourly aggregation for dashboards'
+
+        # ── Databases ─────────────────────────────────────────────────
+        - id: 'cosmos-device-state'
+          service: 'cosmos-db'
+          name: 'Cosmos DB (Device State)'
+          description: 'Current device state and configuration'
+          config:
+            consistency_level: 'Strong'
+            partition_key: '/deviceId'
+
+        - id: 'sql-asset-mgmt'
+          service: 'azure-sql-database'
+          name: 'Azure SQL (Asset Management)'
+          description: 'Factory asset inventory and maintenance records'
+          compliance:
+            - soc2
+
+        - id: 'table-storage-logs'
+          service: 'azure-table-storage'
+          name: 'Table Storage (Logs)'
+          description: 'Low-cost structured log storage'
+
+        - id: 'redis-realtime'
+          service: 'azure-cache-for-redis'
+          name: 'Redis (Real-time Cache)'
+          description: 'Real-time sensor reading cache'
+
+        - id: 'data-explorer'
+          service: 'azure-data-explorer'
+          name: 'Azure Data Explorer'
+          description: 'Time-series analysis for sensor data'
+          config:
+            cluster_size: 'Standard_L8as_v3'
+            instances: 4
+
+        # ── Storage ───────────────────────────────────────────────────
+        - id: 'data-lake-raw'
+          service: 'azure-data-lake-storage'
+          name: 'Data Lake (Raw)'
+          description: 'Raw telemetry data archive'
+
+        - id: 'data-lake-processed'
+          service: 'azure-data-lake-storage'
+          name: 'Data Lake (Processed)'
+          description: 'Cleaned and feature-engineered data'
+
+        - id: 'blob-models'
+          service: 'azure-blob-storage'
+          name: 'Blob (ML Models)'
+          description: 'Trained model artifacts'
+
+        - id: 'managed-disks'
+          service: 'azure-managed-disks'
+          name: 'Managed Disks'
+          description: 'Premium SSD for VM Scale Set'
+
+        - id: 'queue-storage-tasks'
+          service: 'azure-queue-storage'
+          name: 'Queue Storage (Tasks)'
+          description: 'Lightweight task queue for batch jobs'
+
+        # ── Analytics ─────────────────────────────────────────────────
+        - id: 'synapse-factory'
+          service: 'azure-synapse-analytics'
+          name: 'Synapse Analytics'
+          description: 'Unified analytics for factory operations'
+
+        - id: 'databricks-ml'
+          service: 'azure-databricks'
+          name: 'Databricks (ML Pipeline)'
+          description: 'Feature engineering and model training'
+
+        - id: 'data-factory-etl'
+          service: 'azure-data-factory'
+          name: 'Data Factory'
+          description: 'ETL orchestration and data movement'
+
+        - id: 'power-bi-ops'
+          service: 'power-bi'
+          name: 'Power BI (Operations)'
+          description: 'OEE dashboards and KPI reports'
+
+        - id: 'hdinsight-spark'
+          service: 'azure-hdinsight'
+          name: 'HDInsight Spark'
+          description: 'Large-scale historical data processing'
+
+        - id: 'analysis-services'
+          service: 'azure-analysis-services'
+          name: 'Analysis Services'
+          description: 'OLAP cubes for historical trending'
+
+        # ── AI/ML ─────────────────────────────────────────────────────
+        - id: 'ml-workspace-factory'
+          service: 'azure-machine-learning'
+          name: 'Azure ML (Predictive Maintenance)'
+          runs: ['predictive-maintenance']
+          description: 'AutoML and custom model training'
+
+        - id: 'openai-copilot'
+          service: 'azure-openai-service'
+          name: 'Azure OpenAI (Factory Copilot)'
+          description: 'Natural language queries over factory data'
+
+        - id: 'ai-search-manuals'
+          service: 'azure-ai-search'
+          name: 'AI Search (Manuals)'
+          description: 'Semantic search over equipment manuals'
+
+        # ── Security ──────────────────────────────────────────────────
+        - id: 'entra-factory'
+          service: 'entra-id'
+          name: 'Entra ID'
+          description: 'Employee and service identity management'
+
+        - id: 'keyvault-factory'
+          service: 'azure-key-vault'
+          name: 'Key Vault'
+          compliance:
+            - soc2
+
+        - id: 'defender-iot'
+          service: 'microsoft-defender-for-cloud'
+          name: 'Defender for IoT'
+          description: 'IoT-specific threat detection'
+
+        - id: 'sentinel-factory'
+          service: 'azure-sentinel'
+          name: 'Sentinel (Factory SOC)'
+
+        # ── Monitoring ────────────────────────────────────────────────
+        - id: 'monitor-factory'
+          service: 'azure-monitor'
+          name: 'Azure Monitor'
+
+        - id: 'app-insights-factory'
+          service: 'azure-application-insights'
+          name: 'Application Insights'
+
+        - id: 'log-analytics-factory'
+          service: 'azure-log-analytics'
+          name: 'Log Analytics'
+
+        # ── DevOps ────────────────────────────────────────────────────
+        - id: 'devops-factory'
+          service: 'azure-devops'
+          name: 'Azure DevOps'
+
+        - id: 'pipelines-factory'
+          service: 'azure-pipelines'
+          name: 'Azure Pipelines'
+
+connections:
+  # IoT data ingestion
+  - id: 'edge-to-iothub'
+    from: 'iot-edge-gateway'
+    to: 'iot-hub-factory'
+    type: 'stream-write'
+  - id: 'iothub-to-eventhubs'
+    from: 'iot-hub-factory'
+    to: 'event-hubs-telemetry'
+    type: 'stream-write'
+  - id: 'iothub-to-servicebus-alerts'
+    from: 'iot-hub-factory'
+    to: 'service-bus-alerts'
+    type: 'message-publish'
+  - id: 'iothub-to-digital-twins'
+    from: 'iot-hub-factory'
+    to: 'digital-twins-instance'
+    type: 'api-call'
+  - id: 'edge-to-vpn'
+    from: 'iot-edge-gateway'
+    to: 'vpn-to-factory'
+    type: 'vpn-tunnel'
+
+  # Stream processing
+  - id: 'eventhubs-to-stream-rt'
+    from: 'event-hubs-telemetry'
+    to: 'stream-analytics-realtime'
+    type: 'stream-read'
+  - id: 'stream-rt-to-eh-processed'
+    from: 'stream-analytics-realtime'
+    to: 'event-hubs-processed'
+    type: 'stream-write'
+  - id: 'stream-rt-to-cosmos'
+    from: 'stream-analytics-realtime'
+    to: 'cosmos-device-state'
+    type: 'database-query'
+  - id: 'stream-rt-to-redis'
+    from: 'stream-analytics-realtime'
+    to: 'redis-realtime'
+    type: 'cache-write'
+  - id: 'eventhubs-to-func-telemetry'
+    from: 'event-hubs-telemetry'
+    to: 'func-telemetry'
+    type: 'stream-read'
+  - id: 'eventhubs-capture-to-lake'
+    from: 'event-hubs-telemetry'
+    to: 'data-lake-raw'
+    type: 'file-upload'
+
+  # Alert flow
+  - id: 'sb-alerts-to-func'
+    from: 'service-bus-alerts'
+    to: 'func-alerts'
+    type: 'message-consume'
+  - id: 'func-alerts-to-commands'
+    from: 'func-alerts'
+    to: 'service-bus-commands'
+    type: 'message-publish'
+  - id: 'commands-to-iothub'
+    from: 'service-bus-commands'
+    to: 'iot-hub-factory'
+    type: 'api-call'
+
+  # API layer
+  - id: 'user-to-appgw'
+    from: 'User'
+    to: 'app-gateway'
+    type: 'api-call'
+    protocol: 'HTTPS'
+  - id: 'appgw-to-aks'
+    from: 'app-gateway'
+    to: 'aks-factory'
+    type: 'load-balancing'
+  - id: 'aks-to-cosmos'
+    from: 'device-management-api'
+    to: 'cosmos-device-state'
+    type: 'database-query'
+  - id: 'aks-to-sql'
+    from: 'device-management-api'
+    to: 'sql-asset-mgmt'
+    type: 'database-query'
+    protocol: 'SQL'
+  - id: 'aks-to-iothub'
+    from: 'device-management-api'
+    to: 'iot-hub-factory'
+    type: 'api-call'
+
+  # Digital Twins
+  - id: 'twins-to-cosmos'
+    from: 'digital-twin-service'
+    to: 'cosmos-device-state'
+    type: 'database-query'
+  - id: 'twins-to-data-explorer'
+    from: 'digital-twin-service'
+    to: 'data-explorer'
+    type: 'database-query'
+
+  # Analytics pipeline
+  - id: 'datafactory-to-lake-raw'
+    from: 'data-factory-etl'
+    to: 'data-lake-raw'
+    type: 'file-download'
+  - id: 'datafactory-to-lake-proc'
+    from: 'data-factory-etl'
+    to: 'data-lake-processed'
+    type: 'file-upload'
+  - id: 'databricks-to-lake-proc'
+    from: 'databricks-ml'
+    to: 'data-lake-processed'
+    type: 'file-download'
+  - id: 'synapse-to-lake'
+    from: 'synapse-factory'
+    to: 'data-lake-processed'
+    type: 'database-query'
+  - id: 'synapse-to-powerbi'
+    from: 'synapse-factory'
+    to: 'power-bi-ops'
+    type: 'api-call'
+  - id: 'data-explorer-to-dashboard'
+    from: 'data-explorer'
+    to: 'app-svc-dashboard'
+    type: 'api-call'
+
+  # ML pipeline
+  - id: 'ml-to-lake-proc'
+    from: 'ml-workspace-factory'
+    to: 'data-lake-processed'
+    type: 'file-download'
+  - id: 'ml-to-blob-models'
+    from: 'ml-workspace-factory'
+    to: 'blob-models'
+    type: 'file-upload'
+  - id: 'func-telemetry-to-ml'
+    from: 'func-telemetry'
+    to: 'ml-workspace-factory'
+    type: 'api-call'
+  - id: 'openai-to-search'
+    from: 'openai-copilot'
+    to: 'ai-search-manuals'
+    type: 'api-call'
+
+  # Security
+  - id: 'aks-to-keyvault'
+    from: 'aks-factory'
+    to: 'keyvault-factory'
+    type: 'api-call'
+  - id: 'aks-to-entra'
+    from: 'aks-factory'
+    to: 'entra-factory'
+    type: 'authorization'
+  - id: 'defender-to-sentinel'
+    from: 'defender-iot'
+    to: 'sentinel-factory'
+    type: 'api-call'
+  - id: 'sentinel-to-logs'
+    from: 'sentinel-factory'
+    to: 'log-analytics-factory'
+    type: 'api-call'
+
+  # Monitoring
+  - id: 'aks-to-appinsights'
+    from: 'aks-factory'
+    to: 'app-insights-factory'
+    type: 'stream-write'
+  - id: 'appinsights-to-logs'
+    from: 'app-insights-factory'
+    to: 'log-analytics-factory'
+    type: 'stream-write'
+
+  # CI/CD
+  - id: 'pipelines-to-acr'
+    from: 'pipelines-factory'
+    to: 'acr-factory'
+    type: 'file-upload'
+  - id: 'pipelines-to-aks'
+    from: 'pipelines-factory'
+    to: 'aks-factory'
+    type: 'api-call'

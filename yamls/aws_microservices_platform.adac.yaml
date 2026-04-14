@@ -1,0 +1,867 @@
+version: '0.1'
+
+metadata:
+  name: 'AWS Microservices E-Commerce Platform'
+  author: 'ADAC Team'
+  description: >
+    A large-scale, production-grade AWS microservices platform for an
+    e-commerce application featuring multi-AZ VPC networking, container
+    orchestration on ECS Fargate, event-driven architecture with EventBridge
+    and SQS, data analytics with Kinesis and Redshift, AI-powered search
+    with SageMaker, and comprehensive security with WAF, Shield, and GuardDuty.
+  created: '2026-04-14'
+  environment: production
+
+applications:
+  - id: 'storefront-spa'
+    name: 'Storefront SPA'
+    type: 'frontend'
+    technology: 'Next.js'
+    owner: 'frontend-team'
+    description: 'Customer-facing progressive web app'
+
+  - id: 'product-catalog-api'
+    name: 'Product Catalog API'
+    type: 'backend'
+    technology: 'Java Spring Boot'
+    owner: 'catalog-team'
+    description: 'Product search, browse, and catalog management'
+
+  - id: 'order-service'
+    name: 'Order Service'
+    type: 'microservice'
+    technology: 'Node.js'
+    owner: 'orders-team'
+    description: 'Order placement and lifecycle management'
+
+  - id: 'payment-service'
+    name: 'Payment Service'
+    type: 'microservice'
+    technology: 'Python'
+    owner: 'payments-team'
+    description: 'Payment processing and reconciliation'
+
+  - id: 'inventory-service'
+    name: 'Inventory Service'
+    type: 'microservice'
+    technology: 'Go'
+    owner: 'logistics-team'
+    description: 'Real-time inventory tracking'
+
+  - id: 'notification-worker'
+    name: 'Notification Worker'
+    type: 'worker'
+    technology: 'Python'
+    owner: 'platform-team'
+    description: 'Sends email/SMS/push notifications'
+
+  - id: 'analytics-etl'
+    name: 'Analytics ETL'
+    type: 'data-pipeline'
+    technology: 'Apache Spark'
+    owner: 'data-team'
+    description: 'Transforms raw events into analytics datasets'
+
+  - id: 'recommendation-model'
+    name: 'Recommendation Engine'
+    type: 'ml-model'
+    technology: 'PyTorch'
+    owner: 'ml-team'
+    description: 'Personalised product recommendations'
+
+  - id: 'search-indexer'
+    name: 'Search Indexer'
+    type: 'worker'
+    technology: 'Elasticsearch'
+    owner: 'search-team'
+    description: 'Indexes product data for full-text search'
+
+  - id: 'admin-dashboard'
+    name: 'Admin Dashboard'
+    type: 'frontend'
+    technology: 'React'
+    owner: 'internal-tools-team'
+    description: 'Internal operations dashboard'
+
+infrastructure:
+  clouds:
+    - id: 'aws-prod'
+      provider: 'aws'
+      region: 'us-east-1'
+      tier: 'primary'
+      services:
+        # ── Networking Layer ──────────────────────────────────────────
+        - id: 'main-vpc'
+          service: 'vpc'
+          name: 'Production VPC'
+          description: 'Primary VPC for all production workloads'
+          config:
+            cidr: '10.0.0.0/16'
+            dns_support: true
+            dns_hostnames: true
+            enable_flow_logs: true
+
+        - id: 'public-subnet-az1'
+          service: 'subnet'
+          name: 'Public Subnet AZ1'
+          config:
+            vpc: 'main-vpc'
+            cidr: '10.0.1.0/24'
+            availability_zone: 'us-east-1a'
+            public: true
+
+        - id: 'public-subnet-az2'
+          service: 'subnet'
+          name: 'Public Subnet AZ2'
+          config:
+            vpc: 'main-vpc'
+            cidr: '10.0.2.0/24'
+            availability_zone: 'us-east-1b'
+            public: true
+
+        - id: 'private-app-subnet-az1'
+          service: 'subnet'
+          name: 'Private App Subnet AZ1'
+          config:
+            vpc: 'main-vpc'
+            cidr: '10.0.10.0/24'
+            availability_zone: 'us-east-1a'
+            public: false
+
+        - id: 'private-app-subnet-az2'
+          service: 'subnet'
+          name: 'Private App Subnet AZ2'
+          config:
+            vpc: 'main-vpc'
+            cidr: '10.0.11.0/24'
+            availability_zone: 'us-east-1b'
+            public: false
+
+        - id: 'private-data-subnet-az1'
+          service: 'subnet'
+          name: 'Private Data Subnet AZ1'
+          config:
+            vpc: 'main-vpc'
+            cidr: '10.0.20.0/24'
+            availability_zone: 'us-east-1a'
+            public: false
+
+        - id: 'private-data-subnet-az2'
+          service: 'subnet'
+          name: 'Private Data Subnet AZ2'
+          config:
+            vpc: 'main-vpc'
+            cidr: '10.0.21.0/24'
+            availability_zone: 'us-east-1b'
+            public: false
+
+        - id: 'nat-gw-az1'
+          service: 'nat-gateway'
+          name: 'NAT Gateway AZ1'
+          config:
+            subnet: 'public-subnet-az1'
+
+        - id: 'nat-gw-az2'
+          service: 'nat-gateway'
+          name: 'NAT Gateway AZ2'
+          config:
+            subnet: 'public-subnet-az2'
+
+        - id: 'igw'
+          service: 'internet-gateway'
+          name: 'Internet Gateway'
+          config:
+            vpc: 'main-vpc'
+
+        # ── Edge / CDN / DNS ──────────────────────────────────────────
+        - id: 'route53-dns'
+          service: 'route53'
+          name: 'Route 53 DNS'
+          description: 'Public and private DNS zones'
+          config:
+            hosted_zones:
+              - 'shop.example.com'
+              - 'internal.example.com'
+
+        - id: 'cloudfront-cdn'
+          service: 'cloudfront'
+          name: 'CloudFront CDN'
+          description: 'Global CDN for static assets and API acceleration'
+          config:
+            origins:
+              - 's3-static-assets'
+              - 'alb-main'
+            price_class: 'PriceClass_All'
+            waf_enabled: true
+
+        - id: 'waf-shield'
+          service: 'waf'
+          name: 'AWS WAF + Shield Advanced'
+          description: 'Web application firewall and DDoS protection'
+          compliance:
+            - pci-dss
+            - soc2
+
+        # ── Security ──────────────────────────────────────────────────
+        - id: 'cognito-user-pool'
+          service: 'cognito'
+          name: 'Cognito User Pool'
+          description: 'Customer authentication and authorization'
+          config:
+            mfa_enabled: true
+            password_policy:
+              minimum_length: 12
+              require_uppercase: true
+              require_symbols: true
+
+        - id: 'secrets-mgr'
+          service: 'secrets-manager'
+          name: 'Secrets Manager'
+          description: 'Database credentials and API keys'
+          compliance:
+            - pci-dss
+            - hipaa
+
+        - id: 'kms-key'
+          service: 'kms'
+          name: 'KMS Master Key'
+          description: 'Customer-managed encryption keys'
+          compliance:
+            - pci-dss
+            - hipaa
+
+        - id: 'iam-roles'
+          service: 'iam'
+          name: 'IAM Roles & Policies'
+          description: 'Service-linked IAM roles with least privilege'
+
+        - id: 'guardduty'
+          service: 'guardduty'
+          name: 'GuardDuty'
+          description: 'Threat detection and continuous monitoring'
+
+        - id: 'security-hub-svc'
+          service: 'security-hub'
+          name: 'Security Hub'
+          description: 'Centralized security findings aggregation'
+
+        - id: 'acm-cert'
+          service: 'acm'
+          name: 'ACM Certificates'
+          description: 'TLS certificates for ALB and CloudFront'
+
+        # ── Load Balancing ────────────────────────────────────────────
+        - id: 'alb-main'
+          service: 'alb'
+          name: 'Application Load Balancer'
+          description: 'HTTPS load balancer with path-based routing'
+          config:
+            subnets:
+              - 'public-subnet-az1'
+              - 'public-subnet-az2'
+            scheme: 'internet-facing'
+            targets:
+              - '/api/catalog -> ecs-catalog'
+              - '/api/orders -> ecs-orders'
+              - '/api/payments -> ecs-payments'
+              - '/api/inventory -> ecs-inventory'
+
+        - id: 'nlb-internal'
+          service: 'nlb'
+          name: 'Network Load Balancer'
+          description: 'Internal NLB for gRPC inter-service communication'
+          config:
+            subnets:
+              - 'private-app-subnet-az1'
+              - 'private-app-subnet-az2'
+            scheme: 'internal'
+
+        # ── API Gateway ───────────────────────────────────────────────
+        - id: 'apigw-rest'
+          service: 'api-gateway-rest'
+          name: 'API Gateway'
+          description: 'REST API with throttling, caching, and auth'
+          config:
+            stage: 'prod'
+            throttle_rate: 10000
+            throttle_burst: 5000
+            cache_enabled: true
+
+        - id: 'apigw-websocket'
+          service: 'api-gateway-websocket'
+          name: 'WebSocket API'
+          description: 'Real-time order status and notifications'
+
+        # ── Container Services (ECS Fargate) ──────────────────────────
+        - id: 'ecs-catalog'
+          service: 'ecs-fargate'
+          name: 'Catalog ECS Service'
+          runs: ['product-catalog-api']
+          config:
+            cluster: 'prod-cluster'
+            cpu: 1024
+            memory: 2048
+            desired_count: 4
+            subnets:
+              - 'private-app-subnet-az1'
+              - 'private-app-subnet-az2'
+
+        - id: 'ecs-orders'
+          service: 'ecs-fargate'
+          name: 'Orders ECS Service'
+          runs: ['order-service']
+          config:
+            cluster: 'prod-cluster'
+            cpu: 512
+            memory: 1024
+            desired_count: 3
+            subnets:
+              - 'private-app-subnet-az1'
+              - 'private-app-subnet-az2'
+
+        - id: 'ecs-payments'
+          service: 'ecs-fargate'
+          name: 'Payments ECS Service'
+          runs: ['payment-service']
+          config:
+            cluster: 'prod-cluster'
+            cpu: 512
+            memory: 1024
+            desired_count: 2
+            subnets:
+              - 'private-app-subnet-az1'
+              - 'private-app-subnet-az2'
+
+        - id: 'ecs-inventory'
+          service: 'ecs-fargate'
+          name: 'Inventory ECS Service'
+          runs: ['inventory-service']
+          config:
+            cluster: 'prod-cluster'
+            cpu: 256
+            memory: 512
+            desired_count: 2
+            subnets:
+              - 'private-app-subnet-az1'
+              - 'private-app-subnet-az2'
+
+        - id: 'ecr-registry'
+          service: 'ecr'
+          name: 'ECR Container Registry'
+          description: 'Docker image registry for all microservices'
+
+        # ── Serverless Functions ──────────────────────────────────────
+        - id: 'lambda-notifications'
+          service: 'lambda'
+          name: 'Notification Lambda'
+          runs: ['notification-worker']
+          configuration:
+            memory_mb: 256
+            timeout_seconds: 30
+            vpc_enabled: true
+
+        - id: 'lambda-image-resize'
+          service: 'lambda'
+          name: 'Image Resize Lambda'
+          description: 'On-the-fly product image resizing'
+          configuration:
+            memory_mb: 512
+            timeout_seconds: 60
+
+        - id: 'lambda-auth-authorizer'
+          service: 'lambda'
+          name: 'Custom Authorizer'
+          description: 'JWT validation for API Gateway'
+          configuration:
+            memory_mb: 128
+            timeout_seconds: 5
+
+        - id: 'step-fn-checkout'
+          service: 'step-functions'
+          name: 'Checkout Workflow'
+          description: 'Orchestrates order → payment → inventory → notification'
+
+        # ── Databases ─────────────────────────────────────────────────
+        - id: 'aurora-catalog-db'
+          service: 'rds-aurora-postgres'
+          name: 'Aurora PostgreSQL (Catalog)'
+          description: 'Product catalog and search metadata'
+          compliance:
+            - pci-dss
+            - soc2
+          configuration:
+            instance_type: 'db.r6g.xlarge'
+            instance_count: 3
+            multi_az: true
+            encryption_enabled: true
+            backup_enabled: true
+            backup_retention_days: 14
+            engine_version: '15.4'
+
+        - id: 'rds-orders-db'
+          service: 'rds-postgres'
+          name: 'RDS PostgreSQL (Orders)'
+          description: 'Order and transaction data'
+          compliance:
+            - pci-dss
+            - hipaa
+          configuration:
+            instance_type: 'db.r6g.large'
+            multi_az: true
+            encryption_enabled: true
+            backup_enabled: true
+            backup_retention_days: 7
+
+        - id: 'dynamodb-sessions'
+          service: 'dynamodb'
+          name: 'DynamoDB Sessions'
+          description: 'User session store and shopping cart'
+          config:
+            billing_mode: 'PAY_PER_REQUEST'
+            point_in_time_recovery: true
+            encryption: true
+
+        - id: 'dynamodb-inventory'
+          service: 'dynamodb'
+          name: 'DynamoDB Inventory'
+          description: 'Real-time inventory counts per warehouse'
+          config:
+            billing_mode: 'PROVISIONED'
+            read_capacity: 5000
+            write_capacity: 2000
+            global_secondary_indexes: 3
+
+        - id: 'elasticache-redis'
+          service: 'elasticache-redis'
+          name: 'ElastiCache Redis'
+          description: 'API response caching and rate limiting'
+          config:
+            node_type: 'cache.r6g.large'
+            num_replicas: 2
+            multi_az: true
+
+        - id: 'opensearch-products'
+          service: 'ec2'
+          name: 'OpenSearch Cluster'
+          runs: ['search-indexer']
+          description: 'Full-text product search'
+          config:
+            instance_type: 'r6g.2xlarge.search'
+            instance_count: 3
+            multi_az: true
+
+        # ── Storage ───────────────────────────────────────────────────
+        - id: 's3-static-assets'
+          service: 's3'
+          name: 'S3 Static Assets'
+          runs: ['storefront-spa']
+          description: 'SPA build artifacts, product images, and static content'
+          compliance:
+            - pci-dss
+          config:
+            versioning: true
+            encryption: 'AES256'
+            lifecycle:
+              - transition_days: 90
+                storage_class: 'INTELLIGENT_TIERING'
+
+        - id: 's3-data-lake'
+          service: 's3'
+          name: 'S3 Data Lake'
+          description: 'Raw and transformed event data for analytics'
+          config:
+            versioning: true
+            encryption: 'aws:kms'
+
+        - id: 's3-backups'
+          service: 's3'
+          name: 'S3 Backup Bucket'
+          description: 'Database backups and disaster recovery snapshots'
+          config:
+            versioning: true
+            encryption: 'aws:kms'
+            lifecycle:
+              - transition_days: 30
+                storage_class: 'GLACIER'
+              - expiration_days: 365
+
+        # ── Messaging & Events ────────────────────────────────────────
+        - id: 'eventbridge-bus'
+          service: 'eventbridge'
+          name: 'EventBridge Bus'
+          description: 'Domain event bus for cross-service communication'
+
+        - id: 'sqs-orders'
+          service: 'sqs'
+          name: 'SQS Orders Queue'
+          description: 'Dead-letter-enabled queue for order processing'
+          config:
+            visibility_timeout: 30
+            message_retention: 1209600
+            dead_letter_queue: true
+
+        - id: 'sqs-notifications'
+          service: 'sqs'
+          name: 'SQS Notifications Queue'
+          description: 'Queue for email/SMS/push notifications'
+
+        - id: 'sns-alerts'
+          service: 'sns'
+          name: 'SNS Alert Topic'
+          description: 'Operational alerts and on-call notifications'
+
+        - id: 'kinesis-clickstream'
+          service: 'kinesis-streams'
+          name: 'Kinesis Clickstream'
+          description: 'Real-time clickstream data ingestion'
+          config:
+            shard_count: 8
+            retention_hours: 168
+
+        - id: 'kinesis-firehose-etl'
+          service: 'kinesis-firehose'
+          name: 'Firehose Delivery'
+          description: 'Auto-batches clickstream data to S3 and Redshift'
+
+        # ── Data Analytics ────────────────────────────────────────────
+        - id: 'redshift-dw'
+          service: 'redshift'
+          name: 'Redshift Data Warehouse'
+          description: 'Business analytics and reporting data warehouse'
+          config:
+            node_type: 'ra3.xlplus'
+            number_of_nodes: 4
+
+        - id: 'athena-adhoc'
+          service: 'athena'
+          name: 'Athena Ad-Hoc Queries'
+          description: 'SQL queries directly on S3 data lake'
+
+        - id: 'glue-catalog'
+          service: 'glue'
+          name: 'Glue Data Catalog'
+          description: 'Central metadata catalog and ETL jobs'
+          runs: ['analytics-etl']
+
+        - id: 'quicksight-bi'
+          service: 'quicksight'
+          name: 'QuickSight BI'
+          runs: ['admin-dashboard']
+          description: 'Business intelligence dashboards'
+
+        # ── AI/ML ─────────────────────────────────────────────────────
+        - id: 'sagemaker-recommender'
+          service: 'sagemaker'
+          name: 'SageMaker Endpoint'
+          runs: ['recommendation-model']
+          description: 'Real-time ML inference for product recommendations'
+          config:
+            instance_type: 'ml.g5.xlarge'
+            instance_count: 2
+
+        - id: 'bedrock-ai'
+          service: 'bedrock'
+          name: 'Bedrock Foundation Models'
+          description: 'LLM-powered product descriptions and Q&A'
+
+        # ── Monitoring & Observability ────────────────────────────────
+        - id: 'cloudwatch-metrics'
+          service: 'cloudwatch'
+          name: 'CloudWatch Metrics'
+          description: 'Infrastructure and application metrics'
+          monitoring:
+            enabled: true
+            metrics:
+              - 'CPUUtilization'
+              - 'MemoryUtilization'
+              - 'RequestCount'
+              - 'Latency'
+
+        - id: 'cloudwatch-logs'
+          service: 'cloudwatch-logs'
+          name: 'CloudWatch Logs'
+          description: 'Centralized log aggregation from all services'
+
+        - id: 'xray-tracing'
+          service: 'x-ray'
+          name: 'X-Ray Distributed Tracing'
+          description: 'End-to-end request tracing across microservices'
+
+        - id: 'cloudtrail-audit'
+          service: 'cloudtrail'
+          name: 'CloudTrail Audit'
+          description: 'API call audit logging for compliance'
+          compliance:
+            - soc2
+            - pci-dss
+
+        # ── CI/CD ─────────────────────────────────────────────────────
+        - id: 'codepipeline-ci'
+          service: 'codepipeline'
+          name: 'CodePipeline'
+          description: 'CI/CD pipeline for all microservices'
+
+        - id: 'codebuild-svc'
+          service: 'codebuild'
+          name: 'CodeBuild'
+          description: 'Build and test automation'
+
+        - id: 'codedeploy-svc'
+          service: 'codedeploy'
+          name: 'CodeDeploy'
+          description: 'Blue/green deployment to ECS'
+
+        # ── Backup & DR ───────────────────────────────────────────────
+        - id: 'backup-plan'
+          service: 'backup'
+          name: 'AWS Backup'
+          description: 'Centralized backup for RDS, DynamoDB, and EFS'
+
+connections:
+  # ── Edge to Application ─────────────────────────────────────────
+  - id: 'dns-to-cloudfront'
+    from: 'route53-dns'
+    to: 'cloudfront-cdn'
+    type: 'dns-resolution'
+  - id: 'cloudfront-to-waf'
+    from: 'cloudfront-cdn'
+    to: 'waf-shield'
+    type: 'api-call'
+  - id: 'cloudfront-to-s3'
+    from: 'cloudfront-cdn'
+    to: 's3-static-assets'
+    type: 'cdn-origin'
+  - id: 'cloudfront-to-alb'
+    from: 'cloudfront-cdn'
+    to: 'alb-main'
+    type: 'api-call'
+    protocol: 'HTTPS'
+
+  # ── ALB to Services ─────────────────────────────────────────────
+  - id: 'alb-to-catalog'
+    from: 'alb-main'
+    to: 'ecs-catalog'
+    type: 'load-balancing'
+    protocol: 'HTTP'
+  - id: 'alb-to-orders'
+    from: 'alb-main'
+    to: 'ecs-orders'
+    type: 'load-balancing'
+    protocol: 'HTTP'
+  - id: 'alb-to-payments'
+    from: 'alb-main'
+    to: 'ecs-payments'
+    type: 'load-balancing'
+    protocol: 'HTTP'
+  - id: 'alb-to-inventory'
+    from: 'alb-main'
+    to: 'ecs-inventory'
+    type: 'load-balancing'
+    protocol: 'HTTP'
+
+  # ── API Gateway ─────────────────────────────────────────────────
+  - id: 'apigw-to-lambda-auth'
+    from: 'apigw-rest'
+    to: 'lambda-auth-authorizer'
+    type: 'api-call'
+  - id: 'apigw-to-alb'
+    from: 'apigw-rest'
+    to: 'alb-main'
+    type: 'api-call'
+    protocol: 'HTTPS'
+  - id: 'ws-to-lambda-notif'
+    from: 'apigw-websocket'
+    to: 'lambda-notifications'
+    type: 'api-call'
+
+  # ── Service-to-Database ─────────────────────────────────────────
+  - id: 'catalog-to-aurora'
+    from: 'product-catalog-api'
+    to: 'aurora-catalog-db'
+    type: 'database-query'
+    protocol: 'PostgreSQL'
+  - id: 'orders-to-rds'
+    from: 'order-service'
+    to: 'rds-orders-db'
+    type: 'database-query'
+    protocol: 'PostgreSQL'
+  - id: 'orders-to-dynamo-sessions'
+    from: 'order-service'
+    to: 'dynamodb-sessions'
+    type: 'database-query'
+  - id: 'inventory-to-dynamo'
+    from: 'inventory-service'
+    to: 'dynamodb-inventory'
+    type: 'database-query'
+
+  # ── Cache ───────────────────────────────────────────────────────
+  - id: 'catalog-to-redis'
+    from: 'product-catalog-api'
+    to: 'elasticache-redis'
+    type: 'cache-read'
+    protocol: 'Redis'
+  - id: 'orders-to-redis'
+    from: 'order-service'
+    to: 'elasticache-redis'
+    type: 'cache-read'
+    protocol: 'Redis'
+
+  # ── Search ──────────────────────────────────────────────────────
+  - id: 'catalog-to-opensearch'
+    from: 'product-catalog-api'
+    to: 'opensearch-products'
+    type: 'api-call'
+  - id: 'indexer-from-aurora'
+    from: 'aurora-catalog-db'
+    to: 'opensearch-products'
+    type: 'replication'
+
+  # ── Event-Driven Architecture ───────────────────────────────────
+  - id: 'orders-to-eventbridge'
+    from: 'order-service'
+    to: 'eventbridge-bus'
+    type: 'message-publish'
+  - id: 'payments-to-eventbridge'
+    from: 'payment-service'
+    to: 'eventbridge-bus'
+    type: 'message-publish'
+  - id: 'eventbridge-to-sqs-orders'
+    from: 'eventbridge-bus'
+    to: 'sqs-orders'
+    type: 'message-publish'
+  - id: 'eventbridge-to-sqs-notifs'
+    from: 'eventbridge-bus'
+    to: 'sqs-notifications'
+    type: 'message-publish'
+  - id: 'sqs-orders-to-stepfn'
+    from: 'sqs-orders'
+    to: 'step-fn-checkout'
+    type: 'message-consume'
+  - id: 'sqs-notifs-to-lambda'
+    from: 'sqs-notifications'
+    to: 'lambda-notifications'
+    type: 'message-consume'
+
+  # ── Step Functions Orchestration ────────────────────────────────
+  - id: 'stepfn-to-payments'
+    from: 'step-fn-checkout'
+    to: 'ecs-payments'
+    type: 'api-call'
+  - id: 'stepfn-to-inventory'
+    from: 'step-fn-checkout'
+    to: 'ecs-inventory'
+    type: 'api-call'
+  - id: 'stepfn-to-sns'
+    from: 'step-fn-checkout'
+    to: 'sns-alerts'
+    type: 'message-publish'
+
+  # ── Analytics Pipeline ──────────────────────────────────────────
+  - id: 'clickstream-to-kinesis'
+    from: 'storefront-spa'
+    to: 'kinesis-clickstream'
+    type: 'stream-write'
+  - id: 'kinesis-to-firehose'
+    from: 'kinesis-clickstream'
+    to: 'kinesis-firehose-etl'
+    type: 'stream-read'
+  - id: 'firehose-to-s3-lake'
+    from: 'kinesis-firehose-etl'
+    to: 's3-data-lake'
+    type: 'file-upload'
+  - id: 'firehose-to-redshift'
+    from: 'kinesis-firehose-etl'
+    to: 'redshift-dw'
+    type: 'stream-write'
+  - id: 'glue-to-s3-lake'
+    from: 'glue-catalog'
+    to: 's3-data-lake'
+    type: 'file-download'
+  - id: 'athena-to-s3-lake'
+    from: 'athena-adhoc'
+    to: 's3-data-lake'
+    type: 'database-query'
+  - id: 'redshift-to-quicksight'
+    from: 'redshift-dw'
+    to: 'quicksight-bi'
+    type: 'api-call'
+
+  # ── AI/ML ───────────────────────────────────────────────────────
+  - id: 'catalog-to-sagemaker'
+    from: 'product-catalog-api'
+    to: 'sagemaker-recommender'
+    type: 'api-call'
+    protocol: 'HTTPS'
+  - id: 'catalog-to-bedrock'
+    from: 'product-catalog-api'
+    to: 'bedrock-ai'
+    type: 'api-call'
+    protocol: 'HTTPS'
+
+  # ── Authentication ──────────────────────────────────────────────
+  - id: 'spa-to-cognito'
+    from: 'storefront-spa'
+    to: 'cognito-user-pool'
+    type: 'authentication'
+
+  # ── Secrets ─────────────────────────────────────────────────────
+  - id: 'ecs-to-secrets'
+    from: 'ecs-catalog'
+    to: 'secrets-mgr'
+    type: 'api-call'
+  - id: 'ecs-orders-to-secrets'
+    from: 'ecs-orders'
+    to: 'secrets-mgr'
+    type: 'api-call'
+
+  # ── Encryption ──────────────────────────────────────────────────
+  - id: 'kms-to-aurora'
+    from: 'kms-key'
+    to: 'aurora-catalog-db'
+    type: 'api-call'
+  - id: 'kms-to-s3'
+    from: 'kms-key'
+    to: 's3-data-lake'
+    type: 'api-call'
+
+  # ── Monitoring ──────────────────────────────────────────────────
+  - id: 'ecs-to-xray'
+    from: 'ecs-catalog'
+    to: 'xray-tracing'
+    type: 'api-call'
+  - id: 'ecs-to-cw-logs'
+    from: 'ecs-catalog'
+    to: 'cloudwatch-logs'
+    type: 'stream-write'
+
+  # ── CI/CD Pipeline ─────────────────────────────────────────────
+  - id: 'pipeline-to-build'
+    from: 'codepipeline-ci'
+    to: 'codebuild-svc'
+    type: 'api-call'
+  - id: 'build-to-ecr'
+    from: 'codebuild-svc'
+    to: 'ecr-registry'
+    type: 'file-upload'
+  - id: 'pipeline-to-deploy'
+    from: 'codepipeline-ci'
+    to: 'codedeploy-svc'
+    type: 'api-call'
+  - id: 'deploy-to-ecs'
+    from: 'codedeploy-svc'
+    to: 'ecs-catalog'
+    type: 'api-call'
+
+  # ── Backup ─────────────────────────────────────────────────────
+  - id: 'backup-to-aurora'
+    from: 'backup-plan'
+    to: 'aurora-catalog-db'
+    type: 'backup'
+  - id: 'backup-to-dynamo'
+    from: 'backup-plan'
+    to: 'dynamodb-sessions'
+    type: 'backup'
+  - id: 'backup-to-s3'
+    from: 'backup-plan'
+    to: 's3-backups'
+    type: 'file-upload'
