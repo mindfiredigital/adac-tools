@@ -4,6 +4,7 @@ import {
   AdacApplication,
   AdacCloud,
 } from '@mindfiredigital/adac-schema';
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { ElkNode, ElkEdge } from './types.js';
 import path from 'path';
 import fs from 'fs';
@@ -716,6 +717,7 @@ export function buildElkGraph(adac: AdacConfig): ElkNode {
 
   // 2. Create Nodes for Infrastructure Services (Pass 1)
   (adac.infrastructure?.clouds || []).forEach((cloud: AdacCloud) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const cloudStyles = getStylesForCloud(cloud) as any;
     const gcpCloud = isGcpCloud(cloud);
 

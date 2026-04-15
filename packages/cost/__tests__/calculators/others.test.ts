@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { describe, it, expect } from 'vitest';
 import { DatabaseCalculator } from '../../src/calculators/database-calculator';
 import { NetworkingCalculator } from '../../src/calculators/networking-calculator';

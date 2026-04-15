@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { createLayoutEngine } from '../src/factory';
 import * as autoSelector from '../src/auto-selector';

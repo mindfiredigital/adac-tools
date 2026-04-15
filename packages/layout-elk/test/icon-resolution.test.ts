@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { describe, it, expect, vitest, beforeEach } from 'vitest';
 import { buildElkGraph } from '../src/elk-builder.js';
 import fs from 'fs';
