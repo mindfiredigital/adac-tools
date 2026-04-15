@@ -1,8 +1,19 @@
 {
   "name": "@mindfiredigital/adac-layout-elk",
   "version": "0.0.1",
+  "description": "Professional graph layout engine using ELK for ADAC diagrams",
+  "author": "Yogesh Sharma",
+  "license": "MIT",
   "main": "dist/index.js",
+  "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
+  "keywords": [
+    "adac",
+    "layout",
+    "elkjs",
+    "graph",
+    "diagram"
+  ],
   "scripts": {
     "build": "tsc",
     "test": "vitest run"

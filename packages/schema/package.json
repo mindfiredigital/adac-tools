@@ -1,9 +1,20 @@
 {
   "name": "@mindfiredigital/adac-schema",
   "version": "0.0.1",
+  "description": "JSON Schema validation for ADAC architecture definitions",
+  "author": "Yogesh Sharma",
+  "license": "MIT",
   "type": "module",
   "main": "dist/index.js",
+  "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
+  "keywords": [
+    "adac",
+    "schema",
+    "json-schema",
+    "validation",
+    "ajv"
+  ],
   "files": [
     "dist"
   ],
@@ -11,7 +22,6 @@
     "build": "tsc",
     "test": "vitest run"
   },
-  "license": "ISC",
   "dependencies": {
     "ajv": "^8.18.0",
     "ajv-formats": "^3.0.1"

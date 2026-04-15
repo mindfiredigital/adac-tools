@@ -1,14 +1,28 @@
 {
   "name": "@mindfiredigital/adac-export-terraform",
   "version": "0.0.1",
+  "description": "Export ADAC diagrams to Terraform HCL",
+  "author": "Yogesh Sharma",
+  "license": "MIT",
   "type": "module",
   "main": "dist/index.js",
+  "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
+  "keywords": [
+    "adac",
+    "export",
+    "terraform",
+    "hcl",
+    "iac"
+  ],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsup src/index.ts --format esm,cjs --dts",
     "test": "vitest run"
   },
-  "license": "ISC",
+  "license": "MIT",
   "repository": {
     "type": "git",
     "url": "https://github.com/mindfiredigital/adac-tools.git",

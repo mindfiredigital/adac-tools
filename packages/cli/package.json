@@ -2,9 +2,17 @@
   "name": "@mindfiredigital/adac-cli",
   "version": "0.1.0",
   "description": "CLI command reader for ADAC",
+  "author": "Yogesh Sharma",
+  "license": "MIT",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
+  "keywords": [
+    "adac",
+    "cli",
+    "commander",
+    "command-line"
+  ],
   "scripts": {
     "build": "tsup"
   },

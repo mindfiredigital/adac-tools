@@ -1,0 +1,46 @@
+version: 2
+updates:
+  # Enable version updates for npm dependencies
+  - package-ecosystem: 'npm'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+      day: 'monday'
+      time: '09:00'
+    open-pull-requests-limit: 5
+    reviewers:
+      - 'mindfiredigital/maintainers'
+    assignees:
+      - 'mindfiredigital/maintainers'
+    labels:
+      - 'dependencies'
+      - 'npm'
+    commit-message:
+      prefix: 'chore(deps):'
+      prefix-development: 'chore(deps-dev):'
+      include: 'scope'
+    pull-request-branch-name:
+      separator: '/'
+    rebase-strategy: 'auto'
+    allow:
+      - dependency-type: 'all'
+    ignore:
+      # Ignore major version updates that require maintainers to review
+      - dependency-name: '*'
+        update-types:
+          - 'version-update:semver-major'
+
+  # Enable version updates for GitHub Actions
+  - package-ecosystem: 'github-actions'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+      day: 'monday'
+      time: '10:00'
+    reviewers:
+      - 'mindfiredigital/maintainers'
+    labels:
+      - 'ci/cd'
+      - 'github-actions'
+    commit-message:
+      prefix: 'ci:'

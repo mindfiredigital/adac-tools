@@ -1,8 +1,19 @@
 {
   "name": "@mindfiredigital/adac-icons-azure",
   "version": "0.0.1",
+  "description": "Azure service icons and mappings for ADAC diagrams",
+  "author": "Yogesh Sharma",
+  "license": "MIT",
   "main": "dist/index.js",
+  "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
+  "keywords": [
+    "adac",
+    "icons",
+    "azure",
+    "diagram",
+    "assets"
+  ],
   "files": [
     "dist",
     "mappings",

@@ -1,8 +1,19 @@
 {
   "name": "@mindfiredigital/adac-web-server",
   "version": "0.0.1",
+  "description": "Express API server for ADAC diagram generation and compliance services",
+  "author": "Yogesh Sharma",
+  "license": "MIT",
   "main": "dist/index.js",
+  "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
+  "keywords": [
+    "adac",
+    "api",
+    "web-server",
+    "express",
+    "diagram"
+  ],
   "scripts": {
     "build": "tsc",
     "test": "echo \"No tests specified\""

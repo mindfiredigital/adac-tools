@@ -1,8 +1,21 @@
 {
   "name": "@mindfiredigital/adac-layout",
   "version": "0.1.0",
+  "description": "Layout orchestration for ADAC diagrams",
+  "author": "Yogesh Sharma",
+  "license": "MIT",
   "main": "dist/index.js",
+  "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
+  "keywords": [
+    "adac",
+    "layout",
+    "orchestration",
+    "graph"
+  ],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsc",
     "test": "vitest run"

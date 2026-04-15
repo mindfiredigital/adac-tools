@@ -1,5 +1,10 @@
 # ADAC - Architecture Diagram As Code
 
+[![npm version](https://img.shields.io/npm/v/@mindfiredigital/adac-diagram)](https://www.npmjs.com/package/@mindfiredigital/adac-diagram)
+[![CI Status](https://img.shields.io/github/actions/workflow/status/mindfiredigital/adac-tools/ci.yml)](https://github.com/mindfiredigital/adac-tools/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Monorepo managed with pnpm](https://img.shields.io/badge/managed%20with-pnpm-blue)](https://pnpm.io)
+
 ADAC is a comprehensive ecosystem for generating high-quality multi-cloud architecture diagrams (currently supporting AWS and GCP). It provides a powerful command-line interface (CLI), a developer-friendly core engine, and a modern Web UI for both programmatic and visual diagram creation.
 
 ## 📂 Project Overview & Structure
@@ -143,3 +148,62 @@ When cloning this repo, pay attention to:
 4.  **CLI** is decoupled into its own package for clean command management.
 5.  **Diagram** provides both a CLI entry point and an npm module API.
 6.  **Web Server** consumes the `diagram` package as a standard npm module.
+
+---
+
+## 🤝 Contributing
+
+We welcome contributions from the community! Please see our [CONTRIBUTING.md](CONTRIBUTING.md) for:
+
+- How to set up your development environment
+- Branch naming conventions
+- Commit message guidelines
+- Testing requirements
+- Pull request process
+
+### Quick Start for Contributors
+
+```bash
+# Fork and clone the repository
+git clone https://github.com/YOUR_USERNAME/adac-tools.git
+cd adac-tools
+
+# Install dependencies and build
+pnpm install && pnpm build
+
+# Create a feature branch
+git checkout -b feature/your-feature
+
+# Make your changes and test
+pnpm lint && pnpm format && pnpm test
+
+# Push and create a PR
+git push origin feature/your-feature
+```
+
+---
+
+## 📋 Code of Conduct
+
+This project adheres to a [Code of Conduct](CODE_OF_CONDUCT.md) that we expect all community members to follow. Please read it to understand our community standards and reporting procedures.
+
+---
+
+## 📚 Additional Resources
+
+- [API Reference](docs/API_REFERENCE.md) - Detailed API documentation
+- [Code Quality Guidelines](docs/CODE_QUALITY.md) - Standards and best practices
+- [Testing Strategy](docs/TESTING.md) - Testing approach and coverage targets
+- [GitHub Discussions](https://github.com/mindfiredigital/adac-tools/discussions) - Ask questions and share ideas
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License - see [LICENSE](LICENSE) file for details.
+
+---
+
+## 🙏 Acknowledgments
+
+Built with ❤️ by the Mindfire team and our amazing community contributors.

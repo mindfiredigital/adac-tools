@@ -1,14 +1,28 @@
 {
   "name": "@mindfiredigital/adac-optimizer",
   "version": "0.0.1",
+  "description": "Architecture optimization recommendations for ADAC diagrams",
+  "author": "Yogesh Sharma",
+  "license": "MIT",
   "main": "dist/index.js",
+  "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
+  "keywords": [
+    "adac",
+    "optimizer",
+    "optimization",
+    "analysis",
+    "architecture"
+  ],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsc",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage"
   },
-  "license": "ISC",
+  "license": "MIT",
   "repository": {
     "type": "git",
     "url": "https://github.com/mindfiredigital/adac-tools.git",

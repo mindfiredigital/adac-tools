@@ -30,7 +30,7 @@
     "diagram"
   ],
   "author": "Yogesh Sharma",
-  "license": "ISC",
+  "license": "MIT",
   "dependencies": {
     "adm-zip": "^0.5.16",
     "axios": "^1.13.2",

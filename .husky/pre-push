@@ -1,0 +1,8 @@
+#!/bin/sh
+# Pre-push hook: prevents pushing without successful build and tests
+
+# Rebuild to ensure changes compile correctly
+pnpm run build
+
+# Run tests one more time before push
+pnpm run test

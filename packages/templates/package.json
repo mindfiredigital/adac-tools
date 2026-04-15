@@ -1,13 +1,21 @@
 {
   "name": "@mindfiredigital/adac-templates",
   "version": "0.0.1",
+  "description": "Template library for common cloud architectures",
+  "author": "Yogesh Sharma",
+  "license": "MIT",
   "main": "dist/index.js",
+  "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
-  "scripts": {
-    "build": "tsc",
-    "test": "echo \"No tests specified\""
-  },
-  "license": "ISC",
+  "keywords": [
+    "adac",
+    "templates",
+    "architecture",
+    "library"
+  ],
+  "files": [
+    "dist"
+  ],
   "repository": {
     "type": "git",
     "url": "https://github.com/mindfiredigital/adac-tools.git",

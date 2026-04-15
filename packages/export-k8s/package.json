@@ -1,13 +1,22 @@
 {
   "name": "@mindfiredigital/adac-export-k8s",
   "version": "0.0.1",
+  "description": "Export ADAC diagrams to Kubernetes manifests",
+  "author": "Yogesh Sharma",
+  "license": "MIT",
   "main": "dist/index.js",
+  "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
-  "scripts": {
-    "build": "tsc",
-    "test": "echo \"No tests specified\""
-  },
-  "license": "ISC",
+  "keywords": [
+    "adac",
+    "export",
+    "kubernetes",
+    "k8s",
+    "manifests"
+  ],
+  "files": [
+    "dist"
+  ],
   "repository": {
     "type": "git",
     "url": "https://github.com/mindfiredigital/adac-tools.git",

@@ -1,5 +1,11 @@
+#!/bin/sh
+# Pre-commit hook: runs linting, formatting, and tests
+
 # Run ESLint
 pnpm lint
 
 # Run Prettier check
 pnpm format:check
+
+# Run tests
+pnpm test
