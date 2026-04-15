@@ -371,4 +371,61 @@ describe('ELK Builder', () => {
     const zoneNode = utilityGroup?.children?.find((c) => c.id === 'my-zone');
     expect(zoneNode?.properties?.cssClass).toBe('gcp-zone');
   });
+
+  it('should build an ELK graph with Azure infrastructure', () => {
+    const config: AdacConfig = {
+      version: '0.1',
+      metadata: { name: 'Azure Test', created: '2023-10-27' },
+      infrastructure: {
+        clouds: [
+          {
+            id: 'azure-cloud',
+            provider: 'azure',
+            region: 'eastus',
+            services: [
+              {
+                id: 'azure-rg',
+                name: 'Resource Group',
+                service: 'vpc',
+              },
+              {
+                id: 'azure-sub',
+                name: 'Subscription',
+                service: 'region',
+              },
+              {
+                id: 'azure-container',
+                name: 'VNet',
+                service: 'subnet',
+                configuration: {
+                  vpc: 'azure-rg',
+                },
+              },
+              {
+                id: 'azure-aks',
+                name: 'AKS',
+                service: 'compute',
+                configuration: {
+                  vpc: 'azure-rg',
+                  subnets: ['azure-container'],
+                },
+              },
+            ],
+          },
+        ],
+      },
+    };
+
+    const graph = buildElkGraph(config);
+    expect(graph).toBeDefined();
+
+    const rgNode = graph.children?.find((c) => c.id === 'azure-rg');
+    expect(rgNode?.properties?.cssClass).toBe('azure-rg');
+
+    const vnetNode = rgNode?.children?.find((c) => c.id === 'azure-container');
+    expect(vnetNode?.properties?.cssClass).toBe('azure-container');
+
+    const aksNode = vnetNode?.children?.find((c) => c.id === 'azure-aks');
+    expect(aksNode?.properties?.cssClass).toBe('azure-compute-cluster');
+  });
 });

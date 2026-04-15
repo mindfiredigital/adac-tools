@@ -44,7 +44,7 @@ const getId = () => `node-${idCounter++}`;
 /**
  * Map label/icon to a valid ADAC service type.
  */
-const getServiceType = (
+export const getServiceType = (
   label: string,
   path: string,
   provider: Provider
@@ -99,7 +99,11 @@ const getServiceType = (
 };
 
 // Helper to convert React Flow state to ADAC YAML
-const generateYaml = (nodes: Node[], edges: Edge[], provider: Provider) => {
+export const generateYaml = (
+  nodes: Node[],
+  edges: Edge[],
+  provider: Provider
+) => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const yamlObj: any = {
     version: '0.1',

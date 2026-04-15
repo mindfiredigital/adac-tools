@@ -96,4 +96,38 @@ describe('ComputeCalculator', () => {
     // 1 + 2 instances across entries => 3x single-instance cost
     expect(costMulti).toBeCloseTo(cost1 * 3, 1);
   });
+
+  it('should calculate ECS Fargate costs', () => {
+    const pricing = new AWSPricing();
+    const calc = new ComputeCalculator(pricing);
+    const config: ComputeConfig = {
+      compute: [
+        {
+          type: 'ecs',
+          vcpu: 2,
+          memoryGB: 4,
+          count: 1,
+        },
+      ],
+    };
+    const cost = calc.calculate(config);
+    expect(cost).toBeGreaterThan(0);
+  });
+
+  it('should calculate Lambda costs', () => {
+    const pricing = new AWSPricing();
+    const calc = new ComputeCalculator(pricing);
+    const config: ComputeConfig = {
+      compute: [
+        {
+          type: 'lambda',
+          requestsPerMonth: 1000000,
+          avgDurationMs: 100,
+          memoryMB: 512,
+        },
+      ],
+    };
+    const cost = calc.calculate(config);
+    expect(cost).toBeGreaterThan(0);
+  });
 });
