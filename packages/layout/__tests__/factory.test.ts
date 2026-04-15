@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { createLayoutEngine } from '../src/factory';
 import * as autoSelector from '../src/auto-selector';
 import { CustomLayoutEngineAdapter } from '../src/custom-layout-engine-adapter';
@@ -10,15 +10,26 @@ vi.mock('@mindfiredigital/adac-layout-core', () => ({
   }),
 }));
 
-vi.mock('@mindfiredigital/adac-layout-elk', () => ({
-  ElkLayoutEngine: vi.fn().mockImplementation(function () {
-    return { type: 'elk' };
-  }),
-}));
+let elkMockError: any = null;
+vi.mock('@mindfiredigital/adac-layout-elk', () => {
+  return {
+    get ElkLayoutEngine() {
+      if (elkMockError) throw elkMockError;
+      return vi.fn().mockImplementation(function () {
+        return { type: 'elk' };
+      });
+    },
+  };
+});
 
 describe('createLayoutEngine', () => {
-  afterEach(() => {
+  beforeEach(() => {
+    elkMockError = null;
     vi.clearAllMocks();
+  });
+
+  afterEach(() => {
+    elkMockError = null;
   });
 
   it('returns CustomLayoutEngine when type is custom', async () => {
@@ -61,9 +72,18 @@ describe('createLayoutEngine', () => {
 
   it('throws error for invalid type', async () => {
     await expect(
-      createLayoutEngine(
-        'invalid' as unknown as import('../src/factory').EngineType
-      )
+      createLayoutEngine('invalid' as unknown as any)
     ).rejects.toThrow('Unknown engine type: invalid');
+  });
+
+  it('falls back to custom engine if ELK is not found (MODULE_NOT_FOUND)', async () => {
+    elkMockError = { code: 'MODULE_NOT_FOUND' };
+    const engine = await createLayoutEngine('elk');
+    expect(engine).toBeInstanceOf(CustomLayoutEngineAdapter);
+  });
+
+  it('re-throws error if ELK fails with non-not-found error', async () => {
+    elkMockError = new Error('Some other error');
+    await expect(createLayoutEngine('elk')).rejects.toThrow('Some other error');
   });
 });

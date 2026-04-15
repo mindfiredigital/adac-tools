@@ -254,7 +254,7 @@ async function updatePreview(
   }
 }
 
-function wrapSvgInHtml(
+export function wrapSvgInHtml(
   svg: string,
   logs: string[],
   durationMs: number
@@ -377,7 +377,7 @@ function wrapSvgInHtml(
 </html>`;
 }
 
-function getLoadingHtml(): string {
+export function getLoadingHtml(): string {
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -420,7 +420,7 @@ function escapeHtml(text: string): string {
     .replace(/'/g, '&#039;');
 }
 
-function getErrorHtml(message: string, logs?: string[]): string {
+export function getErrorHtml(message: string, logs?: string[]): string {
   const logsHtml = logs
     ? `<div style="text-align:left;max-height:200px;overflow:auto;margin-top:16px;padding:8px;background:#1a1a1a;border-radius:6px;font-family:monospace;font-size:11px">${logs.map((l) => `<div>${escapeHtml(l)}</div>`).join('')}</div>`
     : '';
