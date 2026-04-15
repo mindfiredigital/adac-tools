@@ -2,7 +2,7 @@
   "name": "@mindfiredigital/adac-export-terraform",
   "version": "0.0.1",
   "description": "Export ADAC diagrams to Terraform HCL",
-  "author": "Yogesh Sharma",
+  "author": "Mindfire Digital",
   "license": "MIT",
   "type": "module",
   "main": "dist/index.js",

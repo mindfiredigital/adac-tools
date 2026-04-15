@@ -2,7 +2,7 @@
   "name": "@mindfiredigital/adac-export-cloudformation",
   "version": "0.0.1",
   "description": "Export ADAC diagrams to AWS CloudFormation templates",
-  "author": "Yogesh Sharma",
+  "author": "Mindfire Digital",
   "license": "MIT",
   "main": "dist/index.js",
   "module": "dist/index.mjs",

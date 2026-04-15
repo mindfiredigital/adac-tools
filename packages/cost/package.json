@@ -2,7 +2,7 @@
   "name": "@mindfiredigital/adac-cost",
   "version": "0.0.1",
   "description": "Cost analysis tool for cloud architectures",
-  "author": "Yogesh Sharma",
+  "author": "Mindfire Digital",
   "license": "MIT",
   "type": "commonjs",
   "main": "dist/index.js",

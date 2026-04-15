@@ -2,7 +2,7 @@
   "name": "@mindfiredigital/adac-schema",
   "version": "0.0.1",
   "description": "JSON Schema validation for ADAC architecture definitions",
-  "author": "Yogesh Sharma",
+  "author": "Mindfire Digital",
   "license": "MIT",
   "type": "module",
   "main": "dist/index.js",

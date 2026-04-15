@@ -2,7 +2,7 @@
   "name": "@mindfiredigital/adac-web-server",
   "version": "0.0.1",
   "description": "Express API server for ADAC diagram generation and compliance services",
-  "author": "Yogesh Sharma",
+  "author": "Mindfire Digital",
   "license": "MIT",
   "main": "dist/index.js",
   "module": "dist/index.mjs",

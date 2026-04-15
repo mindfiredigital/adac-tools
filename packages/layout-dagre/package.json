@@ -2,7 +2,7 @@
   "name": "@mindfiredigital/adac-layout-dagre",
   "version": "0.0.1",
   "description": "Lightweight graph layout engine using Dagre for ADAC diagrams",
-  "author": "Yogesh Sharma",
+  "author": "Mindfire Digital",
   "license": "MIT",
   "main": "dist/index.js",
   "module": "dist/index.mjs",

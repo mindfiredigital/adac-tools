@@ -2,7 +2,7 @@
   "name": "@mindfiredigital/adac-doc",
   "version": "0.0.1",
   "description": "Documentation generator for ADAC schemas and compliance reports",
-  "author": "Yogesh Sharma",
+  "author": "Mindfire Digital",
   "license": "MIT",
   "type": "module",
   "main": "dist/index.js",

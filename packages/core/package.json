@@ -2,7 +2,7 @@
   "name": "@mindfiredigital/adac-core",
   "version": "0.1.0",
   "description": "Core integration package for ADAC (Parser, Validator, and Layouts)",
-  "author": "Yogesh Sharma",
+  "author": "Mindfire Digital",
   "license": "MIT",
   "keywords": [
     "adac",

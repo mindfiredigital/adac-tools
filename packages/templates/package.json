@@ -2,7 +2,7 @@
   "name": "@mindfiredigital/adac-templates",
   "version": "0.0.1",
   "description": "Template library for common cloud architectures",
-  "author": "Yogesh Sharma",
+  "author": "Mindfire Digital",
   "license": "MIT",
   "main": "dist/index.js",
   "module": "dist/index.mjs",

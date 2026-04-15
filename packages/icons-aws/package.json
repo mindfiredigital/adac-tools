@@ -2,7 +2,7 @@
   "name": "@mindfiredigital/adac-icons-aws",
   "version": "0.0.1",
   "description": "AWS service icons and mappings for ADAC diagrams",
-  "author": "Yogesh Sharma",
+  "author": "Mindfire Digital",
   "license": "MIT",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
