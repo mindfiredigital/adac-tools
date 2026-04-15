@@ -1,6 +1,8 @@
 import { Command } from 'commander';
 import path from 'path';
 import { exec } from 'child_process';
+import { writeFileSync } from 'fs';
+import { generateCloudFormationFromAdacFile } from '@mindfiredigital/adac-export-cloudformation';
 
 export type CostPeriod = 'hourly' | 'daily' | 'monthly' | 'yearly';
 export type PricingModel = 'on_demand' | 'reserved';
@@ -32,6 +34,11 @@ export type CLIOptions = {
   generateTerraformFromYaml?: (
     input: string,
     outputDir?: string,
+    validate?: boolean
+  ) => Promise<void>;
+  generateCloudFormationFromYaml?: (
+    input: string,
+    outputPath?: string,
     validate?: boolean
   ) => Promise<void>;
   parseAdac: (input: string, options?: Record<string, unknown>) => unknown;
@@ -252,6 +259,41 @@ export function runCLI(options: CLIOptions) {
       } catch (error: unknown) {
         const message = error instanceof Error ? error.message : String(error);
         console.error('Error generating Terraform:', message);
+        process.exit(1);
+      }
+    });
+
+  program
+    .command('cloudformation <file>')
+    .description('Generate CloudFormation YAML from ADAC YAML file')
+    .option('-o, --output <path>', 'Output YAML file path')
+    .option('--validate', 'Validate schema before generating')
+    .action(async (file, opts) => {
+      try {
+        const inputPath = path.resolve(process.cwd(), file);
+        const outputPath = opts.output
+          ? path.resolve(process.cwd(), opts.output)
+          : path.join(
+              path.dirname(inputPath),
+              `${path.parse(inputPath).name}.cfn.yaml`
+            );
+
+        if (opts.validate && options.parseAdac && options.validateAdacConfig) {
+          const config = options.parseAdac(inputPath, { validate: false });
+          const result = options.validateAdacConfig(config);
+          if (!result.valid) {
+            console.error(' Validation failed:');
+            result.errors?.forEach((err) => console.error(`  - ${err}`));
+            process.exit(1);
+          }
+        }
+
+        const result = generateCloudFormationFromAdacFile(inputPath);
+        writeFileSync(outputPath, result.templateYaml, 'utf8');
+        console.log(`CloudFormation YAML generated at ${outputPath}`);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        console.error('Error generating CloudFormation:', message);
         process.exit(1);
       }
     });

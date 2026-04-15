@@ -1,0 +1,45 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "{{description}}"
+
+{{#if parameters}}
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      {{#if networkingParameters.length}}
+      - Label:
+          default: "Networking Configuration"
+        Parameters:
+          {{#each networkingParameters}}
+          - "{{this}}"
+          {{/each}}
+      {{/if}}
+      {{#if databaseParameters.length}}
+      - Label:
+          default: "Database Configuration"
+        Parameters:
+          {{#each databaseParameters}}
+          - "{{this}}"
+          {{/each}}
+      {{/if}}
+      {{#if computeParameters.length}}
+      - Label:
+          default: "Compute Configuration"
+        Parameters:
+          {{#each computeParameters}}
+          - "{{this}}"
+          {{/each}}
+      {{/if}}
+
+Parameters:
+{{{parameters}}}
+{{/if}}
+
+{{#if resources}}
+Resources:
+{{{resources}}}
+{{/if}}
+
+{{#if outputs}}
+Outputs:
+{{{outputs}}}
+{{/if}}
