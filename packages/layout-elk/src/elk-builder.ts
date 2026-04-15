@@ -716,7 +716,7 @@ export function buildElkGraph(adac: AdacConfig): ElkNode {
 
   // 2. Create Nodes for Infrastructure Services (Pass 1)
   (adac.infrastructure?.clouds || []).forEach((cloud: AdacCloud) => {
-    const cloudStyles = getStylesForCloud(cloud);
+    const cloudStyles = getStylesForCloud(cloud) as any;
     const gcpCloud = isGcpCloud(cloud);
 
     (cloud.services || []).forEach((service: AdacService) => {
