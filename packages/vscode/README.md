@@ -91,9 +91,9 @@ Use the `adac-scaffold` snippet to create a complete ADAC file template:
 version: '0.1'
 
 metadata:
-  name: 'My Architecture'
-  author: 'Author'
-  description: 'Architecture description'
+  name: 'ADAC - Architecture Diagram as Code'
+  author: 'Mindfire Digital'
+  description: 'ADAC (Architecture Diagram As Code) is a comprehensive ecosystem for generating high-quality multi-cloud architecture diagrams from YAML/JSON infrastructure definitions.'
   created: '2026-01-01'
 
 applications:
