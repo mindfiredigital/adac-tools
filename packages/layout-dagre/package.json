@@ -26,6 +26,13 @@
     "url": "https://github.com/mindfiredigital/adac-tools.git",
     "directory": "packages/layout-dagre"
   },
+  "dependencies": {
+    "dagre": "^0.8.5",
+    "@mindfiredigital/adac-layout-elk": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/dagre": "^0.7.54"
+  },
   "publishConfig": {
     "access": "public",
     "registry": "https://npm.pkg.github.com"
