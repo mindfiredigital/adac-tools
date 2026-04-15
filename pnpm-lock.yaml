@@ -430,6 +430,15 @@ importers:
 
   packages/layout-elk:
     dependencies:
+      '@mindfiredigital/adac-icons-aws':
+        specifier: workspace:*
+        version: link:../icons-aws
+      '@mindfiredigital/adac-icons-azure':
+        specifier: workspace:*
+        version: link:../icons-azure
+      '@mindfiredigital/adac-icons-gcp':
+        specifier: workspace:*
+        version: link:../icons-gcp
       '@mindfiredigital/adac-layout-core':
         specifier: workspace:*
         version: link:../layout-core
