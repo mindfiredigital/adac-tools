@@ -1,23 +1,22 @@
 {
   "name": "@mindfiredigital/adac-export-cloudformation",
   "version": "0.0.1",
+  "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "build": "tsc",
-    "test": "echo \"No tests specified\""
+    "build": "tsc && node -e \"fs.cpSync('src/templates', 'dist/templates', {recursive: true})\"",
+    "test": "vitest run"
   },
   "license": "ISC",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/mindfiredigital/adac-tools.git",
-    "directory": "packages/export-cloudformation"
+  "dependencies": {
+    "@mindfiredigital/adac-parser": "workspace:*",
+    "@mindfiredigital/adac-schema": "workspace:*",
+    "handlebars": "^4.7.8"
   },
-  "publishConfig": {
-    "access": "public",
-    "registry": "https://npm.pkg.github.com"
-  },
-  "files": [
-    "dist"
-  ]
+  "devDependencies": {
+    "@types/node": "^22.13.4",
+    "cfn-lint": "^1.9.7",
+    "vitest": "^2.1.9"
+  }
 }

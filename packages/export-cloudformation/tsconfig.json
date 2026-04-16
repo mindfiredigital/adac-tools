@@ -2,7 +2,12 @@
   "extends": "../../tsconfig.json",
   "compilerOptions": {
     "outDir": "./dist",
-    "rootDir": "./src"
+    "rootDir": "./src",
+    "baseUrl": ".",
+    "paths": {
+      "@mindfiredigital/adac-parser": ["../parser/dist/index.d.ts"],
+      "@mindfiredigital/adac-schema": ["../schema/dist/index.d.ts"]
+    }
   },
   "include": ["src/**/*"]
 }
