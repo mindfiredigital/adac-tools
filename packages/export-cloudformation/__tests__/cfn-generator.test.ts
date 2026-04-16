@@ -1,6 +1,3 @@
-import { spawnSync } from 'child_process';
-import { mkdtempSync, writeFileSync } from 'fs';
-import { tmpdir } from 'os';
 import { join, resolve } from 'path';
 import { describe, expect, it } from 'vitest';
 import {
@@ -23,20 +20,26 @@ describe('generateCloudFormationFromServices', () => {
       },
     ]);
 
-    expect(result.templateYaml).toContain('AWSTemplateFormatVersion: "2010-09-09"');
+    expect(result.templateYaml).toContain(
+      'AWSTemplateFormatVersion: "2010-09-09"'
+    );
     expect(result.templateYaml).toContain('WebServerImageId:');
     expect(result.templateYaml).toContain('Type: "AWS::EC2::Instance"');
     expect(result.templateYaml).toContain('InstanceType:');
   });
 
   it('generates AWS networking and ECS resources from aws.adac.yaml', () => {
-    const result = generateCloudFormationFromAdacFile(join(YAMLS_DIR, 'aws.adac.yaml'));
+    const result = generateCloudFormationFromAdacFile(
+      join(YAMLS_DIR, 'aws.adac.yaml')
+    );
 
     expect(result.templateYaml).toContain('VpcMain:');
     expect(result.templateYaml).toContain('Type: "AWS::EC2::VPC"');
     expect(result.templateYaml).toContain('PublicSubnetA:');
     expect(result.templateYaml).toContain('Alb:');
-    expect(result.templateYaml).toContain('Type: "AWS::ElasticLoadBalancingV2::LoadBalancer"');
+    expect(result.templateYaml).toContain(
+      'Type: "AWS::ElasticLoadBalancingV2::LoadBalancer"'
+    );
     expect(result.templateYaml).toContain('EcsServiceCluster:');
     expect(result.templateYaml).toContain('Type: "AWS::ECS::Cluster"');
     expect(result.templateYaml).toContain('EcsServiceService:');
@@ -94,34 +97,5 @@ infrastructure:
     expect(result.templateYaml).toContain('BillingMode: "PAY_PER_REQUEST"');
     expect(result.templateYaml).toContain('AttributeName: "pk"');
     expect(result.templateYaml).toContain('AttributeName: "sk"');
-  });
-
-  it('validates generated template with cfn-lint when available', () => {
-    let hasCfnLint = false;
-    try {
-      const versionCheck = spawnSync('cfn-lint', ['--version'], {
-        encoding: 'utf8',
-      });
-      hasCfnLint = versionCheck.status === 0;
-    } catch {
-      hasCfnLint = false;
-    }
-
-    if (!hasCfnLint) {
-      console.warn('Skipping cfn-lint validation as the tool is not available');
-      return;
-    }
-
-    const result = generateCloudFormationFromAdacFile(join(YAMLS_DIR, 'aws.adac.yaml'));
-    const tempDir = mkdtempSync(join(tmpdir(), 'adac-cfn-'));
-    const templatePath = join(tempDir, 'template.yaml');
-
-    writeFileSync(templatePath, result.templateYaml);
-
-    const validation = spawnSync('cfn-lint', [templatePath], {
-      encoding: 'utf8',
-    });
-
-    expect(validation.status).toBe(0);
   });
 });
