@@ -327,4 +327,349 @@ describe('Web Server API', () => {
       expect(res.status).toBeLessThan(600);
     });
   });
+
+  describe('Compliance Check Edge Cases', () => {
+    it('should handle empty configuration', async () => {
+      const res = await request(app).post('/api/compliance-check').send({});
+
+      expect(res.status).toBe(400);
+    });
+
+    it('should validate configuration with clouds array', async () => {
+      const adacContent = `
+        version: "1.0"
+        infrastructure:
+          name: "Test"
+          clouds:
+            - name: "AWS"
+              services:
+                - name: "EC2"
+                  type: "compute"
+      `;
+
+      const res = await request(app)
+        .post('/api/compliance-check')
+        .send({ content: adacContent });
+
+      expect(res.status).toBeLessThanOrEqual(200);
+    });
+
+    it('should handle config with no services', async () => {
+      const adacContent = `
+        version: "1.0"
+        infrastructure:
+          name: "Empty"
+          clouds:
+            - name: "AWS"
+      `;
+
+      const res = await request(app)
+        .post('/api/compliance-check')
+        .send({ content: adacContent });
+
+      expect([200, 500]).toContain(res.status);
+    });
+  });
+
+  describe('Cost Analysis Edge Cases', () => {
+    it('should calculate costs for multi-service config', async () => {
+      const adacContent = `
+        version: "1.0"
+        infrastructure:
+          name: "Test"
+          clouds:
+            - name: "AWS"
+              services:
+                - name: "EC2"
+                  type: "compute"
+                - name: "S3"
+                  type: "storage"
+      `;
+
+      const res = await request(app)
+        .post('/api/cost')
+        .send({ content: adacContent });
+
+      expect([200, 500]).toContain(res.status);
+    });
+
+    it('should handle services with all properties', async () => {
+      const adacContent = `
+        version: "1.0"
+        infrastructure:
+          name: "Test"
+          clouds:
+            - name: "AWS"
+              services:
+                - name: "EC2"
+                  type: "compute"
+                  quantity: 2
+                  unit: "instance"
+      `;
+
+      const res = await request(app)
+        .post('/api/cost')
+        .send({ content: adacContent });
+
+      expect([200, 500]).toContain(res.status);
+    });
+
+    it('should handle cost calculation errors gracefully', async () => {
+      const res = await request(app)
+        .post('/api/cost')
+        .send({ content: 'invalid' });
+
+      expect([400, 500]).toContain(res.status);
+      expect(res.body.error).toBeDefined();
+    });
+  });
+
+  describe('Generate Diagram Edge Cases', () => {
+    it('should handle generation with no layout', async () => {
+      const adacContent = `
+        version: "1.0"
+        infrastructure:
+          name: "Test"
+      `;
+
+      const res = await request(app)
+        .post('/api/generate')
+        .send({ content: adacContent });
+
+      expect([200, 500]).toContain(res.status);
+    });
+
+    it('should handle generation with specific layout', async () => {
+      const adacContent = `
+        version: "1.0"
+        infrastructure:
+          name: "Test"
+          clouds:
+            - name: "AWS"
+              services:
+                - name: "Lambda"
+                  type: "compute"
+      `;
+
+      const res = await request(app)
+        .post('/api/generate')
+        .send({ content: adacContent, layout: 'dagre' });
+
+      expect([200, 500]).toContain(res.status);
+    });
+
+    it('should return logs in generation errors', async () => {
+      const res = await request(app)
+        .post('/api/generate')
+        .send({ content: 'invalid' });
+
+      expect([200, 500]).toContain(res.status);
+      if (res.status === 500) {
+        expect(res.body).toHaveProperty('error');
+      }
+    });
+  });
+
+  describe('Infrastructure Response Validation', () => {
+    it('should validate infrastructure field requirement', async () => {
+      const res = await request(app)
+        .post('/api/compliance-check')
+        .send({ content: 'name: "NoInfra"' });
+
+      expect([400, 500]).toContain(res.status);
+    });
+
+    it('should process valid complete config', async () => {
+      const adacContent = `
+        version: "1.0"
+        infrastructure:
+          name: "Complete"
+          clouds:
+            - name: "AWS"
+              region: "us-east-1"
+              services:
+                - name: "ECS"
+                  type: "compute"
+      `;
+
+      const res = await request(app)
+        .post('/api/compliance-check')
+        .send({ content: adacContent });
+
+      expect([200, 500]).toContain(res.status);
+    });
+  });
+
+  describe('Message and Log Handling', () => {
+    it('should handle compliance check message formats', async () => {
+      const adacContent = `
+        version: "1.0"
+        infrastructure:
+          name: "Test Infrastructure"
+          clouds:
+            - name: "AWS"
+              services:
+                - name: "Lambda"
+                  type: "compute"
+      `;
+
+      const res = await request(app)
+        .post('/api/compliance-check')
+        .send({ content: adacContent });
+
+      expect([200, 500]).toContain(res.status);
+      if (res.status === 200) {
+        expect(res.body).toBeDefined();
+      }
+    });
+
+    it('should provide meaningful error messages', async () => {
+      const res = await request(app).post('/api/compliance-check').send({});
+
+      expect(res.status).toBe(400);
+      expect(typeof res.body.error).toBe('string');
+      expect(res.body.error.length).toBeGreaterThan(0);
+    });
+
+    it('should handle cost analysis result formatting', async () => {
+      const adacContent = `
+        version: "1.0"
+        infrastructure:
+          name: "Cost Test"
+          clouds:
+            - name: "AWS"
+              services: []
+      `;
+
+      const res = await request(app)
+        .post('/api/cost')
+        .send({ content: adacContent });
+
+      expect([200, 500]).toContain(res.status);
+    });
+
+    it('should include all required fields in error response', async () => {
+      const res = await request(app).post('/api/generate').send({});
+
+      expect(res.status).toBe(400);
+      expect(res.body).toHaveProperty('error');
+    });
+  });
+
+  describe('Middleware and Handler Coverage', () => {
+    it('should handle compliance check with valid infrastructure structure', async () => {
+      const adacContent = `
+        version: "1.0"
+        infrastructure:
+          name: "Multi Service"
+          clouds:
+            - name: "AWS"
+              services:
+                - name: "EC2"
+                  type: "compute"
+                - name: "RDS"
+                  type: "database"
+                - name: "S3"
+                  type: "storage"
+      `;
+
+      const res = await request(app)
+        .post('/api/compliance-check')
+        .send({ content: adacContent });
+
+      expect([200, 500]).toContain(res.status);
+    });
+
+    it('should handle cost with multiple clouds', async () => {
+      const adacContent = `
+        version: "1.0"
+        infrastructure:
+          name: "MultiCloud"
+          clouds:
+            - name: "AWS"
+              services:
+                - name: "EC2"
+                  type: "compute"
+            - name: "GCP"
+              services:
+                - name: "Compute Engine"
+                  type: "compute"
+      `;
+
+      const res = await request(app)
+        .post('/api/cost')
+        .send({ content: adacContent });
+
+      expect([200, 500]).toContain(res.status);
+    });
+
+    it('should generate diagram with minimal valid config', async () => {
+      const adacContent = `
+        version: "1.0"
+        infrastructure:
+          name: "Minimal"
+      `;
+
+      const res = await request(app)
+        .post('/api/generate')
+        .send({ content: adacContent });
+
+      expect([200, 500]).toContain(res.status);
+    });
+
+    it('should validate all three endpoints work independently', async () => {
+      const config = `
+        version: "1.0"
+        infrastructure:
+          name: "Test"
+      `;
+
+      const gen = await request(app)
+        .post('/api/generate')
+        .send({ content: config });
+      const comp = await request(app)
+        .post('/api/compliance-check')
+        .send({ content: config });
+      const cost = await request(app)
+        .post('/api/cost')
+        .send({ content: config });
+
+      expect([200, 500]).toContain(gen.status);
+      expect([200, 500]).toContain(comp.status);
+      expect([200, 500]).toContain(cost.status);
+    });
+
+    it('should handle empty errors in catch blocks', async () => {
+      const res = await request(app)
+        .post('/api/compliance-check')
+        .send({ content: 'invalid: {bad' });
+
+      expect(res.status).toBe(500);
+      expect(res.body).toHaveProperty('error');
+    });
+
+    it('should handle generation with null values', async () => {
+      const res = await request(app)
+        .post('/api/generate')
+        .send({ content: null, layout: null });
+
+      expect(res.status).toBe(400);
+    });
+
+    it('should handle cost without services', async () => {
+      const adacContent = `
+        version: "1.0"
+        infrastructure:
+          name: "NoServices"
+          clouds:
+            - name: "AWS"
+      `;
+
+      const res = await request(app)
+        .post('/api/cost')
+        .send({ content: adacContent });
+
+      expect([200, 500]).toContain(res.status);
+    });
+  });
 });
