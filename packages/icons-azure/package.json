@@ -35,7 +35,6 @@
     "@types/fs-extra": "^11.0.4",
     "ts-node": "^10.9.2"
   },
-  "license": "ISC",
   "repository": {
     "type": "git",
     "url": "https://github.com/mindfiredigital/adac-tools.git",

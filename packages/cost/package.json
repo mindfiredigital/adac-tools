@@ -29,5 +29,9 @@
     "@types/js-yaml": "^4.0.9",
     "@aws-sdk/client-pricing": "^3.1008.0",
     "vitest": "^4.0.18"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://npm.pkg.github.com"
   }
 }

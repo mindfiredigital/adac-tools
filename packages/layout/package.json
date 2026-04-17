@@ -27,5 +27,9 @@
     "@mindfiredigital/adac-layout-core": "workspace:*",
     "@mindfiredigital/adac-schema": "workspace:*",
     "@mindfiredigital/adac-layout-elk": "workspace:*"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://npm.pkg.github.com"
   }
 }

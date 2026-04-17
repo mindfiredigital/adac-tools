@@ -22,7 +22,6 @@
     "test": "vitest run",
     "test:coverage": "vitest run --coverage"
   },
-  "license": "MIT",
   "repository": {
     "type": "git",
     "url": "https://github.com/mindfiredigital/adac-tools.git",
@@ -31,8 +30,5 @@
   "publishConfig": {
     "access": "public",
     "registry": "https://npm.pkg.github.com"
-  },
-  "files": [
-    "dist"
-  ]
+  }
 }
