@@ -21,13 +21,16 @@
   ],
   "scripts": {
     "build": "tsc",
-    "test": "echo \"No tests specified\"",
+    "test": "vitest run",
     "setup-icons": "npx ts-node scripts/icon-setup.ts"
   },
   "repository": {
     "type": "git",
     "url": "https://github.com/mindfiredigital/adac-tools.git",
     "directory": "packages/icons-gcp"
+  },
+  "devDependencies": {
+    "vitest": "^4.0.18"
   },
   "publishConfig": {
     "access": "public",

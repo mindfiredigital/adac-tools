@@ -16,7 +16,7 @@
   ],
   "scripts": {
     "build": "tsc",
-    "test": "echo \"No tests specified\""
+    "test": "vitest run"
   },
   "dependencies": {
     "express": "^4.18.2",
@@ -33,7 +33,10 @@
     "@types/cors": "^2.8.17",
     "@types/body-parser": "^1.19.5",
     "@types/js-yaml": "^4.0.0",
-    "@types/node": "^20.11.0"
+    "@types/node": "^20.11.0",
+    "supertest": "^6.3.3",
+    "@types/supertest": "^2.0.12",
+    "vitest": "^4.0.18"
   },
   "repository": {
     "type": "git",
