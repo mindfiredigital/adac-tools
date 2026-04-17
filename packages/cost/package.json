@@ -26,8 +26,8 @@
     "js-yaml": "^4.1.1"
   },
   "devDependencies": {
+    "@aws-sdk/client-pricing": "^3.1031.0",
     "@types/js-yaml": "^4.0.9",
-    "@aws-sdk/client-pricing": "^3.1008.0",
     "vitest": "^4.0.18"
   },
   "publishConfig": {
