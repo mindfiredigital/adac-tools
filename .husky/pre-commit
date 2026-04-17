@@ -1,7 +1,19 @@
 #!/bin/sh
-# Pre-commit hook: runs lint-staged on modified files
+# Pre-commit hook: runs linting, formatting, test, build, and audit on commit
 
 exec > /dev/tty
 exec < /dev/tty
 
-pnpm exec lint-staged
+echo "Running Pre-commit Checks..."
+
+echo "Linting & Formatting..."
+pnpm exec lint-staged || exit 1
+
+echo "Tests..."
+pnpm run test || exit 1
+
+echo "Build..."
+pnpm run build || exit 1
+
+echo "Audit..."
+pnpm audit --audit-level=high || exit 1
