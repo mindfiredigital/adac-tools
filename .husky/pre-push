@@ -1,0 +1,4 @@
+#!/bin/sh
+# Pre-push hook
+
+# Checks have been moved to pre-commit

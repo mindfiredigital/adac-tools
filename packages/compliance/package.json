@@ -1,9 +1,22 @@
 {
   "name": "@mindfiredigital/adac-compliance",
   "version": "0.0.1",
+  "description": "Compliance validation and security framework checks for cloud architectures",
+  "author": "Mindfire Digital",
+  "license": "MIT",
   "type": "module",
   "main": "dist/index.js",
+  "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
+  "keywords": [
+    "adac",
+    "compliance",
+    "pci-dss",
+    "soc2",
+    "hipaa",
+    "security",
+    "framework"
+  ],
   "files": [
     "dist"
   ],
@@ -11,7 +24,6 @@
     "build": "tsup src/index.ts --format esm,cjs --dts",
     "test": "vitest run"
   },
-  "license": "ISC",
   "dependencies": {
     "@mindfiredigital/adac-schema": "workspace:*"
   },

@@ -449,3 +449,191 @@ describe('ADAC CLI - CostBreakdown type', () => {
     expect(calculatedTotal).toBe(breakdown.total);
   });
 });
+
+describe('ADAC CLI - Branch Coverage', () => {
+  let originalArgv: string[];
+  let originalExit: typeof process.exit;
+  let mockExit: ReturnType<typeof vi.fn>;
+  let consoleSpy: ReturnType<typeof vi.spyOn>;
+  let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
+  let originalPlatform: string;
+
+  beforeEach(() => {
+    originalArgv = process.argv;
+    originalExit = process.exit;
+    originalPlatform = Object.getOwnPropertyDescriptor(
+      process,
+      'platform'
+    )?.value;
+    mockExit = vi.fn();
+    (process as unknown as { exit: typeof process.exit }).exit =
+      mockExit as unknown as typeof process.exit;
+    consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    process.argv = originalArgv;
+    (process as unknown as { exit: typeof process.exit }).exit = originalExit;
+    Object.defineProperty(process, 'platform', {
+      value: originalPlatform,
+      writable: false,
+    });
+    consoleSpy.mockRestore();
+    consoleErrorSpy.mockRestore();
+  });
+
+  it('should handle diagram generation with Windows platform', async () => {
+    Object.defineProperty(process, 'platform', {
+      value: 'win32',
+      writable: true,
+    });
+
+    const generateDiagram = vi.fn().mockResolvedValue(undefined);
+    const options = {
+      generateDiagram,
+      parseAdac: vi.fn().mockReturnValue({}),
+      validateAdacConfig: vi.fn().mockReturnValue({ valid: true }),
+      version: '1.0.0',
+    };
+
+    process.argv = ['node', 'adac', 'diagram', 'test.yaml'];
+    await runCLI(options);
+
+    expect(generateDiagram).toHaveBeenCalled();
+    // Verify Windows browser launch command pattern
+    const allLogs = consoleSpy.mock.calls.map((c) => c.join(' ')).join('\n');
+    // Should attempt to launch browser
+    expect(allLogs).toContain('Automatically launching browser');
+  });
+
+  it('should handle diagram generation with Linux platform', async () => {
+    Object.defineProperty(process, 'platform', {
+      value: 'linux',
+      writable: true,
+    });
+
+    const generateDiagram = vi.fn().mockResolvedValue(undefined);
+    const options = {
+      generateDiagram,
+      parseAdac: vi.fn().mockReturnValue({}),
+      validateAdacConfig: vi.fn().mockReturnValue({ valid: true }),
+      version: '1.0.0',
+    };
+
+    process.argv = ['node', 'adac', 'diagram', 'test.yaml'];
+    await runCLI(options);
+
+    expect(generateDiagram).toHaveBeenCalled();
+    // Verify Linux browser launch
+    const allLogs = consoleSpy.mock.calls.map((c) => c.join(' ')).join('\n');
+    expect(allLogs).toContain('Automatically launching browser');
+  });
+
+  it('should handle validation with errors array', async () => {
+    const options = {
+      generateDiagram: vi.fn().mockResolvedValue(undefined),
+      parseAdac: vi.fn().mockReturnValue({}),
+      validateAdacConfig: vi.fn().mockReturnValue({
+        valid: false,
+        errors: ['Missing version', 'Missing infrastructure'],
+      }),
+      version: '1.0.0',
+    };
+
+    process.argv = ['node', 'adac', 'validate', 'test.yaml'];
+    await runCLI(options);
+
+    const errorLogs = consoleErrorSpy.mock.calls
+      .map((c) => c.join(' '))
+      .join('\n');
+    expect(errorLogs).toContain('Missing version');
+    expect(errorLogs).toContain('Missing infrastructure');
+  });
+
+  it('should handle validation with empty errors array', async () => {
+    const options = {
+      generateDiagram: vi.fn().mockResolvedValue(undefined),
+      parseAdac: vi.fn().mockReturnValue({}),
+      validateAdacConfig: vi.fn().mockReturnValue({
+        valid: false,
+        errors: [],
+      }),
+      version: '1.0.0',
+    };
+
+    process.argv = ['node', 'adac', 'validate', 'test.yaml'];
+    await runCLI(options);
+
+    expect(mockExit).toHaveBeenCalledWith(1);
+  });
+
+  it('should handle validation failure message display', async () => {
+    const options = {
+      generateDiagram: vi.fn().mockResolvedValue(undefined),
+      parseAdac: vi.fn().mockReturnValue({}),
+      validateAdacConfig: vi.fn().mockReturnValue({
+        valid: false,
+        errors: ['Schema validation failed', 'Unsupported resource type'],
+      }),
+      version: '1.0.0',
+    };
+
+    process.argv = ['node', 'adac', 'validate', 'test.yaml'];
+    await runCLI(options);
+
+    const allLogs = consoleErrorSpy.mock.calls
+      .map((c) => c.join(' '))
+      .join('\n');
+    expect(allLogs).toContain('Validation failed');
+    expect(allLogs).toContain('Schema validation failed');
+    expect(allLogs).toContain('Unsupported resource type');
+  });
+
+  it('should handle diagram error gracefully', async () => {
+    const options = {
+      generateDiagram: vi.fn().mockRejectedValue(new Error('Bad YAML syntax')),
+      parseAdac: vi.fn().mockReturnValue({}),
+      validateAdacConfig: vi.fn().mockReturnValue({ valid: true }),
+      version: '1.0.0',
+    };
+
+    process.argv = ['node', 'adac', 'diagram', 'test.yaml'];
+    await runCLI(options);
+
+    expect(mockExit).toHaveBeenCalledWith(1);
+    const errorLogs = consoleErrorSpy.mock.calls
+      .map((c) => c.join(' '))
+      .join('\n');
+    expect(errorLogs).toContain('Error generating diagram');
+  });
+
+  it('should handle multiple cost categories display', async () => {
+    const calculateCostFromYaml = vi.fn().mockReturnValue({
+      compute: 500,
+      database: 300,
+      storage: 150,
+      networking: 50,
+      total: 1000,
+      period: 'monthly',
+    });
+
+    const options = {
+      generateDiagram: vi.fn().mockResolvedValue(undefined),
+      parseAdac: vi.fn().mockReturnValue({}),
+      validateAdacConfig: vi.fn().mockReturnValue({ valid: true }),
+      calculateCostFromYaml,
+      version: '1.0.0',
+    };
+
+    process.argv = ['node', 'adac', 'cost', 'test.yaml'];
+    await runCLI(options);
+
+    const allLogs = consoleSpy.mock.calls.map((c) => c.join(' ')).join('\n');
+    // Should output all cost categories
+    expect(allLogs).toMatch(/Compute.*50/);
+    expect(allLogs).toMatch(/Database.*30/);
+    expect(allLogs).toMatch(/Storage.*15/);
+    expect(allLogs).toMatch(/Networking.*5/);
+  });
+});

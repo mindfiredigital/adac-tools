@@ -1,8 +1,21 @@
 {
   "name": "@mindfiredigital/adac-layout-core",
   "version": "1.0.0",
+  "description": "Core types and interfaces for graph layout engines",
+  "author": "Mindfire Digital",
+  "license": "MIT",
   "main": "dist/index.js",
+  "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
+  "keywords": [
+    "adac",
+    "layout-core",
+    "graph",
+    "types"
+  ],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsc",
     "test": "jest",
@@ -23,8 +36,5 @@
   "publishConfig": {
     "access": "public",
     "registry": "https://npm.pkg.github.com"
-  },
-  "files": [
-    "dist"
-  ]
+  }
 }

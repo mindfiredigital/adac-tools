@@ -2,8 +2,8 @@
   "name": "@mindfiredigital/adac-diagram",
   "version": "0.1.0",
   "description": "Core engine and CLI for ADAC (AWS Diagram As Code) generator",
-  "author": "Yogesh Sharma",
-  "license": "ISC",
+  "author": "Mindfire Digital",
+  "license": "MIT",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
@@ -16,7 +16,7 @@
   ],
   "scripts": {
     "build": "tsup",
-    "prepublishOnly": "npm run build",
+    "prepublishOnly": "pnpm run build",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage"
   },

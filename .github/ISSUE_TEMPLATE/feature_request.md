@@ -2,7 +2,7 @@
 name: Feature Request
 about: Suggest an idea for this project
 title: '[FEAT] '
-labels: enhancement
+labels: enhancement,needs-review
 assignees: ''
 ---
 
@@ -18,7 +18,12 @@ Describe the solution you'd like.
 
 Describe alternatives you've considered.
 
+## Related Package
+
+Which package does this affect? (e.g., `adac-core`, `adac-web-server`)
+
 ## Checklist
 
 - [ ] Aligns with project goals
 - [ ] Reviewed API Reference
+- [ ] Impacts multiple packages

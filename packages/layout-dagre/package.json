@@ -1,8 +1,19 @@
 {
   "name": "@mindfiredigital/adac-layout-dagre",
   "version": "0.0.1",
+  "description": "Lightweight graph layout engine using Dagre for ADAC diagrams",
+  "author": "Mindfire Digital",
+  "license": "MIT",
   "main": "dist/index.js",
+  "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
+  "keywords": [
+    "adac",
+    "layout",
+    "dagre",
+    "graph",
+    "diagram"
+  ],
   "files": [
     "dist"
   ],
@@ -10,18 +21,17 @@
     "build": "tsc",
     "test": "vitest run"
   },
-  "dependencies": {
-    "dagre": "^0.8.5",
-    "@mindfiredigital/adac-layout-core": "workspace:*",
-    "@mindfiredigital/adac-layout-elk": "workspace:*"
-  },
-  "devDependencies": {
-    "@types/dagre": "^0.7.53"
-  },
   "repository": {
     "type": "git",
     "url": "https://github.com/mindfiredigital/adac-tools.git",
     "directory": "packages/layout-dagre"
+  },
+  "dependencies": {
+    "dagre": "^0.8.5",
+    "@mindfiredigital/adac-layout-elk": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/dagre": "^0.7.54"
   },
   "publishConfig": {
     "access": "public",

@@ -1,8 +1,19 @@
 {
   "name": "@mindfiredigital/adac-icons-gcp",
   "version": "0.0.1",
+  "description": "GCP service icons and mappings for ADAC diagrams",
+  "author": "Mindfire Digital",
+  "license": "MIT",
   "main": "dist/index.js",
+  "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
+  "keywords": [
+    "adac",
+    "icons",
+    "gcp",
+    "diagram",
+    "assets"
+  ],
   "files": [
     "dist",
     "mappings",
@@ -10,24 +21,16 @@
   ],
   "scripts": {
     "build": "tsc",
-    "test": "echo \"No tests specified\"",
+    "test": "vitest run",
     "setup-icons": "npx ts-node scripts/icon-setup.ts"
   },
-  "devDependencies": {
-    "axios": "^1.6.2",
-    "adm-zip": "^0.5.10",
-    "js-yaml": "^4.1.0",
-    "fs-extra": "^11.2.0",
-    "@types/adm-zip": "^0.5.5",
-    "@types/js-yaml": "^4.0.9",
-    "@types/fs-extra": "^11.0.4",
-    "ts-node": "^10.9.2"
-  },
-  "license": "ISC",
   "repository": {
     "type": "git",
     "url": "https://github.com/mindfiredigital/adac-tools.git",
     "directory": "packages/icons-gcp"
+  },
+  "devDependencies": {
+    "vitest": "^4.0.18"
   },
   "publishConfig": {
     "access": "public",

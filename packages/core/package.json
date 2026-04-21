@@ -2,8 +2,16 @@
   "name": "@mindfiredigital/adac-core",
   "version": "0.1.0",
   "description": "Core integration package for ADAC (Parser, Validator, and Layouts)",
-  "author": "Yogesh Sharma",
-  "license": "ISC",
+  "author": "Mindfire Digital",
+  "license": "MIT",
+  "keywords": [
+    "adac",
+    "core",
+    "diagram",
+    "parser",
+    "layout",
+    "validation"
+  ],
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",

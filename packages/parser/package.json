@@ -1,9 +1,20 @@
 {
   "name": "@mindfiredigital/adac-parser",
   "version": "0.0.1",
+  "description": "YAML parser for ADAC architecture definitions",
+  "author": "Mindfire Digital",
+  "license": "MIT",
   "type": "module",
   "main": "dist/index.js",
+  "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
+  "keywords": [
+    "adac",
+    "parser",
+    "yaml",
+    "schema",
+    "validation"
+  ],
   "files": [
     "dist"
   ],
@@ -19,7 +30,6 @@
     "@types/js-yaml": "^4.0.9",
     "vitest": "^4.0.18"
   },
-  "license": "ISC",
   "repository": {
     "type": "git",
     "url": "https://github.com/mindfiredigital/adac-tools.git",

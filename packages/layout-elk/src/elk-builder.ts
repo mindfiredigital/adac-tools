@@ -4,6 +4,7 @@ import {
   AdacApplication,
   AdacCloud,
 } from '@mindfiredigital/adac-schema';
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { ElkNode, ElkEdge } from './types.js';
 import path from 'path';
 import fs from 'fs';
@@ -716,7 +717,8 @@ export function buildElkGraph(adac: AdacConfig): ElkNode {
 
   // 2. Create Nodes for Infrastructure Services (Pass 1)
   (adac.infrastructure?.clouds || []).forEach((cloud: AdacCloud) => {
-    const cloudStyles = getStylesForCloud(cloud);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const cloudStyles = getStylesForCloud(cloud) as any;
     const gcpCloud = isGcpCloud(cloud);
 
     (cloud.services || []).forEach((service: AdacService) => {
@@ -745,11 +747,11 @@ export function buildElkGraph(adac: AdacConfig): ElkNode {
         } else if (typeKey === 'zone') {
           width = 300;
           height = 300;
-          style = GCP_STYLES.zone;
+          style = cloudStyles.zone || GCP_STYLES.zone;
         } else if (typeKey === 'region') {
           width = 450;
           height = 350;
-          style = GCP_STYLES.region;
+          style = cloudStyles.region || GCP_STYLES.region;
         } else if (
           runsApps ||
           [
@@ -764,24 +766,48 @@ export function buildElkGraph(adac: AdacConfig): ElkNode {
           height = 250;
           style = cloudStyles.compute;
         }
+      } else if (isAzureCloud(cloud)) {
+        // Azure container detection
+        if (typeKey === 'vpc' || typeKey === 'resource-group') {
+          width = 400;
+          height = 400;
+          style = cloudStyles.vpc;
+        } else if (typeKey === 'subnet' || typeKey === 'vnet') {
+          width = 250;
+          height = 250;
+          style = cloudStyles.subnet;
+        } else if (typeKey === 'region' || typeKey === 'subscription') {
+          width = 450;
+          height = 350;
+          style = cloudStyles.region;
+        } else if (
+          runsApps ||
+          ['aks', 'compute', 'vm', 'container'].includes(typeKey)
+        ) {
+          width = 300;
+          height = 250;
+          style = cloudStyles.compute;
+        }
       } else {
         // AWS container detection
         if (typeKey === 'vpc') {
           width = 400;
           height = 400;
-          style = STYLES.vpc;
+          style = cloudStyles.vpc;
         } else if (typeKey === 'subnet') {
           width = 250;
           height = 250;
           const isPublic = cfg.public_access === true || cfg.public === true;
-          style = isPublic ? STYLES.publicSubnet : STYLES.privateSubnet;
+          style = isPublic
+            ? cloudStyles.publicSubnet || STYLES.publicSubnet
+            : cloudStyles.privateSubnet || STYLES.privateSubnet;
         } else if (
           runsApps ||
           ['ecs-fargate', 'eks', 'ecs', 'ec2'].includes(typeKey)
         ) {
           width = 300;
           height = 250;
-          style = STYLES.compute;
+          style = cloudStyles.compute;
         }
       }
 
