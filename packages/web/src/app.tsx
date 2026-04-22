@@ -4,7 +4,7 @@ import Flow from './components/flow';
 import { Home } from './components/home';
 import { Uploader } from './components/uploader';
 
-export type Provider = 'aws' | 'gcp';
+export type Provider = 'aws' | 'gcp' | 'azure';
 
 function App() {
   const [view, setView] = useState<'home' | 'ui' | 'upload'>('home');

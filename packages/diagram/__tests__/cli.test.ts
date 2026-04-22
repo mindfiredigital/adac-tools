@@ -111,7 +111,8 @@ describe('cli.ts', () => {
       true,
       {},
       'monthly',
-      'on_demand'
+      'on_demand',
+      false
     );
 
     expect(parseAdac).toHaveBeenCalledWith('input.yaml', { validate: false });
@@ -126,7 +127,8 @@ describe('cli.ts', () => {
       'elk',
       true,
       { s3: 10 },
-      'monthly'
+      'monthly',
+      false
     );
     // In current implementation, generateDiagram does not return a value, we can just assert it was called.
   });

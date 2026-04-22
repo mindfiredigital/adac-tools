@@ -14,7 +14,7 @@ export interface CostTier {
 export interface ServiceCostEntry {
   serviceType: string;
   displayName: string;
-  provider: 'aws' | 'gcp';
+  provider: 'aws' | 'gcp' | 'azure';
   tiers: CostTier[];
 }
 
@@ -541,7 +541,86 @@ const gcpCatalog: ServiceCostEntry[] = [
   },
 ];
 
-export const costCatalog: ServiceCostEntry[] = [...awsCatalog, ...gcpCatalog];
+// ─── Azure Service Pricing ──────────────────────────────────────────────────
+const azureCatalog: ServiceCostEntry[] = [
+  {
+    serviceType: 'virtual-machine',
+    displayName: 'Virtual Machine',
+    provider: 'azure',
+    tiers: [
+      { name: 'B1s', monthlyCost: 7.59, description: '1 vCPU, 1 GiB' },
+      { name: 'D2s v3', monthlyCost: 70.08, description: '2 vCPU, 8 GiB' },
+      { name: 'D4s v3', monthlyCost: 140.16, description: '4 vCPU, 16 GiB' },
+    ],
+  },
+  {
+    serviceType: 'storage-account',
+    displayName: 'Storage Account',
+    provider: 'azure',
+    tiers: [
+      { name: 'Hot LRS 50GB', monthlyCost: 1.0, description: 'Standard tier' },
+      {
+        name: 'Hot LRS 500GB',
+        monthlyCost: 10.0,
+        description: 'Standard tier',
+      },
+      { name: 'Archive 1TB', monthlyCost: 1.0, description: 'LRS Archive' },
+    ],
+  },
+  {
+    serviceType: 'app-service',
+    displayName: 'App Service',
+    provider: 'azure',
+    tiers: [
+      { name: 'B1 (Basic)', monthlyCost: 12.41, description: '1.75 GB RAM' },
+      { name: 'P1v2 (Premium)', monthlyCost: 146.0, description: '3.5 GB RAM' },
+    ],
+  },
+  {
+    serviceType: 'sql-database',
+    displayName: 'SQL Database',
+    provider: 'azure',
+    tiers: [
+      { name: 'S0 (Standard)', monthlyCost: 15.0, description: '10 DTU' },
+      { name: 'P1 (Premium)', monthlyCost: 465.0, description: '125 DTU' },
+    ],
+  },
+  {
+    serviceType: 'cosmos-db',
+    displayName: 'Cosmos DB',
+    provider: 'azure',
+    tiers: [
+      { name: '400 RU/s', monthlyCost: 24.0, description: 'Provisioned' },
+      { name: '1000 RU/s', monthlyCost: 60.0, description: 'Provisioned' },
+    ],
+  },
+  {
+    serviceType: 'aks',
+    displayName: 'AKS',
+    provider: 'azure',
+    tiers: [
+      {
+        name: 'Standard (3 nodes)',
+        monthlyCost: 210.0,
+        description: 'D2s_v3 x 3',
+      },
+    ],
+  },
+  {
+    serviceType: 'vnet',
+    displayName: 'VNET',
+    provider: 'azure',
+    tiers: [
+      { name: 'Free', monthlyCost: 0.0, description: 'No additional cost' },
+    ],
+  },
+];
+
+export const costCatalog: ServiceCostEntry[] = [
+  ...awsCatalog,
+  ...gcpCatalog,
+  ...azureCatalog,
+];
 
 /**
  * Look up cost tiers for a given service type and provider.
@@ -549,7 +628,7 @@ export const costCatalog: ServiceCostEntry[] = [...awsCatalog, ...gcpCatalog];
  */
 export function getCostTiers(
   serviceType: string,
-  provider: 'aws' | 'gcp'
+  provider: 'aws' | 'gcp' | 'azure'
 ): CostTier[] {
   const entry = costCatalog.find(
     (e) => e.serviceType === serviceType && e.provider === provider

@@ -78,7 +78,8 @@ export const NodeConfigDrawer = ({
     );
   };
 
-  const accentColor = provider === 'aws' ? '#ec7211' : '#4285F4';
+  const accentColor =
+    provider === 'aws' ? '#ec7211' : provider === 'gcp' ? '#4285F4' : '#0078D4';
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end">

@@ -32,12 +32,20 @@ const CustomNode = ({ id, data, selected }: NodeProps) => {
         selected
           ? data.provider === 'gcp'
             ? 'border-blue-500'
-            : 'border-orange-500'
+            : data.provider === 'azure'
+              ? 'border-[#0078D4]'
+              : 'border-orange-500'
           : 'border-[#3e3e42]'
       } hover:border-orange-500/50 transition-all duration-300 min-w-[120px] w-full h-full flex flex-col items-center justify-center gap-2 group relative`}
     >
       <NodeResizer
-        color={data.provider === 'gcp' ? '#4285F4' : '#ec7211'}
+        color={
+          data.provider === 'gcp'
+            ? '#4285F4'
+            : data.provider === 'azure'
+              ? '#0078D4'
+              : '#ec7211'
+        }
         isVisible={selected}
         minWidth={100}
         minHeight={100}
