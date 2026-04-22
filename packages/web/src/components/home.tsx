@@ -15,8 +15,8 @@ export const Home = ({ onSelect }: HomeProps) => {
           ADAC Diagram Generator
         </h1>
         <p className="text-xl text-gray-400 max-w-2xl mx-auto">
-          Create beautiful AWS architecture diagrams from code or design
-          visually with our interactive builder.
+          Create beautiful AWS, GCP, and Azure architecture diagrams from code
+          or design visually with our interactive builder.
         </p>
       </div>
 
@@ -32,8 +32,8 @@ export const Home = ({ onSelect }: HomeProps) => {
             Visual Designer
           </h2>
           <p className="text-gray-400">
-            Drag and drop AWS components to create your architecture. Export as
-            YAML or SVG.
+            Drag and drop multi-cloud components to create your architecture.
+            Export as YAML or SVG.
           </p>
           <div className="absolute bottom-6 right-8 opacity-0 group-hover:opacity-100 transition-opacity text-orange-400 font-medium flex items-center gap-1">
             Start Designing &rarr;

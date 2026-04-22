@@ -44,6 +44,16 @@ Full IDE support for `.adac.yaml` files with syntax highlighting, IntelliSense, 
 - Connection arrows with protocol labels
 - Service statistics summary
 
+### 🔍 Architecture Optimizer Panel
+
+Every diagram preview includes an **Optimizer** panel below the diagram that automatically analyses your architecture and surfaces prioritised recommendations:
+
+- **Colour-coded by severity** — 🔴 Critical, 🟠 High, 🟡 Medium, 🔵 Low, ⚪ Info
+- **Collapsible per-recommendation** — expand any finding to see the description, action steps, and a link to the relevant AWS/GCP documentation
+- **Zero-friction** — the panel collapses by default so it never obstructs the diagram
+- **Clean architecture badge** — if no recommendations are found, a green ✅ badge confirms the architecture looks good
+- **Disable via settings** — set `"adac.diagram.optimize": false` to skip the analysis entirely
+
 ### 📝 Code Snippets
 
 | Prefix             | Description                     |
@@ -71,13 +81,14 @@ Full IDE support for `.adac.yaml` files with syntax highlighting, IntelliSense, 
 
 ## Configuration
 
-| Setting                     | Default | Description                     |
-| --------------------------- | ------- | ------------------------------- |
-| `adac.validation.enabled`   | `true`  | Enable real-time validation     |
-| `adac.validation.onSave`    | `true`  | Validate on file save           |
-| `adac.validation.onType`    | `true`  | Validate as you type            |
-| `adac.diagram.theme`        | `auto`  | Diagram theme (auto/light/dark) |
-| `adac.diagram.layoutEngine` | `elk`   | Layout engine (elk/dagre)       |
+| Setting                     | Default | Description                                 |
+| --------------------------- | ------- | ------------------------------------------- |
+| `adac.validation.enabled`   | `true`  | Enable real-time validation                 |
+| `adac.validation.onSave`    | `true`  | Validate on file save                       |
+| `adac.validation.onType`    | `true`  | Validate as you type                        |
+| `adac.diagram.theme`        | `auto`  | Diagram theme (auto/light/dark)             |
+| `adac.diagram.layoutEngine` | `elk`   | Layout engine (elk/dagre)                   |
+| `adac.diagram.optimize`     | `true`  | Run architecture optimizer on every preview |
 
 ## Getting Started
 

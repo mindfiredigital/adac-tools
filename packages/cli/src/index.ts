@@ -24,7 +24,8 @@ export type CLIOptions = {
     validate?: boolean,
     costData?: Record<string, number>,
     period?: CostPeriod,
-    pricingModel?: PricingModel
+    pricingModel?: PricingModel,
+    skipOptimizer?: boolean
   ) => Promise<void>;
   calculateCostFromYaml?: (
     input: string,
@@ -100,6 +101,7 @@ export function runCLI(options: CLIOptions) {
       'Cost period (hourly, daily, monthly, yearly)',
       'monthly'
     )
+    .option('--no-optimize', 'Skip architecture optimization analysis')
 
     .action(async (file, opts) => {
       try {
@@ -125,6 +127,8 @@ export function runCLI(options: CLIOptions) {
         }
 
         const layout = opts.layout as 'elk' | 'dagre';
+        // Commander turns --no-optimize into opts.optimize = false
+        const skipOptimizer = opts.optimize === false;
 
         let outputPath: string = opts.output;
         if (!outputPath) {
@@ -141,7 +145,8 @@ export function runCLI(options: CLIOptions) {
           Boolean(opts.validate),
           undefined,
           opts.period as CostPeriod,
-          opts.pricing as PricingModel
+          opts.pricing as PricingModel,
+          skipOptimizer
         );
 
         console.log(`Diagram successfully generated at ${outputPath}`);

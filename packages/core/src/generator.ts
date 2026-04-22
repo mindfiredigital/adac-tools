@@ -3,6 +3,10 @@ import { parseAdacFromContent } from '@mindfiredigital/adac-parser';
 import { buildElkGraph } from '@mindfiredigital/adac-layout-elk';
 import { validateAdacConfig } from '@mindfiredigital/adac-schema';
 import { ComplianceChecker } from '@mindfiredigital/adac-compliance';
+import {
+  OptimizerEngine,
+  type OptimizationResult,
+} from '@mindfiredigital/adac-optimizer';
 import { renderSvg } from './renderer.js';
 
 type CostPeriod = 'hourly' | 'daily' | 'monthly' | 'yearly';
@@ -11,14 +15,20 @@ export interface GenerationResult {
   svg: string;
   logs: string[];
   duration: number;
+  /** Optimizer recommendations produced during generation (undefined if optimizer was skipped). */
+  optimizationResult?: OptimizationResult;
 }
+
+const optimizer = new OptimizerEngine();
 
 export async function generateDiagramSvg(
   inputContent: string,
   layoutOverride?: 'elk' | 'dagre',
   validate: boolean = false,
   costData?: Record<string, number>,
-  period: CostPeriod = 'monthly'
+  period: CostPeriod = 'monthly',
+  /** Set to true to skip optimizer analysis (e.g. --no-optimize CLI flag). */
+  skipOptimizer: boolean = false
 ): Promise<GenerationResult> {
   const logs: string[] = [];
   const start = Date.now();
@@ -43,6 +53,39 @@ export async function generateDiagramSvg(
     }
 
     log('Parsing complete.');
+
+    // ─── Optimizer ────────────────────────────────────────────────────────────
+    let optimizationResult: OptimizationResult | undefined;
+    if (!skipOptimizer) {
+      log('Running architecture optimizer...');
+      try {
+        optimizationResult = optimizer.analyze(adac);
+        const s = optimizationResult.summary;
+        log(
+          `Optimizer: ${s.total} recommendation(s) — ` +
+            `${s.critical} critical, ${s.high} high, ${s.medium} medium, ` +
+            `${s.low} low, ${s.info} info`
+        );
+        if (s.critical > 0 || s.high > 0) {
+          const urgent = optimizationResult.recommendations.filter(
+            (r) => r.severity === 'critical' || r.severity === 'high'
+          );
+          for (const rec of urgent) {
+            log(
+              `[${rec.severity.toUpperCase()}] ${rec.category}: ${rec.title} → ${rec.affectedResources.join(', ')}`
+            );
+          }
+        }
+      } catch (optErr) {
+        // Optimizer failure must never block diagram generation
+        log(
+          `Optimizer error (non-fatal): ${optErr instanceof Error ? optErr.message : String(optErr)}`
+        );
+      }
+    } else {
+      log('Optimizer skipped (--no-optimize).');
+    }
+    // ─────────────────────────────────────────────────────────────────────────
 
     log('Building ELK Graph structure...');
     const graph = buildElkGraph(adac);
@@ -106,12 +149,10 @@ export async function generateDiagramSvg(
     );
     log('SVG Rendering complete.');
 
-    // Removed cost summary injection
-
     const duration = Date.now() - start;
     log(`Total generation time: ${duration}ms`);
 
-    return { svg, logs, duration };
+    return { svg, logs, duration, optimizationResult };
   } catch (e: unknown) {
     const error = e instanceof Error ? e : new Error(String(e));
     log(`Error: ${error.message}`);
@@ -126,7 +167,8 @@ export async function generateDiagram(
   layoutOverride?: 'elk' | 'dagre',
   validate: boolean = false,
   costData?: Record<string, number>,
-  period: CostPeriod = 'monthly'
+  period: CostPeriod = 'monthly',
+  skipOptimizer: boolean = false
 ): Promise<void> {
   const raw = await fs.readFile(input, 'utf8');
   const { svg } = await generateDiagramSvg(
@@ -134,7 +176,8 @@ export async function generateDiagram(
     layoutOverride,
     validate,
     costData,
-    period
+    period,
+    skipOptimizer
   );
 
   await fs.outputFile(output, svg);

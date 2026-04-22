@@ -13,21 +13,22 @@ The project is managed as a **pnpm monorepo**, ensuring modularity and clean sep
 
 ### 📦 Packages
 
-| Package                                  | Description                     | Key Responsibilities                                                            |
-| :--------------------------------------- | :------------------------------ | :------------------------------------------------------------------------------ |
-| **`@mindfiredigital/adac-core`**         | The brain of the system.        | Orchestrates parsing, validation, and rendering. Bundles layout engines.        |
-| **`@mindfiredigital/adac-diagram`**      | Distribution package for users. | Provides the `adac` CLI and a public API for web applications.                  |
-| **`@mindfiredigital/adac-cli`**          | CLI Engine.                     | Handles command-line arguments and help text. Separated from the diagram logic. |
-| **`@mindfiredigital/adac-parser`**       | YAML Logic.                     | Robust parsing of ADAC-formatted YAML files into structured data.               |
-| **`@mindfiredigital/adac-schema`**       | Validation Layer.               | Formally defines the ADAC specification using JSON Schema.                      |
-| **`@mindfiredigital/adac-layout-elk`**   | Professional Layout.            | Advanced graph positioning using `elkjs` algorithms.                            |
-| **`@mindfiredigital/adac-layout-dagre`** | Simple Layout.                  | Lightweight alternative for hierarchical graph layouts.                         |
-| **`@mindfiredigital/adac-icons-aws`**    | AWS Assets.                     | Repository of over 1,600 AWS icons and tools to manage them.                    |
-| **`@mindfiredigital/adac-icons-gcp`**    | GCP Assets.                     | Repository of GCP icons mapping to Google Cloud services.                       |
-| **`@mindfiredigital/adac-compliance`**   | Validation & Security.          | Evaluates architecture against security frameworks (PCI-DSS, SOC2, HIPAA, etc). |
-| **`@mindfiredigital/adac-cost`**         | Analysis Tool.                  | Evaluates cloud architecture to provide structural cost breakdowns.             |
-| **`@mindfiredigital/adac-web`**          | Frontend.                       | React-based visual editor with drag-and-drop and real-time preview.             |
-| **`@mindfiredigital/adac-web-server`**   | API.                            | Express server that exposes diagram generation as a service.                    |
+| Package                                  | Description                     | Key Responsibilities                                                                |
+| :--------------------------------------- | :------------------------------ | :---------------------------------------------------------------------------------- |
+| **`@mindfiredigital/adac-core`**         | The brain of the system.        | Orchestrates parsing, validation, compliance, **optimization**, and rendering.      |
+| **`@mindfiredigital/adac-diagram`**      | Distribution package for users. | Provides the `adac` CLI and a public API for web applications.                      |
+| **`@mindfiredigital/adac-cli`**          | CLI Engine.                     | Handles command-line arguments and help text. Separated from the diagram logic.     |
+| **`@mindfiredigital/adac-parser`**       | YAML Logic.                     | Robust parsing of ADAC-formatted YAML files into structured data.                   |
+| **`@mindfiredigital/adac-schema`**       | Validation Layer.               | Formally defines the ADAC specification using JSON Schema.                          |
+| **`@mindfiredigital/adac-layout-elk`**   | Professional Layout.            | Advanced graph positioning using `elkjs` algorithms.                                |
+| **`@mindfiredigital/adac-layout-dagre`** | Simple Layout.                  | Lightweight alternative for hierarchical graph layouts.                             |
+| **`@mindfiredigital/adac-icons-aws`**    | AWS Assets.                     | Repository of over 1,600 AWS icons and tools to manage them.                        |
+| **`@mindfiredigital/adac-icons-gcp`**    | GCP Assets.                     | Repository of GCP icons mapping to Google Cloud services.                           |
+| **`@mindfiredigital/adac-compliance`**   | Validation & Security.          | Evaluates architecture against security frameworks (PCI-DSS, SOC2, HIPAA, etc).     |
+| **`@mindfiredigital/adac-cost`**         | Analysis Tool.                  | Evaluates cloud architecture to provide structural cost breakdowns.                 |
+| **`@mindfiredigital/adac-optimizer`**    | **Architecture Optimizer.**     | Automatic cost, security & reliability recommendations on every diagram run.        |
+| **`@mindfiredigital/adac-web`**          | Frontend.                       | React-based visual editor with drag-and-drop and real-time preview.                 |
+| **`@mindfiredigital/adac-web-server`**   | API.                            | Express server exposing diagram generation, optimization & compliance as a service. |
 
 ---
 
@@ -63,14 +64,20 @@ The project is managed as a **pnpm monorepo**, ensuring modularity and clean sep
 
 The CLI is the primary way to use ADAC programmatically.
 
-- **Generate a Diagram**:
+- **Generate a Diagram** (optimizer runs automatically and prints a summary to stdout):
+
   ```bash
   pnpm cli diagram my-infra.yaml -o output.svg
   ```
-  _(Note: If your YAML services declare `compliance:` requirements, they will automatically be checked and reflected in the SVG tooltips.)_
+
+  _(Compliance declarations on individual services are checked and reflected in SVG tooltips. Architecture optimization recommendations are printed to the console.)_
+
+- **Generate without optimizer analysis**:
+
   ```bash
-  pnpm cli diagram my-infra.yaml --validate
+  pnpm cli diagram my-infra.yaml -o output.svg --no-optimize
   ```
+
 - **Schema Validation Only**:
   ```bash
   pnpm cli validate my-infra.yaml
@@ -83,8 +90,28 @@ Use this package if you are building your own application that needs to generate
 ```typescript
 import { generateDiagramSvg } from '@mindfiredigital/adac-core';
 
-// Automatically validates compliance for any services declaring it in the YAML
-const { svg, logs } = await generateDiagramSvg(yamlFileContent, 'elk', false);
+// Optimizer runs automatically — results available in optimizationResult
+const { svg, logs, optimizationResult } = await generateDiagramSvg(
+  yamlContent,
+  'elk'
+);
+
+if (optimizationResult) {
+  console.log(
+    `${optimizationResult.summary.total} optimization recommendations`
+  );
+  console.log(`${optimizationResult.summary.critical} critical`);
+}
+
+// Skip optimizer
+const { svg: svgOnly } = await generateDiagramSvg(
+  yamlContent,
+  'elk',
+  false,
+  undefined,
+  'monthly',
+  true
+);
 ```
 
 ### 3. Web UI (`@mindfiredigital/adac-web`)
@@ -148,6 +175,8 @@ When cloning this repo, pay attention to:
 4.  **CLI** is decoupled into its own package for clean command management.
 5.  **Diagram** provides both a CLI entry point and an npm module API.
 6.  **Web Server** consumes the `diagram` package as a standard npm module.
+7.  **Optimizer** runs automatically on every diagram generation (CLI, VS Code, npm module, web server) and can be disabled with `--no-optimize` / `skipOptimizer: true` / `"adac.diagram.optimize": false`.
+8.  **Web Server** compresses all API responses (gzip/brotli) for token and bandwidth efficiency.
 
 ---
 

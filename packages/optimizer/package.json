@@ -12,7 +12,10 @@
     "optimizer",
     "optimization",
     "analysis",
-    "architecture"
+    "architecture",
+    "cost",
+    "security",
+    "reliability"
   ],
   "files": [
     "dist"
@@ -21,6 +24,9 @@
     "build": "tsc",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage"
+  },
+  "dependencies": {
+    "@mindfiredigital/adac-schema": "workspace:*"
   },
   "repository": {
     "type": "git",

@@ -24,19 +24,20 @@ pnpm run dev  # or work on specific package
 
 ```
 adac-tools/
-├── packages/           # 23 individual packages
-│   ├── core/          # Main orchestration engine
+├── packages/           # Individual packages
+│   ├── core/          # Main orchestration engine (includes optimizer)
 │   ├── parser/        # YAML parsing
 │   ├── schema/        # Validation schemas
 │   ├── layout-*/      # Layout engines
 │   ├── icons-*/       # Cloud provider icons
-│   ├── compliance/    # Security validation
+│   ├── compliance/    # Security framework validation
 │   ├── cost/          # Cost analysis
+│   ├── optimizer/     # Architecture optimization rules ← NEW
 │   ├── cli/           # Command-line interface
-│   ├── diagram/       # Distribution package
+│   ├── diagram/       # Distribution package + CLI binary
 │   ├── web/           # React UI
-│   ├── web-server/    # Express API
-│   └── ...others
+│   ├── web-server/    # Express API (compression + /api/optimize)
+│   └── vscode/        # VS Code extension
 ├── docs/              # Documentation
 ├── scripts/           # Utilities and release scripts
 ├── .github/           # GitHub configurations
@@ -81,7 +82,26 @@ pnpm build             # Build this package
 ### Generate Diagram
 
 ```bash
-pnpm cli diagram path/to/architecture.yaml -o output.svg
+# Optimizer runs automatically and prints summary to stdout
+pnpm cli diagram path/to/architecture.adac.yaml -o output.svg
+
+# Disable optimizer
+pnpm cli diagram path/to/architecture.adac.yaml --no-optimize -o output.svg
+```
+
+### Run Optimizer standalone
+
+```typescript
+import { analyzeOptimizations } from '@mindfiredigital/adac-optimizer';
+import { parseAdac } from '@mindfiredigital/adac-parser';
+
+const config = parseAdac('architecture.adac.yaml');
+const result = analyzeOptimizations(config, { minSeverity: 'high' });
+
+console.log(`${result.summary.critical} critical, ${result.summary.high} high`);
+result.recommendations.forEach((r) =>
+  console.log(`[${r.severity}] ${r.title}: ${r.affectedResources.join(', ')}`)
+);
 ```
 
 ### Run Web UI
