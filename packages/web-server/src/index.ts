@@ -2,15 +2,13 @@ import express from 'express';
 import path from 'path';
 import cors from 'cors';
 import compression from 'compression';
-import jsYaml from 'js-yaml';
-import { generateDiagramSvg } from '@mindfiredigital/adac-diagram';
-import { ComplianceChecker } from '@mindfiredigital/adac-compliance';
+
 import {
-  CostCalculator,
-  mapAdacServicesToCostConfig,
-} from '@mindfiredigital/adac-cost';
-import { analyzeOptimizations } from '@mindfiredigital/adac-optimizer';
-import type { AdacConfig } from '@mindfiredigital/adac-schema';
+  generateDiagramHandler,
+  complianceCheckHandler,
+  costAnalysisHandler,
+  optimizeHandler,
+} from './handlers';
 
 const app: express.Application = express();
 const PORT = process.env.PORT || 3000;
@@ -26,139 +24,17 @@ app.use(express.json({ limit: '10mb' }));
 const publicPath = path.join(process.cwd(), 'public');
 app.use(express.static(publicPath));
 
-// ─── Singleton engines ────────────────────────────────────────────────────────
-const complianceChecker = new ComplianceChecker();
-const costCalculator = new CostCalculator();
-
-// ─── Helper: parse YAML and validate base structure ──────────────────────────
-function parseAdacConfig(content: string): AdacConfig {
-  const config = jsYaml.load(content) as AdacConfig;
-  if (!config || !config.infrastructure) {
-    throw new Error('Invalid ADAC configuration: missing infrastructure');
-  }
-  return config;
-}
-
 // ─── API: Generate Diagram ────────────────────────────────────────────────────
-app.post('/api/generate', async (req, res) => {
-  try {
-    const { content, layout } = req.body;
-
-    if (!content) {
-      res.status(400).json({ error: 'Missing content' });
-      return;
-    }
-
-    const result = await generateDiagramSvg(content, layout);
-    res.status(200).json(result);
-  } catch (e: unknown) {
-    console.error('Generation failed:', e);
-    const error = e as Error & { logs?: string[] };
-    res.status(500).json({
-      error: error.message || 'Internal Server Error',
-      logs: error.logs,
-    });
-  }
-});
+app.post('/api/generate', generateDiagramHandler);
 
 // ─── API: Compliance Check ────────────────────────────────────────────────────
-app.post('/api/compliance-check', (req, res) => {
-  try {
-    const { content } = req.body;
-
-    if (!content) {
-      res.status(400).json({ error: 'Missing content' });
-      return;
-    }
-
-    const config = parseAdacConfig(content);
-    const result = complianceChecker.checkCompliance(config);
-    res.status(200).json(result);
-  } catch (e: unknown) {
-    console.error('Compliance check failed:', e);
-    const error = e as Error;
-    const isValidationError = error.message?.includes(
-      'Invalid ADAC configuration'
-    );
-    res.status(isValidationError ? 400 : 500).json({
-      error: error.message || 'Compliance check failed',
-    });
-  }
-});
+app.post('/api/compliance-check', complianceCheckHandler);
 
 // ─── API: Cost Analysis ───────────────────────────────────────────────────────
-app.post('/api/cost', (req, res) => {
-  try {
-    const { content } = req.body;
-
-    if (!content) {
-      res.status(400).json({ error: 'Missing content' });
-      return;
-    }
-
-    const config = parseAdacConfig(content);
-    const services =
-      config.infrastructure.clouds?.flatMap((cloud) => cloud.services ?? []) ??
-      [];
-    const costConfig = mapAdacServicesToCostConfig(services);
-    const result = costCalculator.calculate(costConfig);
-    res.status(200).json(result);
-  } catch (e: unknown) {
-    console.error('Cost analysis failed:', e);
-    const error = e as Error;
-    const isValidationError = error.message?.includes(
-      'Invalid ADAC configuration'
-    );
-    res.status(isValidationError ? 400 : 500).json({
-      error: error.message || 'Cost analysis failed',
-    });
-  }
-});
+app.post('/api/cost', costAnalysisHandler);
 
 // ─── API: Optimize ────────────────────────────────────────────────────────────
-/**
- * POST /api/optimize
- *
- * Request body:
- *   content  – ADAC YAML string (required)
- *   options  – OptimizerOptions (optional)
- *     categories        – string[]  (cost|security|reliability|architecture|…)
- *     minSeverity       – string    (critical|high|medium|low|info)
- *     enableCostRules       – boolean
- *     enableSecurityRules   – boolean
- *     enableReliabilityRules – boolean
- *
- * Response: OptimizationResult (compressed)
- */
-app.post('/api/optimize', (req, res) => {
-  try {
-    const { content, options } = req.body as {
-      content?: string;
-      options?: Record<string, unknown>;
-    };
-
-    if (!content) {
-      res.status(400).json({ error: 'Missing content' });
-      return;
-    }
-
-    const config = parseAdacConfig(content);
-    const result = analyzeOptimizations(
-      config,
-      options as Parameters<typeof analyzeOptimizations>[1]
-    );
-    res.status(200).json(result);
-  } catch (e: unknown) {
-    console.error('Optimization analysis failed:', e);
-    const error = e as Error;
-    const isValidationError = error.message?.includes(
-      'Invalid ADAC configuration'
-    );
-    res.status(isValidationError ? 400 : 500).json({
-      error: error.message || 'Optimization analysis failed',
-    });
-  }
-});
+app.post('/api/optimize', optimizeHandler);
 
 // ─── Global error handler ─────────────────────────────────────────────────────
 app.use(
@@ -180,7 +56,10 @@ app.use(
 );
 
 // ─── Start Server ─────────────────────────────────────────────────────────────
-if (process.argv[1].match(/index\.(js|ts)$/)) {
+if (
+  process.argv[1].match(/index\.(js|ts)$/) &&
+  process.env.NODE_ENV !== 'test'
+) {
   app.listen(PORT, () => {
     console.log(`Server is running at http://localhost:${PORT}`);
     console.log(`Serving static files from: ${publicPath}`);

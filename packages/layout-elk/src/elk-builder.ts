@@ -9,163 +9,164 @@ import { ElkNode, ElkEdge } from './types.js';
 import path from 'path';
 import fs from 'fs';
 
-// Load AWS Icon Map
-let ICON_MAP: Record<string, string> = {};
+type IconProvider = 'aws' | 'gcp' | 'azure';
 
-try {
-  const awsMapPaths = [
-    // Two directories up from dist is packages: packages/layout-elk/dist -> packages
-    path.resolve(
-      __dirname,
-      '..',
-      '..',
-      'icons-aws',
-      'mappings',
-      'icon-map.json'
-    ),
-    // Try npm module location
-    path.resolve(
-      __dirname,
-      '..',
-      '..',
-      '..',
-      '@mindfiredigital',
-      'adac-icons-aws',
-      'mappings',
-      'icon-map.json'
-    ),
-    // Relative to process cwd
-    path.resolve(
-      process.cwd(),
-      'packages',
-      'icons-aws',
-      'mappings',
-      'icon-map.json'
-    ),
-    path.resolve(process.cwd(), 'icons-aws', 'mappings', 'icon-map.json'),
-  ];
+const PROVIDER_FOLDERS: Record<IconProvider, string> = {
+  aws: 'icons-aws',
+  gcp: 'icons-gcp',
+  azure: 'icons-azure',
+};
 
-  let foundMap = false;
-  for (const p of awsMapPaths) {
-    if (fs.existsSync(p)) {
-      ICON_MAP = JSON.parse(fs.readFileSync(p, 'utf8'));
-      foundMap = true;
-      break;
-    }
-  }
-
-  if (!foundMap) {
-    console.warn(
-      'Warning: Could not find AWS icon-map.json in expected locations'
-    );
-  }
-} catch (e) {
-  console.error('Failed to load icon-map.json', e);
-}
-
-// Load GCP Icon Map
-let GCP_ICON_MAP: Record<string, string> = {};
-
-try {
-  const gcpMapPaths = [
-    // Two directories up from dist is packages
-    path.resolve(
-      __dirname,
-      '..',
-      '..',
-      'icons-gcp',
-      'mappings',
-      'icon-map.json'
-    ),
-    // Try npm module location
+function iconMapCandidates(provider: IconProvider): string[] {
+  const folder = PROVIDER_FOLDERS[provider];
+  return [
+    path.resolve(__dirname, '..', '..', folder, 'mappings', 'icon-map.json'),
     path.resolve(
       __dirname,
       '..',
       '..',
       '..',
       '@mindfiredigital',
-      'adac-icons-gcp',
+      `adac-${folder}`,
       'mappings',
       'icon-map.json'
     ),
-    // Relative to process cwd
     path.resolve(
       process.cwd(),
       'packages',
-      'icons-gcp',
+      folder,
       'mappings',
       'icon-map.json'
     ),
-    path.resolve(process.cwd(), 'icons-gcp', 'mappings', 'icon-map.json'),
+    path.resolve(process.cwd(), folder, 'mappings', 'icon-map.json'),
   ];
-
-  for (const p of gcpMapPaths) {
-    if (fs.existsSync(p)) {
-      GCP_ICON_MAP = JSON.parse(fs.readFileSync(p, 'utf8'));
-      break;
-    }
-  }
-
-  if (Object.keys(GCP_ICON_MAP).length === 0) {
-    console.warn(
-      'Warning: Could not find GCP icon-map.json. Run: pnpm --filter @mindfiredigital/adac-icons-gcp setup-icons'
-    );
-  }
-} catch (e) {
-  console.error('Failed to load GCP icon-map.json', e);
 }
 
-// Load Azure Icon Map
-let AZURE_ICON_MAP: Record<string, string> = {};
+function loadIconMap(provider: IconProvider): Record<string, string> {
+  try {
+    for (const p of iconMapCandidates(provider)) {
+      if (fs.existsSync(p)) {
+        return JSON.parse(fs.readFileSync(p, 'utf8'));
+      }
+    }
+    console.warn(
+      `Warning: Could not find ${provider.toUpperCase()} icon-map.json. ` +
+        `Run: pnpm --filter @mindfiredigital/adac-${PROVIDER_FOLDERS[provider]} setup-icons`
+    );
+  } catch (e) {
+    console.error(`Failed to load ${provider.toUpperCase()} icon-map.json`, e);
+  }
+  return {};
+}
 
-try {
-  const azureMapPaths = [
-    // Two directories up from dist is packages
-    path.resolve(
-      __dirname,
-      '..',
-      '..',
-      'icons-azure',
-      'mappings',
-      'icon-map.json'
-    ),
-    // Try npm module location
+function assetCandidates(
+  provider: IconProvider,
+  relativePath: string
+): string[] {
+  const folder = PROVIDER_FOLDERS[provider];
+  return [
+    // dist/assets — only AWS historically shipped icons inside the package
+    path.resolve(__dirname, 'assets', relativePath),
+    path.resolve(__dirname, '..', '..', folder, 'assets', relativePath),
     path.resolve(
       __dirname,
       '..',
       '..',
       '..',
       '@mindfiredigital',
-      'adac-icons-azure',
-      'mappings',
-      'icon-map.json'
+      `adac-${folder}`,
+      'assets',
+      relativePath
     ),
-    // Relative to process cwd
-    path.resolve(
-      process.cwd(),
-      'packages',
-      'icons-azure',
-      'mappings',
-      'icon-map.json'
-    ),
-    path.resolve(process.cwd(), 'icons-azure', 'mappings', 'icon-map.json'),
+    path.resolve(process.cwd(), 'packages', folder, 'assets', relativePath),
+    path.resolve(process.cwd(), folder, 'assets', relativePath),
+    path.resolve(process.cwd(), 'assets', relativePath),
   ];
-
-  for (const p of azureMapPaths) {
-    if (fs.existsSync(p)) {
-      AZURE_ICON_MAP = JSON.parse(fs.readFileSync(p, 'utf8'));
-      break;
-    }
-  }
-
-  if (Object.keys(AZURE_ICON_MAP).length === 0) {
-    console.warn(
-      'Warning: Could not find Azure icon-map.json. Run: pnpm --filter @mindfiredigital/adac-icons-azure setup-icons'
-    );
-  }
-} catch (e) {
-  console.error('Failed to load Azure icon-map.json', e);
 }
+
+function resolveProviderAssetPath(
+  provider: IconProvider,
+  relativePath?: string
+): string | undefined {
+  if (!relativePath) return undefined;
+  for (const p of assetCandidates(provider, relativePath)) {
+    if (fs.existsSync(p)) return p;
+  }
+  console.warn(
+    `Could not resolve ${provider.toUpperCase()} icon path:`,
+    relativePath
+  );
+  return undefined;
+}
+
+const ICON_MAP: Record<string, string> = loadIconMap('aws');
+const GCP_ICON_MAP: Record<string, string> = loadIconMap('gcp');
+const AZURE_ICON_MAP: Record<string, string> = loadIconMap('azure');
+
+// ── Shared ELK layout option presets ────────────────────────────────────────
+// Increased and symmetric so labels at the top of containers have breathing
+// room and nested groups don't visually crowd each other.
+const CONTAINER_PADDING = '[top=60,left=40,bottom=40,right=40]';
+
+// Container nodes interpret their `width`/`height` as MINIMUMS thanks to
+// the MINIMUM_SIZE constraint, and grow to fit their label + children.
+const CONTAINER_LAYOUT_OPTIONS: Record<string, string> = {
+  'elk.padding': CONTAINER_PADDING,
+  'elk.spacing.nodeNode': '50',
+  'elk.nodeSize.constraints': 'NODE_LABELS MINIMUM_SIZE',
+};
+
+// Leaf nodes (services, apps, implicit external nodes). Lets ELK enlarge a
+// node when its label is wider than the icon, instead of clipping the text.
+const LEAF_NODE_LAYOUT_OPTIONS: Record<string, string> = {
+  'elk.nodeSize.constraints': 'NODE_LABELS MINIMUM_SIZE',
+  'elk.portAlignment.default': 'CENTER',
+};
+
+// Service/app types that should be pinned to the FIRST layer so the diagram
+// reads "user → cloud" left-to-right (or top-to-bottom).
+const ENTRY_NODE_TYPES = new Set([
+  'user',
+  'client',
+  'internet',
+  'browser',
+  'mobile',
+  'frontend',
+]);
+
+// Storage/database service types that belong on the LAST layer so data
+// stores naturally appear after the compute that talks to them.
+const STORAGE_SERVICE_TYPES = new Set([
+  // AWS
+  'rds',
+  's3',
+  'dynamodb',
+  'redshift',
+  'aurora',
+  'documentdb',
+  'elasticache',
+  'efs',
+  // GCP
+  'cloud-sql',
+  'cloudsql',
+  'bigquery',
+  'firestore',
+  'cloud-storage',
+  'cloud-spanner',
+  'bigtable',
+  'memorystore',
+  'alloydb',
+  'persistent-disk',
+  // Azure
+  'cosmos-db',
+  'sql-database',
+  'storage-account',
+  'blob-storage',
+  // Generic
+  'database',
+  'db',
+  'storage',
+]);
 
 // AWS Colors matching AWS Diagrams
 const STYLES = {
@@ -498,129 +499,12 @@ export function buildElkGraph(adac: AdacConfig): ElkNode {
     return undefined;
   };
 
-  // Helper to resolve an AWS icon relative path to an absolute file path
-  const resolveAwsAssetPath = (relativePath?: string) => {
-    if (!relativePath) return undefined;
-
-    const searchPaths = [
-      path.resolve(__dirname, 'assets', relativePath),
-      path.resolve(__dirname, '..', '..', 'icons-aws', 'assets', relativePath),
-      // Try npm module location
-      path.resolve(
-        __dirname,
-        '..',
-        '..',
-        '..',
-        '@mindfiredigital',
-        'adac-icons-aws',
-        'assets',
-        relativePath
-      ),
-      path.resolve(
-        process.cwd(),
-        'packages',
-        'icons-aws',
-        'assets',
-        relativePath
-      ),
-      path.resolve(process.cwd(), 'icons-aws', 'assets', relativePath),
-      path.resolve(process.cwd(), 'assets', relativePath),
-    ];
-
-    for (const p of searchPaths) {
-      if (fs.existsSync(p)) return p;
-    }
-
-    console.warn('Could not resolve AWS icon path:', relativePath);
-    return undefined;
-  };
-
-  // Helper to resolve a GCP icon relative path to an absolute file path
-  const resolveGcpAssetPath = (relativePath?: string) => {
-    if (!relativePath) return undefined;
-
-    const searchPaths = [
-      path.resolve(__dirname, '..', '..', 'icons-gcp', 'assets', relativePath),
-      // Try npm module location
-      path.resolve(
-        __dirname,
-        '..',
-        '..',
-        '..',
-        '@mindfiredigital',
-        'adac-icons-gcp',
-        'assets',
-        relativePath
-      ),
-      path.resolve(
-        process.cwd(),
-        'packages',
-        'icons-gcp',
-        'assets',
-        relativePath
-      ),
-      path.resolve(process.cwd(), 'icons-gcp', 'assets', relativePath),
-      path.resolve(process.cwd(), 'assets', relativePath),
-    ];
-
-    for (const p of searchPaths) {
-      if (fs.existsSync(p)) return p;
-    }
-
-    console.warn('Could not resolve GCP icon path:', relativePath);
-    return undefined;
-  };
-
-  // Helper to resolve an Azure icon relative path to an absolute file path
-  const resolveAzureAssetPath = (relativePath?: string) => {
-    if (!relativePath) return undefined;
-
-    const searchPaths = [
-      path.resolve(
-        __dirname,
-        '..',
-        '..',
-        'icons-azure',
-        'assets',
-        relativePath
-      ),
-      // Try npm module location
-      path.resolve(
-        __dirname,
-        '..',
-        '..',
-        '..',
-        '@mindfiredigital',
-        'adac-icons-azure',
-        'assets',
-        relativePath
-      ),
-      path.resolve(
-        process.cwd(),
-        'packages',
-        'icons-azure',
-        'assets',
-        relativePath
-      ),
-      path.resolve(process.cwd(), 'icons-azure', 'assets', relativePath),
-      path.resolve(process.cwd(), 'assets', relativePath),
-    ];
-
-    for (const p of searchPaths) {
-      if (fs.existsSync(p)) return p;
-    }
-
-    console.warn('Could not resolve Azure icon path:', relativePath);
-    return undefined;
-  };
-
-  // Backwards-compat helper (picks the right resolver based on current context)
-  const resolveAssetPath = (relativePath?: string) => {
-    return isGcp
-      ? resolveGcpAssetPath(relativePath)
-      : resolveAwsAssetPath(relativePath);
-  };
-  void resolveAssetPath; // suppress unused warning
+  const resolveAwsAssetPath = (relativePath?: string) =>
+    resolveProviderAssetPath('aws', relativePath);
+  const resolveGcpAssetPath = (relativePath?: string) =>
+    resolveProviderAssetPath('gcp', relativePath);
+  const resolveAzureAssetPath = (relativePath?: string) =>
+    resolveProviderAssetPath('azure', relativePath);
 
   const getServiceType = (service: AdacService): string => {
     return service.service || service.subtype || service.type || 'unknown';
@@ -667,6 +551,31 @@ export function buildElkGraph(adac: AdacConfig): ElkNode {
     return getIconPath(app.type) || getIconPath('Application');
   };
 
+  // Choose a per-node layer constraint so the diagram reads in flow order:
+  // entry points pinned to the FIRST layer, data stores pinned to the LAST.
+  const layerConstraintFor = (
+    typeKey: string
+  ): 'FIRST' | 'LAST' | undefined => {
+    const t = (typeKey || '').toLowerCase();
+    if (ENTRY_NODE_TYPES.has(t)) return 'FIRST';
+    if (STORAGE_SERVICE_TYPES.has(t)) return 'LAST';
+    return undefined;
+  };
+
+  const buildLeafLayoutOptions = (
+    typeKey: string,
+    minW: number,
+    minH: number
+  ): Record<string, string> => {
+    const opts: Record<string, string> = {
+      ...LEAF_NODE_LAYOUT_OPTIONS,
+      'elk.nodeSize.minimum': `(${minW}, ${minH})`,
+    };
+    const layer = layerConstraintFor(typeKey);
+    if (layer) opts['elk.layered.layering.layerConstraint'] = layer;
+    return opts;
+  };
+
   // 1. Create Nodes for Applications
   (adac.applications || []).forEach((app: AdacApplication) => {
     const node: ElkNode = {
@@ -679,6 +588,7 @@ export function buildElkGraph(adac: AdacConfig): ElkNode {
         iconPath: detectIconForApp(app),
         title: app.type,
       },
+      layoutOptions: buildLeafLayoutOptions(app.type || '', 80, 100),
     };
     nodesMap.set(app.id, node);
   });
@@ -698,8 +608,10 @@ export function buildElkGraph(adac: AdacConfig): ElkNode {
     const groupId = `group-${groupName.replace(/\s+/g, '-')}`;
     const node: ElkNode = {
       id: groupId,
-      width: 400, // Dynamic? ELK resizes containers usually
-      height: 300,
+      // Treated as minimums by CONTAINER_LAYOUT_OPTIONS; ELK grows them as
+      // children are added during the hierarchy pass.
+      width: 320,
+      height: 220,
       labels: [{ text: groupName }],
       children: [],
       properties: {
@@ -708,8 +620,8 @@ export function buildElkGraph(adac: AdacConfig): ElkNode {
         title: 'Logical Group',
       },
       layoutOptions: {
-        'elk.padding': '[top=40,left=20,bottom=20,right=20]',
-        'elk.spacing.nodeNode': '30',
+        ...CONTAINER_LAYOUT_OPTIONS,
+        'elk.nodeSize.minimum': '(320, 220)',
       },
     };
     nodesMap.set(groupId, node);
@@ -828,6 +740,14 @@ export function buildElkGraph(adac: AdacConfig): ElkNode {
           : getAwsIconPath('General resource icon');
       }
 
+      const isContainer = style.type === 'container';
+      const layoutOptions: Record<string, string> = isContainer
+        ? {
+            ...CONTAINER_LAYOUT_OPTIONS,
+            'elk.nodeSize.minimum': `(${width}, ${height})`,
+          }
+        : buildLeafLayoutOptions(typeKey, width, height);
+
       const node: ElkNode = {
         id: service.id,
         width,
@@ -840,10 +760,7 @@ export function buildElkGraph(adac: AdacConfig): ElkNode {
           iconPath: iconPath,
           description: service.description || typeKey,
         },
-        layoutOptions: {
-          'elk.padding': '[top=40,left=20,bottom=20,right=20]',
-          'elk.spacing.nodeNode': '30',
-        },
+        layoutOptions,
       };
       nodesMap.set(service.id, node);
     });
@@ -870,10 +787,9 @@ export function buildElkGraph(adac: AdacConfig): ElkNode {
     return false;
   };
 
-  // Place Apps
-  (adac.applications || []).forEach((app: AdacApplication) => {
-    if (placedNodeIds.has(app.id)) return;
-  });
+  // Note: apps are placed by the service pass (via `runs`) or by the orphan
+  // sweep further down — there's intentionally no standalone app placement
+  // pass here, so a service's `runs:` claim always wins over `ai_tags.group`.
 
   // Process Services to assign Logic Parents
   (adac.infrastructure?.clouds || []).forEach((cloud: AdacCloud) => {
@@ -905,8 +821,8 @@ export function buildElkGraph(adac: AdacConfig): ElkNode {
                 title: 'Availability Zone',
               },
               layoutOptions: {
-                'elk.padding': '[top=40,left=20,bottom=20,right=20]',
-                'elk.spacing.nodeNode': '30',
+                ...CONTAINER_LAYOUT_OPTIONS,
+                'elk.nodeSize.minimum': '(300, 300)',
               },
             };
             nodesMap.set(azId, azNode);
@@ -984,8 +900,8 @@ export function buildElkGraph(adac: AdacConfig): ElkNode {
 
     const node: ElkNode = {
       id: utilityGroupId,
-      width: 400,
-      height: 300,
+      width: 320,
+      height: 220,
       labels: [{ text: 'Shared Infrastructure' }],
       children: [],
       properties: {
@@ -994,8 +910,8 @@ export function buildElkGraph(adac: AdacConfig): ElkNode {
         title: 'Shared Services',
       },
       layoutOptions: {
-        'elk.padding': '[top=40,left=20,bottom=20,right=20]',
-        'elk.spacing.nodeNode': '30',
+        ...CONTAINER_LAYOUT_OPTIONS,
+        'elk.nodeSize.minimum': '(320, 220)',
       },
     };
     nodesMap.set(utilityGroupId, node);
@@ -1082,6 +998,25 @@ export function buildElkGraph(adac: AdacConfig): ElkNode {
             icon = getAwsIconPath('Compute');
         }
 
+        // External user/client/internet/frontend nodes are entry points;
+        // pin them to the first layer so the diagram reads in flow order.
+        const isEntry =
+          lowerId.includes('user') ||
+          lowerId.includes('client') ||
+          lowerId.includes('internet') ||
+          lowerId.includes('frontend') ||
+          lowerId.includes('browser') ||
+          lowerId.includes('mobile');
+
+        const implicitLayoutOptions: Record<string, string> = {
+          ...LEAF_NODE_LAYOUT_OPTIONS,
+          'elk.nodeSize.minimum': '(80, 80)',
+        };
+        if (isEntry) {
+          implicitLayoutOptions['elk.layered.layering.layerConstraint'] =
+            'FIRST';
+        }
+
         const implicitNode: ElkNode = {
           id: endpointId,
           width: 80,
@@ -1092,6 +1027,7 @@ export function buildElkGraph(adac: AdacConfig): ElkNode {
             iconPath: icon,
             description: 'External System',
           },
+          layoutOptions: implicitLayoutOptions,
         };
         nodesMap.set(endpointId, implicitNode);
         rootChildren.push(implicitNode); // Implicit nodes are always top-level
@@ -1127,12 +1063,36 @@ export function buildElkGraph(adac: AdacConfig): ElkNode {
       'elk.direction': 'RIGHT',
       'elk.hierarchyHandling': 'INCLUDE_CHILDREN',
       'elk.edgeRouting': 'ORTHOGONAL',
-      'elk.layered.spacing.nodeNodeBetweenLayers': '110',
+
+      // Spacing — slightly more generous than before so labels and icons
+      // don't visually collide in dense diagrams.
+      'elk.layered.spacing.nodeNodeBetweenLayers': '120',
       'elk.spacing.nodeNode': '80',
       'elk.layered.spacing.edgeNodeBetweenLayers': '50',
       'elk.layered.spacing.edgeEdgeBetweenLayers': '25',
+
+      // Crossing/placement — balanced placement and higher thoroughness give
+      // straighter, more symmetric edge routing.
       'elk.layered.nodePlacement.strategy': 'BRANDES_KOEPF',
+      'elk.layered.nodePlacement.bk.fixedAlignment': 'BALANCED',
+      'elk.layered.nodePlacement.favorStraightEdges': 'true',
       'elk.layered.crossingMinimization.strategy': 'LAYER_SWEEP',
+      'elk.layered.layering.strategy': 'NETWORK_SIMPLEX',
+      'elk.layered.thoroughness': '10',
+
+      // Edges — bundle parallel edges into trunks, drop redundant bends, and
+      // route feedback edges cleanly.
+      'elk.layered.mergeEdges': 'true',
+      'elk.layered.unnecessaryBendpoints': 'true',
+      'elk.layered.feedbackEdges': 'true',
+
+      // Disconnected sub-graphs are laid out side-by-side instead of
+      // overlapping each other.
+      'elk.separateConnectedComponents': 'true',
+      'elk.spacing.componentComponent': '60',
+
+      // Bias toward a landscape aspect ratio — easier on slides/docs.
+      'elk.aspectRatio': '1.6',
     },
     children: rootChildren,
     edges,

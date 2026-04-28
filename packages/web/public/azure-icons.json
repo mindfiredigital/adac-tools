@@ -4,19 +4,19 @@
     "icons": [
       {
         "name": "Virtual Machine",
-        "path": "/assets/azure-icons/Virtual-Machine.svg"
+        "path": "/assets/azure-icons/10021-icon-service-Virtual-Machine.svg"
       },
       {
         "name": "App Service",
-        "path": "/assets/azure-icons/App-Services.svg"
+        "path": "/assets/azure-icons/00046-icon-service-App-Service-Plans.svg"
       },
       {
         "name": "Function App",
-        "path": "/assets/azure-icons/Function-Apps.svg"
+        "path": "/assets/azure-icons/10029-icon-service-Function-Apps.svg"
       },
       {
         "name": "Kubernetes Service",
-        "path": "/assets/azure-icons/Kubernetes-Services.svg"
+        "path": "/assets/azure-icons/10023-icon-service-Kubernetes-Services.svg"
       }
     ]
   },
@@ -25,19 +25,19 @@
     "icons": [
       {
         "name": "Storage Account",
-        "path": "/assets/azure-icons/Storage-Accounts.svg"
+        "path": "/assets/azure-icons/10086-icon-service-Storage-Accounts.svg"
       },
       {
         "name": "SQL Database",
-        "path": "/assets/azure-icons/SQL-Database.svg"
+        "path": "/assets/azure-icons/10130-icon-service-SQL-Database.svg"
       },
       {
         "name": "Cosmos DB",
-        "path": "/assets/azure-icons/Azure-Cosmos-DB.svg"
+        "path": "/assets/azure-icons/10121-icon-service-Azure-Cosmos-DB.svg"
       },
       {
         "name": "Blob Storage",
-        "path": "/assets/azure-icons/Storage-Accounts-Blob.svg"
+        "path": "/assets/azure-icons/10780-icon-service-Blob-Block.svg"
       }
     ]
   },
@@ -46,15 +46,15 @@
     "icons": [
       {
         "name": "Virtual Network",
-        "path": "/assets/azure-icons/Virtual-Networks.svg"
+        "path": "/assets/azure-icons/10061-icon-service-Virtual-Networks.svg"
       },
       {
         "name": "Load Balancer",
-        "path": "/assets/azure-icons/Load-Balancers.svg"
+        "path": "/assets/azure-icons/10062-icon-service-Load-Balancers.svg"
       },
       {
         "name": "Application Gateway",
-        "path": "/assets/azure-icons/Application-Gateways.svg"
+        "path": "/assets/azure-icons/10076-icon-service-Application-Gateways.svg"
       }
     ]
   },
@@ -63,11 +63,11 @@
     "icons": [
       {
         "name": "Cognitive Services",
-        "path": "/assets/azure-icons/Cognitive-Services.svg"
+        "path": "/assets/azure-icons/10162-icon-service-Cognitive-Services.svg"
       },
       {
         "name": "Machine Learning",
-        "path": "/assets/azure-icons/Machine-Learning.svg"
+        "path": "/assets/azure-icons/10166-icon-service-Machine-Learning.svg"
       }
     ]
   }

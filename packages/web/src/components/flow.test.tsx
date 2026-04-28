@@ -180,6 +180,34 @@ describe('Flow', () => {
     });
     fireEvent.click(screen.getByText('YAML'));
     expect(clickSpy).toHaveBeenCalledTimes(2);
+
+    // Now test Azure
+    rerender(<Flow {...defaultProps} provider="azure" />);
+    const azureServices = [
+      { label: 'Virtual Machine', icon: '/azure/vm.svg' },
+      { label: 'Storage Account', icon: '/azure/storage.svg' },
+      { label: 'App Service', icon: '/azure/appservice.svg' },
+    ];
+    azureServices.forEach((s) => {
+      fireEvent.drop(reactFlow, {
+        preventDefault: vi.fn(),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        dataTransfer: {
+          getData: (key: string) =>
+            (
+              ({
+                'application/reactflow/type': 'customNode',
+                'application/reactflow/icon': s.icon,
+                'application/reactflow/label': s.label,
+              }) as Record<string, string>
+            )[key],
+        },
+        clientX: 0,
+        clientY: 0,
+      });
+    });
+    fireEvent.click(screen.getByText('YAML'));
+    expect(clickSpy).toHaveBeenCalledTimes(3);
   });
 
   it('handles drag over', () => {

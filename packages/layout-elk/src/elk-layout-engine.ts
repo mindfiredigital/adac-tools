@@ -80,14 +80,30 @@ export class ElkLayoutEngine implements LayoutEngine {
         'elk.algorithm': 'layered',
         'elk.direction': this.options.rankdir === 'LR' ? 'RIGHT' : 'DOWN',
 
+        // Hierarchical edge routing across nested containers — without this
+        // option, edges that cross container boundaries get awkward kinks.
+        'elk.hierarchyHandling': 'INCLUDE_CHILDREN',
+
         'elk.edgeRouting': 'ORTHOGONAL',
         'elk.layered.spacing.nodeNodeBetweenLayers': String(
           this.options.ranksep ?? 80
         ),
         'elk.spacing.nodeNode': String(this.options.nodesep ?? 40),
 
+        // Aesthetic tuning — same defaults used by buildElkGraph so the two
+        // entry points produce visually consistent layouts.
         'elk.layered.nodePlacement.strategy': 'BRANDES_KOEPF',
+        'elk.layered.nodePlacement.bk.fixedAlignment': 'BALANCED',
+        'elk.layered.nodePlacement.favorStraightEdges': 'true',
         'elk.layered.crossingMinimization.strategy': 'LAYER_SWEEP',
+        'elk.layered.layering.strategy': 'NETWORK_SIMPLEX',
+        'elk.layered.thoroughness': '10',
+        'elk.layered.mergeEdges': 'true',
+        'elk.layered.unnecessaryBendpoints': 'true',
+        'elk.layered.feedbackEdges': 'true',
+        'elk.separateConnectedComponents': 'true',
+        'elk.spacing.componentComponent': '60',
+        'elk.aspectRatio': '1.6',
       },
     };
 

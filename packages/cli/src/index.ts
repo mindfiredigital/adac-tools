@@ -95,6 +95,7 @@ export function runCLI(options: CLIOptions) {
       'monthly'
     )
     .option('--no-optimize', 'Skip architecture optimization analysis')
+    .option('--no-open', 'Skip opening the diagram in browser')
 
     .action(async (file, opts) => {
       try {
@@ -122,6 +123,7 @@ export function runCLI(options: CLIOptions) {
         const layout = opts.layout as 'elk' | 'dagre';
         // Commander turns --no-optimize into opts.optimize = false
         const skipOptimizer = opts.optimize === false;
+        const skipOpen = opts.open === false;
 
         let outputPath: string = opts.output;
         if (!outputPath) {
@@ -143,22 +145,25 @@ export function runCLI(options: CLIOptions) {
         );
 
         console.log(`Diagram successfully generated at ${outputPath}`);
-        console.log('Automatically launching browser to view diagram...');
 
-        let startCmd = '';
-        if (process.platform === 'darwin') {
-          startCmd = `open "${outputPath}"`;
-        } else if (process.platform === 'win32') {
-          startCmd = `start "" "${outputPath}"`;
-        } else {
-          startCmd = `xdg-open "${outputPath}"`;
-        }
+        if (!skipOpen) {
+          console.log('Automatically launching browser to view diagram...');
 
-        exec(startCmd, (err) => {
-          if (err) {
-            console.error('Failed to launch browser:', err.message);
+          let startCmd = '';
+          if (process.platform === 'darwin') {
+            startCmd = `open "${outputPath}"`;
+          } else if (process.platform === 'win32') {
+            startCmd = `start "" "${outputPath}"`;
+          } else {
+            startCmd = `xdg-open "${outputPath}"`;
           }
-        });
+
+          exec(startCmd, (err) => {
+            if (err) {
+              console.error('Failed to launch browser:', err.message);
+            }
+          });
+        }
       } catch (error: unknown) {
         const message = error instanceof Error ? error.message : String(error);
         console.error('Error generating diagram:', message);
