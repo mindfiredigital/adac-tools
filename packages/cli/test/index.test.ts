@@ -636,4 +636,46 @@ describe('ADAC CLI - Branch Coverage', () => {
     expect(allLogs).toMatch(/Storage.*15/);
     expect(allLogs).toMatch(/Networking.*5/);
   });
+
+  it('should handle diagram generation with Darwin platform', async () => {
+    Object.defineProperty(process, 'platform', {
+      value: 'darwin',
+      writable: true,
+    });
+
+    const generateDiagram = vi.fn().mockResolvedValue(undefined);
+    const options = {
+      generateDiagram,
+      parseAdac: vi.fn().mockReturnValue({}),
+      validateAdacConfig: vi.fn().mockReturnValue({ valid: true }),
+      version: '1.0.0',
+    };
+
+    process.argv = ['node', 'adac', 'diagram', 'test.yaml'];
+    await runCLI(options);
+
+    expect(generateDiagram).toHaveBeenCalled();
+    const allLogs = consoleSpy.mock.calls.map((c) => c.join(' ')).join('\n');
+    expect(allLogs).toContain('Automatically launching browser');
+  });
+
+  it('should exit with code 1 when validation command throws', async () => {
+    const options = {
+      generateDiagram: vi.fn().mockResolvedValue(undefined),
+      parseAdac: vi.fn().mockImplementation(() => {
+        throw new Error('YAML parsing failed');
+      }),
+      validateAdacConfig: vi.fn().mockReturnValue({ valid: true }),
+      version: '1.0.0',
+    };
+
+    process.argv = ['node', 'adac', 'validate', 'test.yaml'];
+    await runCLI(options);
+
+    expect(mockExit).toHaveBeenCalledWith(1);
+    const errorLogs = consoleErrorSpy.mock.calls
+      .map((c) => c.join(' '))
+      .join('\n');
+    expect(errorLogs).toContain('Error validating file: YAML parsing failed');
+  });
 });
