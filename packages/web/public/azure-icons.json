@@ -1,0 +1,74 @@
+[
+  {
+    "category": "Compute",
+    "icons": [
+      {
+        "name": "Virtual Machine",
+        "path": "/assets/azure-icons/Virtual-Machine.svg"
+      },
+      {
+        "name": "App Service",
+        "path": "/assets/azure-icons/App-Services.svg"
+      },
+      {
+        "name": "Function App",
+        "path": "/assets/azure-icons/Function-Apps.svg"
+      },
+      {
+        "name": "Kubernetes Service",
+        "path": "/assets/azure-icons/Kubernetes-Services.svg"
+      }
+    ]
+  },
+  {
+    "category": "Storage & Database",
+    "icons": [
+      {
+        "name": "Storage Account",
+        "path": "/assets/azure-icons/Storage-Accounts.svg"
+      },
+      {
+        "name": "SQL Database",
+        "path": "/assets/azure-icons/SQL-Database.svg"
+      },
+      {
+        "name": "Cosmos DB",
+        "path": "/assets/azure-icons/Azure-Cosmos-DB.svg"
+      },
+      {
+        "name": "Blob Storage",
+        "path": "/assets/azure-icons/Storage-Accounts-Blob.svg"
+      }
+    ]
+  },
+  {
+    "category": "Networking",
+    "icons": [
+      {
+        "name": "Virtual Network",
+        "path": "/assets/azure-icons/Virtual-Networks.svg"
+      },
+      {
+        "name": "Load Balancer",
+        "path": "/assets/azure-icons/Load-Balancers.svg"
+      },
+      {
+        "name": "Application Gateway",
+        "path": "/assets/azure-icons/Application-Gateways.svg"
+      }
+    ]
+  },
+  {
+    "category": "AI & ML",
+    "icons": [
+      {
+        "name": "Cognitive Services",
+        "path": "/assets/azure-icons/Cognitive-Services.svg"
+      },
+      {
+        "name": "Machine Learning",
+        "path": "/assets/azure-icons/Machine-Learning.svg"
+      }
+    ]
+  }
+]

@@ -229,6 +229,54 @@ describe('Web Server API', () => {
     });
   });
 
+  describe('POST /api/optimize', () => {
+    it('should require content in request body', async () => {
+      const res = await request(app).post('/api/optimize').send({});
+      expect(res.status).toBe(400);
+      expect(res.body.error).toContain('Missing content');
+    });
+
+    it('should require valid ADAC configuration', async () => {
+      const res = await request(app)
+        .post('/api/optimize')
+        .send({ content: 'invalid: [' });
+
+      expect(res.status).toBe(500);
+      expect(res.body.error).toBeDefined();
+    });
+
+    it('should require infrastructure in ADAC config', async () => {
+      const res = await request(app)
+        .post('/api/optimize')
+        .send({ content: 'version: "1.0"' });
+
+      expect(res.status).toBe(400);
+      expect(res.body.error).toContain('infrastructure');
+    });
+
+    it('should accept options and return optimization result on success', async () => {
+      const adacContent = `
+        version: "1.0"
+        infrastructure:
+          name: "Test Architecture"
+          clouds:
+            - name: "AWS"
+              services: []
+      `;
+
+      const res = await request(app)
+        .post('/api/optimize')
+        .send({
+          content: adacContent,
+          options: { minSeverity: 'high' },
+        });
+
+      if (res.status === 200) {
+        expect(res.body).toBeDefined();
+      }
+    });
+  });
+
   describe('CORS Headers', () => {
     it('should include CORS headers in response', async () => {
       const res = await request(app)

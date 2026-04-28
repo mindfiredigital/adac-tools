@@ -75,7 +75,7 @@ export const getServiceType = (
     if (l.includes('emr') || p.includes('emr')) return 'emr';
     if (l.includes('cognito') || p.includes('cognito')) return 'cognito';
     return 'ec2';
-  } else {
+  } else if (provider === 'gcp') {
     if (l.includes('compute engine') || p.includes('computeengine'))
       return 'compute-engine';
     if (l.includes('cloud run') || p.includes('cloudrun')) return 'cloud-run';
@@ -95,6 +95,23 @@ export const getServiceType = (
     if (l.includes('pubsub') || p.includes('pub-sub')) return 'pubsub';
     if (l.includes('build') || p.includes('build')) return 'cloud-build';
     return 'compute-engine';
+  } else {
+    // Azure
+    if (l.includes('virtual machine') || p.includes('virtual-machine'))
+      return 'virtual-machine';
+    if (l.includes('app service') || p.includes('app-service'))
+      return 'app-service';
+    if (l.includes('function app') || p.includes('function-app'))
+      return 'function-app';
+    if (l.includes('kubernetes') || p.includes('kubernetes')) return 'aks';
+    if (l.includes('storage account') || p.includes('storage'))
+      return 'storage-account';
+    if (l.includes('sql database') || p.includes('sql')) return 'sql-database';
+    if (l.includes('cosmos') || p.includes('cosmos')) return 'cosmos-db';
+    if (l.includes('virtual network') || p.includes('vnet')) return 'vnet';
+    if (l.includes('load balancer') || p.includes('load-balancer'))
+      return 'load-balancer';
+    return 'virtual-machine';
   }
 };
 
@@ -118,7 +135,12 @@ export const generateYaml = (
         {
           id: `${provider}-production`,
           provider: provider,
-          region: provider === 'aws' ? 'us-east-1' : 'us-central1',
+          region:
+            provider === 'aws'
+              ? 'us-east-1'
+              : provider === 'gcp'
+                ? 'us-central1'
+                : 'eastus',
           services: [],
         },
       ],
@@ -264,7 +286,12 @@ const Flow = ({ onBack, provider }: EditorProps) => {
             ...params,
             animated: true,
             style: {
-              stroke: provider === 'aws' ? '#ec7211' : '#4285F4',
+              stroke:
+                provider === 'aws'
+                  ? '#ec7211'
+                  : provider === 'gcp'
+                    ? '#4285F4'
+                    : '#0078D4',
               strokeWidth: 2,
             },
           },
@@ -516,7 +543,9 @@ const Flow = ({ onBack, provider }: EditorProps) => {
           className={`${
             provider === 'aws'
               ? 'bg-[#ec7211] hover:bg-[#d6650d]'
-              : 'bg-[#4285F4] hover:bg-[#3367d6]'
+              : provider === 'gcp'
+                ? 'bg-[#4285F4] hover:bg-[#3367d6]'
+                : 'bg-[#0078D4] hover:bg-[#005a9e]'
           } text-white p-2 rounded-lg shadow-lg flex items-center gap-2 text-sm font-bold transition-colors disabled:opacity-70 disabled:cursor-not-allowed`}
         >
           {generating ? (
@@ -558,7 +587,13 @@ const Flow = ({ onBack, provider }: EditorProps) => {
         <Controls className="bg-[#252526] border-[#333] fill-gray-400 text-gray-400" />
         <MiniMap
           className="bg-[#252526] border-[#333]"
-          nodeColor={provider === 'aws' ? '#ec7211' : '#4285F4'}
+          nodeColor={
+            provider === 'aws'
+              ? '#ec7211'
+              : provider === 'gcp'
+                ? '#4285F4'
+                : '#0078D4'
+          }
           maskColor="rgba(0,0,0,0.6)"
         />
         <Background

@@ -225,6 +225,7 @@ async function updatePreview(
       'diagram.layoutEngine',
       'elk'
     );
+    const skipOptimizer = !config.get<boolean>('diagram.optimize', true);
 
     // Run generation with cwd set to monorepo root so icon paths resolve correctly
     const result = await withMonorepoCwd(() =>
@@ -233,7 +234,8 @@ async function updatePreview(
         layoutEngine,
         false, // validate
         undefined, // costData
-        'monthly' // period
+        'monthly', // period
+        skipOptimizer
       )
     );
 
@@ -242,7 +244,8 @@ async function updatePreview(
       panel.webview.html = wrapSvgInHtml(
         result.svg,
         result.logs,
-        result.duration
+        result.duration,
+        result.optimizationResult
       );
     }
   } catch (e: unknown) {
@@ -257,11 +260,68 @@ async function updatePreview(
 export function wrapSvgInHtml(
   svg: string,
   logs: string[],
-  durationMs: number
+  durationMs: number,
+  optimizationResult?: import('@mindfiredigital/adac-optimizer').OptimizationResult
 ): string {
   const logsHtml = logs
     .map((l) => `<div class="log-line">${escapeHtml(l)}</div>`)
     .join('\n');
+
+  // ── Optimizer panel ────────────────────────────────────────────────────────
+  let optimizerHtml = '';
+  if (optimizationResult && optimizationResult.summary.total > 0) {
+    const s = optimizationResult.summary;
+    const SEVERITY_COLOR: Record<string, string> = {
+      critical: '#f14c4c',
+      high: '#e8a838',
+      medium: '#cca700',
+      low: '#3794ff',
+      info: '#858585',
+    };
+    const SEVERITY_ICON: Record<string, string> = {
+      critical: '🔴',
+      high: '🟠',
+      medium: '🟡',
+      low: '🔵',
+      info: '⚪',
+    };
+
+    const recItems = optimizationResult.recommendations
+      .map((rec) => {
+        const color = SEVERITY_COLOR[rec.severity] ?? '#858585';
+        const icon = SEVERITY_ICON[rec.severity] ?? '•';
+        const actions = rec.actionItems
+          .map((a) => `<li>${escapeHtml(a)}</li>`)
+          .join('');
+        return `
+        <details class="rec-item">
+          <summary style="color:${color}">
+            ${icon} <strong>[${escapeHtml(rec.severity.toUpperCase())}]</strong>
+            ${escapeHtml(rec.category)} — ${escapeHtml(rec.title)}
+            <span class="rec-resources">(${rec.affectedResources.map(escapeHtml).join(', ')})</span>
+          </summary>
+          <p class="rec-desc">${escapeHtml(rec.description)}</p>
+          <ul class="rec-actions">${actions}</ul>
+          ${rec.referenceUrl ? `<a class="rec-link" href="${escapeHtml(rec.referenceUrl)}" target="_blank">📖 Learn more</a>` : ''}
+        </details>`;
+      })
+      .join('');
+
+    optimizerHtml = `
+    <details class="opt-panel" id="optimizer-panel">
+      <summary class="opt-summary">
+        🔍 Optimizer — ${s.total} recommendation(s)
+        ${s.critical > 0 ? `<span class="badge badge-critical">${s.critical} critical</span>` : ''}
+        ${s.high > 0 ? `<span class="badge badge-high">${s.high} high</span>` : ''}
+        ${s.medium > 0 ? `<span class="badge badge-medium">${s.medium} medium</span>` : ''}
+        ${s.low + s.info > 0 ? `<span class="badge badge-low">${s.low + s.info} low/info</span>` : ''}
+      </summary>
+      <div class="rec-list">${recItems}</div>
+    </details>`;
+  } else if (optimizationResult) {
+    optimizerHtml = `<div class="opt-clean">✅ Optimizer: No recommendations — architecture looks good!</div>`;
+  }
+  // ──────────────────────────────────────────────────────────────────────────
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -305,10 +365,10 @@ export function wrapSvgInHtml(
       background: var(--vscode-badge-background, #007acc);
       color: var(--vscode-badge-foreground, #fff);
     }
-    .badge-engine {
-      background: var(--vscode-textLink-foreground, #007acc)22;
-      color: var(--vscode-textLink-foreground, #007acc);
-    }
+    .badge-critical { background: #f14c4c22; color: #f14c4c; }
+    .badge-high     { background: #e8a83822; color: #e8a838; }
+    .badge-medium   { background: #cca70022; color: #cca700; }
+    .badge-low      { background: #3794ff22; color: #3794ff; }
     .btn {
       padding: 3px 10px;
       border: 1px solid var(--vscode-button-border, #ccc);
@@ -318,9 +378,7 @@ export function wrapSvgInHtml(
       font-size: 11px;
       cursor: pointer;
     }
-    .btn:hover {
-      background: var(--vscode-button-secondaryHoverBackground, #ddd);
-    }
+    .btn:hover { background: var(--vscode-button-secondaryHoverBackground, #ddd); }
     .diagram-container {
       padding: 8px;
       overflow: auto;
@@ -330,6 +388,52 @@ export function wrapSvgInHtml(
       height: auto;
       max-width: 100%;
     }
+    /* ── Optimizer panel ────────────────────────────────────────── */
+    .opt-panel {
+      border-top: 2px solid var(--vscode-panel-border, #ddd);
+      font-size: 12px;
+    }
+    .opt-summary {
+      cursor: pointer;
+      padding: 8px 16px;
+      background: var(--vscode-editorWidget-background, #f3f3f3);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      user-select: none;
+      list-style: none;
+      font-weight: 600;
+    }
+    .opt-summary::marker, .opt-summary::-webkit-details-marker { display: none; }
+    .opt-clean {
+      padding: 8px 16px;
+      font-size: 12px;
+      color: #4caf50;
+      border-top: 1px solid var(--vscode-panel-border, #ddd);
+    }
+    .rec-list { padding: 8px 16px 12px; display: flex; flex-direction: column; gap: 6px; }
+    .rec-item {
+      border: 1px solid var(--vscode-panel-border, #ddd);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .rec-item > summary {
+      padding: 6px 10px;
+      cursor: pointer;
+      background: var(--vscode-editorHoverWidget-background, #f9f9f9);
+      font-size: 12px;
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+      list-style: none;
+    }
+    .rec-item > summary::-webkit-details-marker { display: none; }
+    .rec-resources { font-size: 11px; color: var(--vscode-descriptionForeground, #888); margin-left: auto; }
+    .rec-desc { padding: 6px 10px; font-size: 11px; color: var(--vscode-descriptionForeground, #666); }
+    .rec-actions { padding: 4px 10px 6px 24px; font-size: 11px; }
+    .rec-actions li { margin: 2px 0; }
+    .rec-link { display: inline-block; padding: 2px 10px 6px; font-size: 11px; color: var(--vscode-textLink-foreground, #007acc); }
+    /* ── Logs panel ─────────────────────────────────────────────── */
     .logs-panel {
       display: none;
       max-height: 200px;
@@ -362,6 +466,8 @@ export function wrapSvgInHtml(
   <div class="diagram-container" id="diagram">
     ${svg}
   </div>
+
+  ${optimizerHtml}
 
   <div class="logs-panel" id="logs-panel">
     ${logsHtml}

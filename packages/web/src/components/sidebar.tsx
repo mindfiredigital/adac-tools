@@ -21,7 +21,12 @@ export const Sidebar = ({ provider, setProvider }: SidebarProps) => {
   const [categories, setCategories] = useState<Category[]>([]);
 
   useEffect(() => {
-    const iconFile = provider === 'aws' ? '/icons.json' : '/gcp-icons.json';
+    const iconFile =
+      provider === 'aws'
+        ? '/icons.json'
+        : provider === 'gcp'
+          ? '/gcp-icons.json'
+          : '/azure-icons.json';
     fetch(iconFile)
       .then((res) => res.json())
       .then((data) => setCategories(data))
@@ -69,6 +74,16 @@ export const Sidebar = ({ provider, setProvider }: SidebarProps) => {
           >
             <Server size={14} /> GCP
           </button>
+          <button
+            onClick={() => setProvider('azure')}
+            className={`flex-1 flex items-center justify-center gap-2 py-1.5 rounded-md text-xs font-bold transition-all ${
+              provider === 'azure'
+                ? 'bg-[#0078D4] text-white shadow-lg'
+                : 'text-gray-400 hover:text-white hover:bg-[#333]'
+            }`}
+          >
+            <Cloud size={14} /> Azure
+          </button>
         </div>
 
         <p className="text-xs text-gray-500 mt-3 font-medium">
@@ -94,7 +109,9 @@ export const Sidebar = ({ provider, setProvider }: SidebarProps) => {
                     className={`aspect-square flex flex-col items-center justify-center p-1 bg-[#252526] rounded-lg hover:bg-[#2d2d2d] cursor-grab transition-all hover:scale-105 border border-[#333] ${
                       provider === 'aws'
                         ? 'hover:border-orange-500/50 hover:shadow-orange-500/10'
-                        : 'hover:border-blue-500/50 hover:shadow-blue-500/10'
+                        : provider === 'gcp'
+                          ? 'hover:border-blue-500/50 hover:shadow-blue-500/10'
+                          : 'hover:border-blue-400/50 hover:shadow-blue-400/10'
                     } hover:shadow-lg active:cursor-grabbing group/item`}
                     onDragStart={(event) =>
                       onDragStart(event, 'customNode', icon.path, label)

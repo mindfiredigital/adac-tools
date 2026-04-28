@@ -91,6 +91,16 @@ describe('CustomNode', () => {
     );
     // GCP color (blue)
     expect(container.firstChild).toHaveClass('border-blue-500');
+
+    rerender(
+      <CustomNode
+        {...(defaultProps as unknown as NodeProps)}
+        selected={true}
+        data={{ ...defaultProps.data, provider: 'azure' }}
+      />
+    );
+    // Azure color (blue)
+    expect(container.firstChild).toHaveClass('border-[#0078D4]');
   });
 
   it('shows cost badge when hasCost is true', () => {

@@ -34,7 +34,8 @@ runCLI({
     validate?: boolean,
     _costData?: Record<string, number>,
     period?: string,
-    pricingModel?: PricingModel
+    pricingModel?: PricingModel,
+    skipOptimizer?: boolean
   ) => {
     const adacConfig = parseAdac(input, { validate: false });
     const perServiceCosts = calculatePerServiceCosts(
@@ -48,7 +49,8 @@ runCLI({
       layoutOverride,
       validate,
       perServiceCosts,
-      period as CostPeriod
+      period as CostPeriod,
+      skipOptimizer ?? false
     );
   },
   calculateCostFromYaml: aggregateCostFromYaml,

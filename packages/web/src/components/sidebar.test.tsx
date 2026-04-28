@@ -34,6 +34,7 @@ describe('Sidebar', () => {
     expect(screen.getByText('ADAC Components')).toBeInTheDocument();
     expect(screen.getByText('AWS')).toBeInTheDocument();
     expect(screen.getByText('GCP')).toBeInTheDocument();
+    expect(screen.getByText('Azure')).toBeInTheDocument();
 
     await waitFor(() => {
       expect(screen.getByText('EC2')).toBeInTheDocument();
@@ -50,6 +51,10 @@ describe('Sidebar', () => {
     expect(setProvider).toHaveBeenCalledWith('gcp');
 
     rerender(<Sidebar provider="gcp" setProvider={setProvider} />);
+    fireEvent.click(screen.getByText('Azure'));
+    expect(setProvider).toHaveBeenCalledWith('azure');
+
+    rerender(<Sidebar provider="azure" setProvider={setProvider} />);
     fireEvent.click(screen.getByText('AWS'));
     expect(setProvider).toHaveBeenCalledWith('aws');
   });
