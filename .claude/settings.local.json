@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm build *)",
+      "Bash(pnpm test *)",
+      "Bash(pnpm --filter @mindfiredigital/adac-core build)"
+    ]
+  }
+}
