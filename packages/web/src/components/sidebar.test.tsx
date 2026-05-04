@@ -46,15 +46,18 @@ describe('Sidebar', () => {
     const { rerender } = render(
       <Sidebar provider="aws" setProvider={setProvider} />
     );
+    await waitFor(() => expect(screen.getByText('EC2')).toBeInTheDocument());
 
     fireEvent.click(screen.getByText('GCP'));
     expect(setProvider).toHaveBeenCalledWith('gcp');
 
     rerender(<Sidebar provider="gcp" setProvider={setProvider} />);
+    await waitFor(() => expect(screen.getByText('EC2')).toBeInTheDocument());
     fireEvent.click(screen.getByText('Azure'));
     expect(setProvider).toHaveBeenCalledWith('azure');
 
     rerender(<Sidebar provider="azure" setProvider={setProvider} />);
+    await waitFor(() => expect(screen.getByText('EC2')).toBeInTheDocument());
     fireEvent.click(screen.getByText('AWS'));
     expect(setProvider).toHaveBeenCalledWith('aws');
   });

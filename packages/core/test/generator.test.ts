@@ -232,8 +232,8 @@ describe('ADAC Core Renderer', () => {
       children: [
         {
           id: 'n1',
-          width: 50,
-          height: 50,
+          width: 120,
+          height: 100,
           x: 0,
           y: 0,
           labels: [{ text: '<&> "escape\'' }],
@@ -241,10 +241,10 @@ describe('ADAC Core Renderer', () => {
         },
         {
           id: 'n2',
-          width: 50,
-          height: 50,
-          x: 100,
-          y: 100,
+          width: 120,
+          height: 100,
+          x: 150,
+          y: 150,
           labels: [{ text: 'This is a very long text indeed' }],
           properties: { type: 'service' },
         },

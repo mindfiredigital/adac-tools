@@ -4,55 +4,74 @@ import fs from 'fs-extra';
 import { layoutDagre } from '@mindfiredigital/adac-layout-dagre';
 
 const CSS_STYLES = `
+  /* ── Modern Design System ─────────────────────────────────────────── */
+  :root {
+    --bg-white: #ffffff;
+    --text-main: #232f3e;
+    --text-muted: #545b64;
+    
+    /* AWS Colors */
+    --aws-orange: #ff9900;
+    --aws-blue: #232f3e;
+    --aws-purple: #8C4FFF;
+    --aws-green: #6cae6c;
+    --aws-light-blue: #007dbc;
+    
+    /* GCP Colors */
+    --gcp-blue: #4285F4;
+    --gcp-green: #34A853;
+    --gcp-red: #EA4335;
+    --gcp-yellow: #FBBC04;
+  }
+
+  svg {
+    font-variant-ligatures: none;
+    text-rendering: optimizeLegibility;
+    shape-rendering: geometricPrecision;
+  }
+
   /* ── AWS Styles ──────────────────────────────────────────────────── */
-  .aws-container { fill: none; stroke-width: 2px; }
-  .aws-root { fill: #ffffff; stroke: none; }
-  .aws-vpc { fill: #fcfcfc; stroke: #8C4FFF; stroke-dasharray: 5,5; }
-  .aws-az { fill: none; stroke: #545b64; stroke-dasharray: 5,5; stroke-width: 1.5px; }
-  .aws-subnet-public { fill: #e6f6e6; stroke: #6cae6c; } /* Light Green */
-  .aws-subnet-private { fill: #e6f2f8; stroke: #007dbc; } /* Light Blue */
-  .aws-vpc-rect { fill: #ffffff; stroke: #232f3e; stroke-width: 2px; }
-  .aws-compute-cluster { fill: #fff; stroke: #d86613; stroke-dasharray: 4,4; }
-  .aws-label { font-family: "Amazon Ember", sans-serif; font-size: 14px; fill: #232f3e; font-weight: bold;}
-  .aws-label-sm { font-family: "Amazon Ember", sans-serif; font-size: 12px; fill: #545b64; }
-  .aws-edge { stroke: #545b64; stroke-width: 2px; fill: none; }
+  .aws-container { fill: none; stroke-width: 1.5px; }
+  .aws-root { fill: #f8fafc; stroke: none; }
+  .aws-vpc { fill: #ffffff; stroke: var(--aws-purple); stroke-dasharray: 8,4; stroke-width: 2.5px; filter: url(#softShadow); }
+  .aws-az { fill: #f8fafc; fill-opacity: 0.5; stroke: #94a3b8; stroke-dasharray: 4,4; stroke-width: 1px; }
+  .aws-subnet-public { fill: #f0fdf4; stroke: #22c55e; stroke-dasharray: 4,2; } 
+  .aws-subnet-private { fill: #f0f9ff; stroke: #0ea5e9; stroke-dasharray: 4,2; }
+  .aws-compute-cluster { fill: #fff; stroke: var(--aws-orange); stroke-dasharray: 4,4; stroke-width: 1.5px; }
+  .aws-label { font-family: "Amazon Ember", "Inter", sans-serif; font-size: 14px; fill: var(--text-main); font-weight: 800; letter-spacing: -0.01em; }
+  .aws-label-sm { font-family: "Amazon Ember", "Inter", sans-serif; font-size: 12px; fill: var(--text-muted); font-weight: 600; }
+  .aws-edge { stroke: #64748b; stroke-width: 2px; fill: none; transition: stroke 0.3s; }
 
   /* ── GCP Styles ──────────────────────────────────────────────────── */
-  /* GCP uses the official Google Cloud brand palette:                  */
-  /*   Blue  #4285F4  Green #34A853  Red #EA4335  Yellow #FBBC04        */
-
-  /* GCP VPC Network — blue dashed border like gcloud diagrams */
   .gcp-vpc {
     fill: #f5f8ff;
-    stroke: #4285F4;
-    stroke-dasharray: 6, 4;
+    stroke: var(--gcp-blue);
+    stroke-dasharray: 8, 4;
     stroke-width: 2px;
+    filter: url(#softShadow);
   }
 
-  /* GCP Region — green border (regions are a key GCP concept) */
   .gcp-region {
     fill: #f6fdf8;
-    stroke: #34A853;
-    stroke-dasharray: 5, 3;
+    stroke: var(--gcp-green);
+    stroke-dasharray: 6, 3;
     stroke-width: 2px;
   }
 
-  /* GCP Zone — light blue solid border */
   .gcp-zone {
     fill: #f0f6ff;
-    stroke: #4285F4;
-    stroke-width: 1.5px;
-    stroke-dasharray: 3, 3;
+    stroke: var(--gcp-blue);
+    stroke-width: 1.2px;
+    stroke-dasharray: 4, 4;
+    fill-opacity: 0.5;
   }
 
-  /* GCP Subnetwork — a slightly deeper blue */
   .gcp-subnet {
     fill: #e8f0fe;
-    stroke: #4285F4;
+    stroke: var(--gcp-blue);
     stroke-width: 1.5px;
   }
 
-  /* GCP Compute Cluster (GKE, Cloud Run services) — orange dashed */
   .gcp-compute-cluster {
     fill: #fff8f0;
     stroke: #FF6D00;
@@ -60,21 +79,37 @@ const CSS_STYLES = `
     stroke-width: 1.5px;
   }
 
-  /* GCP text labels */
   .gcp-label {
-    font-family: "Google Sans", Roboto, Arial, sans-serif;
+    font-family: "Google Sans", "Product Sans", Roboto, sans-serif;
     font-size: 14px;
     fill: #202124;
     font-weight: 600;
+    letter-spacing: -0.01em;
   }
   .gcp-label-sm {
-    font-family: "Google Sans", Roboto, Arial, sans-serif;
+    font-family: "Google Sans", "Product Sans", Roboto, sans-serif;
     font-size: 12px;
     fill: #5f6368;
+    font-weight: 400;
   }
 
-  /* GCP edges — Google blue */
-  .gcp-edge { stroke: #4285F4; stroke-width: 2px; fill: none; }
+  .gcp-edge { stroke: var(--gcp-blue); stroke-width: 1.5px; fill: none; }
+
+  /* ── Service Node Styles ─────────────────────────────────────────── */
+  .service-node-bg {
+    fill: #ffffff;
+    stroke: #e2e8f0;
+    stroke-width: 1px;
+    filter: url(#nodeShadow);
+  }
+  
+  .compliance-ok {
+    filter: url(#glowGreen);
+  }
+  
+  .compliance-fail {
+    filter: url(#glowRed);
+  }
 `;
 
 export async function renderSvg(
@@ -97,7 +132,18 @@ export async function renderSvg(
   if (layoutEngine === 'dagre') {
     layout = await layoutDagre(graph);
   } else {
-    // ELK Layout
+    // ELK Layout with Architectural Rules
+    const layoutOptions = {
+      'elk.algorithm': 'layered',
+      'elk.direction': 'DOWN',
+      'elk.spacing.nodeNode': '60',
+      'elk.spacing.componentComponent': '80',
+      'elk.layered.spacing.nodeNodeLayered': '80',
+      'elk.padding': '[top=60,left=40,bottom=40,right=40]',
+      'org.eclipse.elk.hierarchyHandling': 'INCLUDE_CHILDREN',
+      ...(graph.layoutOptions || {}),
+    };
+    graph.layoutOptions = layoutOptions;
     layout = (await elk.layout(graph)) as ElkNode;
   }
 
@@ -221,6 +267,10 @@ export async function renderSvg(
 
   collectAndTransformEdges(layout);
 
+  const defaultEdgeClass = layout.properties?.cssClass?.includes('gcp')
+    ? 'gcp-edge'
+    : 'aws-edge';
+
   let edgesOutput = '';
   allEdges.forEach((edge) => {
     if (edge.sections) {
@@ -232,7 +282,7 @@ export async function renderSvg(
           });
         }
         d += ` L ${sec.endPoint.x} ${sec.endPoint.y}`;
-        edgesOutput += `<path d="${d}" class="aws-edge" marker-end="url(#arrow)" />`;
+        edgesOutput += `<path d="${d}" class="${defaultEdgeClass}" marker-end="url(#arrow)" />`;
       });
     }
   });
@@ -282,10 +332,11 @@ export async function renderSvg(
       x: number,
       y: number,
       cssClass: string,
-      maxWidth: number
+      maxWidth: number,
+      textAnchor: 'start' | 'middle' | 'end' = 'start'
     ) => {
       if (!text) return '';
-      const charWidth = 8;
+      const charWidth = 7.5;
       const maxChars = Math.floor(maxWidth / charWidth);
 
       let displayText = text;
@@ -293,12 +344,13 @@ export async function renderSvg(
         displayText = text.substring(0, maxChars).trim() + '...';
       }
 
-      return `<text x="${x}" y="${y}" class="${cssClass}">${escapeXml(displayText)}</text>`;
+      return `<text x="${x}" y="${y}" class="${cssClass}" text-anchor="${textAnchor}">${escapeXml(displayText)}</text>`;
     };
 
     output += `<g transform="translate(${nodeX}, ${nodeY})">`;
 
     let tooltipTitle = '';
+    let complianceClass = '';
     const nodeId = (props as { id?: string }).id || node.id || '';
 
     // Apply compliance tooltip to any node that appears in the map.
@@ -320,8 +372,10 @@ export async function renderSvg(
       if (entry) {
         if (entry.violations.length > 0) {
           tooltipTitle = `⚠ Compliance Violations (${entry.frameworks.join(', ')}): ${entry.violations.join(' | ')}`;
+          complianceClass = 'compliance-fail';
         } else {
           tooltipTitle = `✅ Compliant with: ${entry.frameworks.join(', ')}`;
+          complianceClass = 'compliance-ok';
         }
       }
     }
@@ -338,26 +392,19 @@ export async function renderSvg(
     if (props.type === 'container') {
       let rectClass = 'aws-container';
       if (props.cssClass) rectClass += ` ${props.cssClass}`;
+      if (complianceClass) rectClass += ` ${complianceClass}`;
 
-      output += `<rect width="${nodeW}" height="${nodeH}" class="${rectClass}" rx="4" ry="4" stroke-width="2" />`;
-      output += renderLabel(label, 10, 25, 'aws-label', nodeW - 40);
+      const labelClass = props.cssClass?.includes('gcp')
+        ? 'gcp-label'
+        : 'aws-label';
 
-      let shouldRenderIcon = true;
-      if (props.iconPath && node.children) {
-        const parentIcon = props.iconPath;
-        const hasChildWithSameIcon = node.children.some((child: ElkNode) => {
-          return (
-            child.properties?.iconPath &&
-            child.properties.iconPath === parentIcon
-          );
-        });
-        if (hasChildWithSameIcon) shouldRenderIcon = false;
-      }
+      output += `<rect width="${nodeW}" height="${nodeH}" class="${rectClass}" rx="12" ry="12" stroke-width="2" />`;
+      output += renderLabel(label, 12, 25, labelClass, nodeW - 40, 'start');
 
-      if (props.iconPath && shouldRenderIcon) {
+      if (props.iconPath) {
         const iconUri = getIconDataUri({ path: props.iconPath });
         if (iconUri) {
-          output += `<image href="${iconUri}" x="${nodeW - 28}" y="5" width="24" height="24" />`;
+          output += `<image href="${iconUri}" x="${nodeW - 32}" y="8" width="24" height="24" />`;
         }
       }
 
@@ -368,22 +415,31 @@ export async function renderSvg(
       }
     } else {
       const iconUri = getIconDataUri({ path: props.iconPath });
-      const iy = 10;
-      const textY = 75;
+      const iy = 12;
+      const textY = 78;
 
-      output += `<rect width="${nodeW}" height="${nodeH}" fill="white" stroke="none" />`;
+      let rectClass = 'service-node-bg';
+      if (complianceClass) rectClass += ` ${complianceClass}`;
+
+      output += `<rect width="${nodeW}" height="${nodeH}" class="${rectClass}" rx="8" ry="8" />`;
 
       if (iconUri) {
         const ix = (nodeW - 48) / 2;
+        // Background for icon to make it pop
+        output += `<rect x="${ix - 2}" y="${iy - 2}" width="52" height="52" rx="6" ry="6" fill="#f8fafc" />`;
         output += `<image href="${iconUri}" x="${ix}" y="${iy}" width="48" height="48" />`;
       } else {
-        output += `<rect width="${nodeW}" height="${nodeH}" fill="#eee" stroke="#ccc" />`;
+        output += `<rect width="${nodeW}" height="${nodeH}" fill="#f1f5f9" stroke="#cbd5e1" rx="8" ry="8" />`;
       }
+
+      const labelSmClass = layout.properties?.cssClass?.includes('gcp')
+        ? 'gcp-label-sm'
+        : 'aws-label-sm';
 
       const words = label.split(' ');
       let line1 = label;
       let line2 = '';
-      if (words.length > 2 || label.length > 16) {
+      if (words.length > 2 || label.length > 14) {
         const mid = Math.ceil(words.length / 2);
         if (words.length > 1) {
           line1 = words.slice(0, mid).join(' ');
@@ -391,9 +447,23 @@ export async function renderSvg(
         }
       }
 
-      output += `<text x="${nodeW / 2}" y="${textY}" text-anchor="middle" class="aws-label-sm">${escapeXml(line1)}</text>`;
+      output += renderLabel(
+        line1,
+        nodeW / 2,
+        textY,
+        labelSmClass,
+        nodeW - 10,
+        'middle'
+      );
       if (line2) {
-        output += `<text x="${nodeW / 2}" y="${textY + 12}" text-anchor="middle" class="aws-label-sm">${escapeXml(line2)}</text>`;
+        output += renderLabel(
+          line2,
+          nodeW / 2,
+          textY + 14,
+          labelSmClass,
+          nodeW - 10,
+          'middle'
+        );
       }
     }
 
@@ -406,10 +476,50 @@ export async function renderSvg(
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" style="width: 100%; height: auto; max-width: 100%; background-color: white;">
     <defs>
       <style>${CSS_STYLES}</style>
-      <marker id="arrow" viewBox="0 0 10 10" refX="10" refY="5"
-        markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-      <path d="M 0 0 L 10 5 L 0 10 z" fill="#545b64" />
-    </marker>
+      <filter id="softShadow" x="-20%" y="-20%" width="140%" height="140%">
+        <feGaussianBlur in="SourceAlpha" stdDeviation="3" />
+        <feOffset dx="1" dy="2" result="offsetblur" />
+        <feComponentTransfer>
+          <feFuncA type="linear" slope="0.2" />
+        </feComponentTransfer>
+        <feMerge>
+          <feMergeNode />
+          <feMergeNode in="SourceGraphic" />
+        </feMerge>
+      </filter>
+      <filter id="nodeShadow" x="-50%" y="-50%" width="200%" height="200%">
+        <feGaussianBlur in="SourceAlpha" stdDeviation="2" />
+        <feOffset dx="0" dy="1" result="offsetblur" />
+        <feComponentTransfer>
+          <feFuncA type="linear" slope="0.15" />
+        </feComponentTransfer>
+        <feMerge>
+          <feMergeNode />
+          <feMergeNode in="SourceGraphic" />
+        </feMerge>
+      </filter>
+      <filter id="glowGreen" x="-20%" y="-20%" width="140%" height="140%">
+        <feGaussianBlur stdDeviation="2.5" result="coloredBlur"/>
+        <feMerge>
+            <feMergeNode in="coloredBlur"/>
+            <feMergeNode in="SourceGraphic"/>
+        </feMerge>
+      </filter>
+      <filter id="glowRed" x="-20%" y="-20%" width="140%" height="140%">
+        <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+        <feMerge>
+            <feMergeNode in="coloredBlur"/>
+            <feMergeNode in="SourceGraphic"/>
+        </feMerge>
+      </filter>
+      <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5"
+        markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+        <path d="M 0 0 L 10 5 L 0 10 z" fill="#64748b" />
+      </marker>
+      <marker id="arrow-gcp" viewBox="0 0 10 10" refX="9" refY="5"
+        markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+        <path d="M 0 0 L 10 5 L 0 10 z" fill="#4285F4" />
+      </marker>
     </defs>
     ${svgContent}
   </svg>`;

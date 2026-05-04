@@ -41,6 +41,7 @@
     "@types/node": "^20.11.0",
     "@types/supertest": "^2.0.12",
     "supertest": "^6.3.3",
+    "ts-node": "^10.9.2",
     "vitest": "^4.0.18"
   },
   "repository": {
