@@ -82,6 +82,46 @@ infrastructure:
     expect(resultElk.svg).toContain('<svg');
     expect(resultDagre.svg).toContain('<svg');
   });
+
+  it('should preserve nested hierarchy with the custom layout engine', async () => {
+    const nestedYaml = `
+version: "0.1"
+metadata:
+  name: "Nested Arch"
+  created: "2023-11-01"
+infrastructure:
+  clouds:
+    - id: "aws-1"
+      provider: "aws"
+      region: "us-east-1"
+      services:
+        - id: "vpc-main"
+          service: "vpc"
+          name: "vpc-main"
+        - id: "public-subnet-a"
+          service: "subnet"
+          name: "public-subnet-a"
+          configuration:
+            vpc: "vpc-main"
+            public_access: true
+        - id: "alb"
+          service: "alb"
+          name: "alb"
+          configuration:
+            subnets: ["public-subnet-a"]
+connections:
+  - id: "edge-1"
+    from: "alb"
+    to: "public-subnet-a"
+    type: "route"
+`;
+
+    const resultCustom = await generateDiagramSvg(nestedYaml, 'custom');
+    expect(resultCustom.svg).toContain('<svg');
+    expect(resultCustom.svg).toContain('vpc-main');
+    expect(resultCustom.svg).toContain('public-subnet-a');
+    expect(resultCustom.svg).toContain('alb');
+  });
 });
 
 describe('ADAC Core Renderer', () => {

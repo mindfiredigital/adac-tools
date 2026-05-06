@@ -1,8 +1,6 @@
 import { Command } from 'commander';
 import path from 'path';
 import { exec } from 'child_process';
-import { writeFileSync } from 'fs';
-import { generateCloudFormationFromAdacFile } from '@mindfiredigital/adac-export-cloudformation';
 
 export type CostPeriod = 'hourly' | 'daily' | 'monthly' | 'yearly';
 export type PricingModel = 'on_demand' | 'reserved';
@@ -20,7 +18,7 @@ export type CLIOptions = {
   generateDiagram: (
     input: string,
     output: string,
-    layoutOverride?: 'elk' | 'dagre',
+    layoutOverride?: 'elk' | 'dagre' | 'custom',
     validate?: boolean,
     costData?: Record<string, number>,
     period?: CostPeriod,
@@ -34,11 +32,6 @@ export type CLIOptions = {
   generateTerraformFromYaml?: (
     input: string,
     outputDir?: string,
-    validate?: boolean
-  ) => Promise<void>;
-  generateCloudFormationFromYaml?: (
-    input: string,
-    outputPath?: string,
     validate?: boolean
   ) => Promise<void>;
   parseAdac: (input: string, options?: Record<string, unknown>) => unknown;
@@ -86,7 +79,7 @@ export function runCLI(options: CLIOptions) {
   program
     .command('diagram <file>')
     .description('Generate diagram from ADAC YAML file')
-    .option('-l, --layout <type>', 'Layout engine (elk or dagre)', 'elk')
+    .option('-l, --layout <type>', 'Layout engine (elk, dagre or custom)', 'elk')
     .option('-o, --output <path>', 'Output SVG file path')
     .option('--validate', 'Validate schema before generating')
     .option('--cost', 'Print cost breakdown and generate diagram')
@@ -124,7 +117,7 @@ export function runCLI(options: CLIOptions) {
           }
         }
 
-        const layout = opts.layout as 'elk' | 'dagre';
+        const layout = opts.layout as 'elk' | 'dagre' | 'custom';
 
         let outputPath: string = opts.output;
         if (!outputPath) {
@@ -259,41 +252,6 @@ export function runCLI(options: CLIOptions) {
       } catch (error: unknown) {
         const message = error instanceof Error ? error.message : String(error);
         console.error('Error generating Terraform:', message);
-        process.exit(1);
-      }
-    });
-
-  program
-    .command('cloudformation <file>')
-    .description('Generate CloudFormation YAML from ADAC YAML file')
-    .option('-o, --output <path>', 'Output YAML file path')
-    .option('--validate', 'Validate schema before generating')
-    .action(async (file, opts) => {
-      try {
-        const inputPath = path.resolve(process.cwd(), file);
-        const outputPath = opts.output
-          ? path.resolve(process.cwd(), opts.output)
-          : path.join(
-              path.dirname(inputPath),
-              `${path.parse(inputPath).name}.cfn.yaml`
-            );
-
-        if (opts.validate && options.parseAdac && options.validateAdacConfig) {
-          const config = options.parseAdac(inputPath, { validate: false });
-          const result = options.validateAdacConfig(config);
-          if (!result.valid) {
-            console.error(' Validation failed:');
-            result.errors?.forEach((err) => console.error(`  - ${err}`));
-            process.exit(1);
-          }
-        }
-
-        const result = generateCloudFormationFromAdacFile(inputPath);
-        writeFileSync(outputPath, result.templateYaml, 'utf8');
-        console.log(`CloudFormation YAML generated at ${outputPath}`);
-      } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        console.error('Error generating CloudFormation:', message);
         process.exit(1);
       }
     });

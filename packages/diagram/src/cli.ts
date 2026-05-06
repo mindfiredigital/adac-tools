@@ -10,7 +10,6 @@ import {
   calculatePerServiceCosts,
 } from '@mindfiredigital/adac-cost';
 import { generateTerraformFromAdacFile } from '@mindfiredigital/adac-export-terraform';
-import { generateCloudFormationFromAdacFile } from '@mindfiredigital/adac-export-cloudformation';
 import type { CostPeriod } from '@mindfiredigital/adac-cost';
 import path from 'path';
 import { mkdirSync, readFileSync, writeFileSync } from 'fs';
@@ -31,7 +30,7 @@ runCLI({
   generateDiagram: async (
     input: string,
     output: string,
-    layoutOverride?: 'elk' | 'dagre',
+    layoutOverride?: 'elk' | 'dagre' | 'custom',
     validate?: boolean,
     _costData?: Record<string, number>,
     period?: string,
@@ -75,23 +74,5 @@ runCLI({
   },
   parseAdac,
   validateAdacConfig,
-  generateCloudFormationFromYaml: async (
-    input: string,
-    outputPath?: string,
-    validate?: boolean
-  ) => {
-    const result = generateCloudFormationFromAdacFile(input, {
-      validate: validate ?? true,
-    });
-
-    const parsed = path.parse(input);
-    const targetPath =
-      outputPath ?? path.resolve(parsed.dir, `${parsed.name}.cfn.yaml`);
-
-    mkdirSync(path.dirname(targetPath), { recursive: true });
-    writeFileSync(targetPath, result.templateYaml);
-
-    console.log(`CloudFormation YAML written to ${targetPath}`);
-  },
   version,
 });

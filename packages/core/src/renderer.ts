@@ -101,6 +101,27 @@ export async function renderSvg(
     layout = (await elk.layout(graph)) as ElkNode;
   }
 
+  // Delegate rendering to the positioned-graph renderer
+  return renderSvgFromPositionedGraph(
+    layout,
+    complianceTooltipMap,
+    perServiceCosts,
+    period
+  );
+}
+
+/**
+ * Render an already-positioned ELK graph (no layout run) into SVG.
+ */
+export function renderSvgFromPositionedGraph(
+  layout: ElkNode,
+  complianceTooltipMap?: Record<
+    string,
+    { frameworks: string[]; violations: string[] }
+  >,
+  perServiceCosts?: Record<string, number>,
+  period: 'hourly' | 'daily' | 'monthly' | 'yearly' = 'monthly'
+): string {
   // --- Normalization Start ---
   const padding = 20;
   if (layout.children && layout.children.length > 0) {
@@ -109,7 +130,7 @@ export async function renderSvg(
     let maxX = -Infinity;
     let maxY = -Infinity;
 
-    layout.children.forEach((child: ElkNode) => {
+    layout.children!.forEach((child: ElkNode) => {
       const cx = child.x || 0;
       const cy = child.y || 0;
       const cw = child.width || 0;
@@ -124,7 +145,7 @@ export async function renderSvg(
       const shiftX = -minX + padding;
       const shiftY = -minY + padding;
 
-      layout.children.forEach((child: ElkNode) => {
+      layout.children!.forEach((child: ElkNode) => {
         if (child.x !== undefined) child.x += shiftX;
         if (child.y !== undefined) child.y += shiftY;
       });
@@ -301,8 +322,6 @@ export async function renderSvg(
     let tooltipTitle = '';
     const nodeId = (props as { id?: string }).id || node.id || '';
 
-    // Apply compliance tooltip to any node that appears in the map.
-    // Only skip pure layout containers (vpc, az, subnet) — they are never services.
     const isLayoutContainer =
       props.type === 'container' &&
       (props.cssClass === 'aws-vpc' ||

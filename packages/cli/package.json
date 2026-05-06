@@ -9,8 +9,7 @@
     "build": "tsup"
   },
   "dependencies": {
-    "commander": "^14.0.3",
-    "@mindfiredigital/adac-export-cloudformation": "workspace:*"
+    "commander": "^14.0.3"
   },
   "devDependencies": {
     "@mindfiredigital/adac-core": "workspace:*",
