@@ -17,7 +17,7 @@ export interface AdacApplication {
     group?: string;
     description?: string;
   };
-  ai_tags?: {
+  insight_tags?: {
     icon?: string;
     group?: string;
     description?: string;
@@ -46,7 +46,7 @@ export interface AdacService {
     group?: string;
     description?: string;
   };
-  ai_tags?: {
+  insight_tags?: {
     icon?: string;
     group?: string;
     description?: string;
@@ -88,7 +88,7 @@ export interface GcpService {
     group?: string;
     description?: string;
   };
-  ai_tags?: {
+  insight_tags?: {
     icon?: string;
     group?: string;
     description?: string;

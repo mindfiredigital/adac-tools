@@ -48,8 +48,9 @@ app.use(
     console.error(`[${new Date().toISOString()}] Unhandled error:`, err);
     console.error(`Request: ${req.method} ${req.path}`);
 
-    res.status(500).json({
-      error: 'Internal Server Error',
+    const status = 'status' in err ? (err as { status: number }).status : 500;
+    res.status(status).json({
+      error: status === 400 ? 'Bad Request' : 'Internal Server Error',
       message: process.env.NODE_ENV === 'development' ? err.message : undefined,
     });
   }

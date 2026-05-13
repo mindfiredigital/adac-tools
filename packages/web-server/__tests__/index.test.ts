@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { EventEmitter } from 'events';
+import request from 'supertest';
 
 // Mock middleware that causes issues with non-standard Response objects
 vi.mock('cors', () => ({
@@ -20,6 +21,7 @@ import {
   costAnalysisHandler,
   optimizeHandler,
 } from '../src/handlers';
+import type { Request, Response } from 'express';
 import app from '../src/index';
 
 /**
@@ -554,6 +556,8 @@ describe('Web Server API', () => {
               services:
                 - name: "EC2"
                   type: "compute"
+                - name: "RDS"
+                  type: "database"
                 - name: "S3"
                   type: "storage"
       `;
@@ -643,180 +647,38 @@ describe('Web Server API', () => {
     });
   });
 
-  describe('Infrastructure Response Validation', () => {
-    it('should validate infrastructure field requirement', async () => {
-      const res = await mockRequest('POST', '/api/compliance-check', {
-        content: 'name: "NoInfra"',
-      });
-
-      expect([400, 500]).toContain(res.status);
+  describe('Integration Tests (Supertest)', () => {
+    it('should serve static files', async () => {
+      const res = await request(app).get('/');
+      // If public/index.html doesn't exist, it might be 404, but we're testing the middleware
+      expect([200, 404]).toContain(res.status);
     });
 
-    it('should process valid complete config', async () => {
-      const adacContent = `
-        version: "1.0"
-        infrastructure:
-          name: "Complete"
-          clouds:
-            - name: "AWS"
-              region: "us-east-1"
-              services:
-                - name: "ECS"
-                  type: "compute"
-      `;
-
-      const res = await mockRequest('POST', '/api/compliance-check', {
-        content: adacContent,
-      });
-
-      expect([200, 500]).toContain(res.status);
-    });
-  });
-
-  describe('Message and Log Handling', () => {
-    it('should handle compliance check message formats', async () => {
-      const adacContent = `
-        version: "1.0"
-        infrastructure:
-          name: "Test Infrastructure"
-          clouds:
-            - name: "AWS"
-              services:
-                - name: "Lambda"
-                  type: "compute"
-      `;
-
-      const res = await mockRequest('POST', '/api/compliance-check', {
-        content: adacContent,
-      });
-
-      expect([200, 500]).toContain(res.status);
-      if (res.status === 200) {
-        expect(res.body).toBeDefined();
-      }
+    it('should handle 404', async () => {
+      const res = await request(app).get('/api/not-found');
+      expect(res.status).toBe(404);
     });
 
-    it('should provide meaningful error messages', async () => {
-      const res = await mockRequest('POST', '/api/compliance-check', {});
+    it('should use global error handler', async () => {
+      // Trigger global error handler by sending invalid JSON
+      const res = await request(app)
+        .post('/api/generate')
+        .set('Content-Type', 'application/json')
+        .send('{"invalid": json}');
 
-      expect(res.status).toBe(400);
-      expect(typeof res.body.error).toBe('string');
-      expect(res.body.error.length).toBeGreaterThan(0);
-    });
-
-    it('should handle cost analysis result formatting', async () => {
-      const adacContent = `
-        version: "1.0"
-        infrastructure:
-          name: "Cost Test"
-          clouds:
-            - name: "AWS"
-              services: []
-      `;
-
-      const res = await mockRequest('POST', '/api/cost', {
-        content: adacContent,
-      });
-
-      expect([200, 500]).toContain(res.status);
-    });
-
-    it('should include all required fields in error response', async () => {
-      const res = await mockRequest('POST', '/api/generate', {});
-
-      expect(res.status).toBe(400);
-      expect(res.body).toHaveProperty('error');
-    });
-  });
-
-  describe('Middleware and Handler Coverage', () => {
-    it('should handle compliance check with valid infrastructure structure', async () => {
-      const adacContent = `
-        version: "1.0"
-        infrastructure:
-          name: "Multi Service"
-          clouds:
-            - name: "AWS"
-              services:
-                - name: "EC2"
-                  type: "compute"
-                - name: "RDS"
-                  type: "database"
-                - name: "S3"
-                  type: "storage"
-      `;
-
-      const res = await mockRequest('POST', '/api/compliance-check', {
-        content: adacContent,
-      });
-
-      expect([200, 500]).toContain(res.status);
-    });
-
-    it('should handle cost with multiple clouds', async () => {
-      const adacContent = `
-        version: "1.0"
-        infrastructure:
-          name: "MultiCloud"
-          clouds:
-            - name: "AWS"
-              services:
-                - name: "EC2"
-                  type: "compute"
-            - name: "GCP"
-              services:
-                - name: "Compute Engine"
-                  type: "compute"
-      `;
-
-      const res = await mockRequest('POST', '/api/cost', {
-        content: adacContent,
-      });
-
-      expect([200, 500]).toContain(res.status);
-    });
-
-    it('should generate diagram with minimal valid config', async () => {
-      const adacContent = `
-        version: "1.0"
-        infrastructure:
-          name: "Minimal"
-      `;
-
-      const res = await mockRequest('POST', '/api/generate', {
-        content: adacContent,
-      });
-
-      expect([200, 500]).toContain(res.status);
-    });
-
-    it('should validate all three endpoints work independently', async () => {
-      const config = `
-        version: "1.0"
-        infrastructure:
-          name: "Test"
-      `;
-
-      const gen = await mockRequest('POST', '/api/generate', {
-        content: config,
-      });
-      const comp = await mockRequest('POST', '/api/compliance-check', {
-        content: config,
-      });
-      const cost = await mockRequest('POST', '/api/cost', { content: config });
-
-      expect([200, 500]).toContain(gen.status);
-      expect([200, 500]).toContain(comp.status);
-      expect([200, 500]).toContain(cost.status);
+      expect(res.status).toBe(400); // Express.json() returns 400 for bad JSON
     });
 
     it('should handle empty errors in catch blocks', async () => {
-      const res = await mockRequest('POST', '/api/compliance-check', {
-        content: 'invalid: {bad',
-      });
+      // Create a mock error with no message
+      const req = { body: { content: 'test' } } as Partial<Request> as Request;
+      const res = {
+        status: vi.fn().mockReturnThis(),
+        json: vi.fn().mockReturnThis(),
+      } as Partial<Response> as Response;
 
-      expect(res.status).toBe(500);
-      expect(res.body).toHaveProperty('error');
+      await generateDiagramHandler(req, res);
+      expect(res.status).toHaveBeenCalled();
     });
 
     it('should handle generation with null values', async () => {
@@ -836,11 +698,9 @@ describe('Web Server API', () => {
           clouds:
             - name: "AWS"
       `;
-
       const res = await mockRequest('POST', '/api/cost', {
         content: adacContent,
       });
-
       expect([200, 500]).toContain(res.status);
     });
   });

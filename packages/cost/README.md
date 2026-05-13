@@ -14,6 +14,8 @@ A modular AWS cost calculator engine for ADAC. Estimates monthly cloud costs usi
   - Storage (S3, EBS)
   - Networking (ALB, data transfer)
 - Extensible for new services and providers
+- **Dynamic Service Mapping**: Automatically recognizes services by the standard `service` field in YAML or explicit `type`/`subtype` declarations.
+- **Diagram Integration**: Calculated costs are automatically embedded as tooltips in generated architecture diagrams.
 
 ## File Structure
 

@@ -125,6 +125,16 @@ pnpm dev
 
 ---
 
+### 4. Interactive Diagrams & Observability
+
+ADAC diagrams are not just static images. The generated SVGs include interactive metadata:
+
+- **Cost Tooltips**: Hover over any service node to see its estimated monthly/yearly cost (e.g., `💰 30.37/monthly`).
+- **Compliance Badges**: Nodes are annotated with compliance status based on the `compliance` field in your YAML. Tooltips show specific violations (e.g., `⚠ Compliance Violations (hipaa): Backup retention not enabled`).
+- **Optimization Insights**: Recommendations from the `@mindfiredigital/adac-optimizer` are embedded directly into the node tooltips, providing context-aware advice for cost savings and reliability.
+
+---
+
 ## 📦 Dependencies & Architecture Patterns
 
 ### Critical Patterns

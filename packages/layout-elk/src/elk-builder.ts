@@ -527,8 +527,8 @@ export function buildElkGraph(adac: AdacConfig): ElkNode {
 
   const detectIconForApp = (app: AdacApplication) => {
     // 1. Prefer AI Inference
-    if (app.ai_tags?.icon) {
-      const p = getIconPath(app.ai_tags.icon);
+    if (app.insight_tags?.icon) {
+      const p = getIconPath(app.insight_tags.icon);
       if (p) return p;
     }
 
@@ -596,7 +596,7 @@ export function buildElkGraph(adac: AdacConfig): ElkNode {
   // 1.5 Create Nodes for Logical Groups
   const logicalGroups = new Set<string>();
   const collectGroup = (obj: AdacApplication | AdacService) => {
-    if (obj.ai_tags?.group) logicalGroups.add(obj.ai_tags.group);
+    if (obj.insight_tags?.group) logicalGroups.add(obj.insight_tags.group);
   };
 
   (adac.applications || []).forEach(collectGroup);
@@ -727,10 +727,10 @@ export function buildElkGraph(adac: AdacConfig): ElkNode {
       let iconPath = gcpCloud
         ? getGcpIconPath(typeKey)
         : getAwsIconPath(typeKey);
-      if (service.ai_tags?.icon) {
+      if (service.insight_tags?.icon) {
         const aiIcon = gcpCloud
-          ? getGcpIconPath(service.ai_tags.icon)
-          : getAwsIconPath(service.ai_tags.icon);
+          ? getGcpIconPath(service.insight_tags.icon)
+          : getAwsIconPath(service.insight_tags.icon);
         if (aiIcon) iconPath = aiIcon;
       }
       // Fallback: try generic icon
@@ -772,7 +772,7 @@ export function buildElkGraph(adac: AdacConfig): ElkNode {
   // Helper to place item in logical group if no infra parent
   const tryPlaceInLogicalGroup = (
     node: ElkNode,
-    aiTags: AdacApplication['ai_tags']
+    aiTags: AdacApplication['insight_tags']
   ) => {
     if (aiTags?.group) {
       const groupId = `group-${aiTags.group.replace(/\s+/g, '-')}`;
@@ -789,7 +789,7 @@ export function buildElkGraph(adac: AdacConfig): ElkNode {
 
   // Note: apps are placed by the service pass (via `runs`) or by the orphan
   // sweep further down — there's intentionally no standalone app placement
-  // pass here, so a service's `runs:` claim always wins over `ai_tags.group`.
+  // pass here, so a service's `runs:` claim always wins over `insight_tags.group`.
 
   // Process Services to assign Logic Parents
   (adac.infrastructure?.clouds || []).forEach((cloud: AdacCloud) => {
@@ -881,7 +881,7 @@ export function buildElkGraph(adac: AdacConfig): ElkNode {
 
       // If NOT placed in infra, try Logical Group
       if (!placedNodeIds.has(service.id)) {
-        tryPlaceInLogicalGroup(node, service.ai_tags);
+        tryPlaceInLogicalGroup(node, service.insight_tags);
       }
     });
   });
@@ -924,7 +924,12 @@ export function buildElkGraph(adac: AdacConfig): ElkNode {
     (cloud.services || []).forEach((service: AdacService) => {
       if (!placedNodeIds.has(service.id)) {
         // Try logical group first
-        if (tryPlaceInLogicalGroup(nodesMap.get(service.id)!, service.ai_tags))
+        if (
+          tryPlaceInLogicalGroup(
+            nodesMap.get(service.id)!,
+            service.insight_tags
+          )
+        )
           return;
 
         // Else, place in Utility Group if it looks like a backend service
@@ -950,7 +955,8 @@ export function buildElkGraph(adac: AdacConfig): ElkNode {
   // Scan Apps for Orphans
   (adac.applications || []).forEach((app: AdacApplication) => {
     if (!placedNodeIds.has(app.id)) {
-      if (tryPlaceInLogicalGroup(nodesMap.get(app.id)!, app.ai_tags)) return;
+      if (tryPlaceInLogicalGroup(nodesMap.get(app.id)!, app.insight_tags))
+        return;
 
       // Place in Utility? Or just root?
       const type = (app.type || '').toLowerCase();

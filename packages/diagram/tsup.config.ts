@@ -8,15 +8,19 @@ export default defineConfig({
   splitting: false,
   sourcemap: true,
   minify: false,
-  // Bundle internal workspace packages
+  // Bundle internal workspace packages and all key dependencies
   noExternal: [
     '@mindfiredigital/adac-core',
     '@mindfiredigital/adac-cli',
     '@mindfiredigital/adac-cost',
     '@mindfiredigital/adac-export-terraform',
+    'elkjs',
+    'fs-extra',
+    'axios',
+    'adm-zip',
+    'js-yaml',
   ],
-  // Keep these as external dependencies
-  external: ['elkjs', 'fs-extra'],
+  external: ['web-worker'],
   // Fix for __dirname in bundled code
   shims: true,
   async onSuccess() {

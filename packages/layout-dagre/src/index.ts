@@ -311,6 +311,7 @@ export async function layoutDagre(root: ElkNode): Promise<ElkNode> {
 
         edge.sections = [
           {
+            id: `${edge.id}-section`,
             startPoint: points[0],
             endPoint: points[points.length - 1],
             bendPoints: points.slice(1, points.length - 1),

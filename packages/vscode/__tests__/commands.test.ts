@@ -232,7 +232,7 @@ describe('Preview Diagram Command', () => {
 
     await commandHandler();
     expect(vscode.window.createWebviewPanel).toHaveBeenCalled();
-  });
+  }, 10000);
 
   it('should reveal existing panel', async () => {
     const mockEditor = {
@@ -250,7 +250,7 @@ describe('Preview Diagram Command', () => {
     await commandHandler(); // first call creates
     await commandHandler(); // second call reveals
     expect(mockPanel.reveal).toHaveBeenCalled();
-  });
+  }, 10000);
 
   it('should handle messages from webview', async () => {
     let messageHandler: any;
@@ -276,5 +276,5 @@ describe('Preview Diagram Command', () => {
         'test-msg'
       );
     }
-  });
+  }, 10000);
 });

@@ -43,6 +43,10 @@ azure-vmware-solution:
   name: "Azure VMware Solution"
   category: "Compute"
   color: "#0078D4"
+cloud-services:
+  name: "Cloud Services"
+  category: "Compute"
+  color: "#0078D4"
 
 # Databases
 azure-sql-database:

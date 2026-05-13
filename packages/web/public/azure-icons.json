@@ -3,41 +3,132 @@
     "category": "Compute",
     "icons": [
       {
-        "name": "Virtual Machine",
+        "name": "Virtual Machines",
         "path": "/assets/azure-icons/10021-icon-service-Virtual-Machine.svg"
       },
+      {
+        "name": "Azure Functions",
+        "path": "/assets/azure-icons/azure_functions.svg"
+      },
+      {
+        "name": "Azure Batch",
+        "path": "/assets/azure-icons/azure_batch.svg"
+      },
+      {
+        "name": "Azure Spring Apps",
+        "path": "/assets/azure-icons/10370-icon-service-Azure-Spring-Apps.svg"
+      },
+      {
+        "name": "Virtual Machine Scale Sets",
+        "path": "/assets/azure-icons/virtual_machine_scale_sets.svg"
+      },
+      {
+        "name": "Azure VMware Solution",
+        "path": "/assets/azure-icons/01219-icon-service-Azure-VMware-Solution.svg"
+      }
+    ]
+  },
+  {
+    "category": "Web",
+    "icons": [
       {
         "name": "App Service",
         "path": "/assets/azure-icons/00046-icon-service-App-Service-Plans.svg"
       },
       {
-        "name": "Function App",
-        "path": "/assets/azure-icons/10029-icon-service-Function-Apps.svg"
+        "name": "Azure SignalR Service",
+        "path": "/assets/azure-icons/azure_signalr_service.svg"
       },
       {
-        "name": "Kubernetes Service",
-        "path": "/assets/azure-icons/10023-icon-service-Kubernetes-Services.svg"
+        "name": "Azure Static Web Apps",
+        "path": "/assets/azure-icons/azure_static_web_apps.svg"
       }
     ]
   },
   {
-    "category": "Storage & Database",
+    "category": "Containers",
     "icons": [
       {
-        "name": "Storage Account",
-        "path": "/assets/azure-icons/10086-icon-service-Storage-Accounts.svg"
+        "name": "Container Instances",
+        "path": "/assets/azure-icons/10104-icon-service-Container-Instances.svg"
       },
       {
-        "name": "SQL Database",
-        "path": "/assets/azure-icons/10130-icon-service-SQL-Database.svg"
+        "name": "Azure Kubernetes Service",
+        "path": "/assets/azure-icons/azure_kubernetes_service.svg"
       },
       {
-        "name": "Cosmos DB",
+        "name": "Azure Container Registry",
+        "path": "/assets/azure-icons/azure_container_registry.svg"
+      }
+    ]
+  },
+  {
+    "category": "Databases",
+    "icons": [
+      {
+        "name": "Azure SQL Database",
+        "path": "/assets/azure-icons/azure_sql_database.svg"
+      },
+      {
+        "name": "Azure Cosmos DB",
         "path": "/assets/azure-icons/10121-icon-service-Azure-Cosmos-DB.svg"
       },
       {
-        "name": "Blob Storage",
-        "path": "/assets/azure-icons/10780-icon-service-Blob-Block.svg"
+        "name": "Azure Database for MySQL",
+        "path": "/assets/azure-icons/azure_database_for_mysql.svg"
+      },
+      {
+        "name": "Azure Database for PostgreSQL",
+        "path": "/assets/azure-icons/azure_database_for_postgresql.svg"
+      },
+      {
+        "name": "Azure Cache for Redis",
+        "path": "/assets/azure-icons/azure_cache_for_redis.svg"
+      },
+      {
+        "name": "Azure SQL Managed Instance",
+        "path": "/assets/azure-icons/azure_sql_managed_instance.svg"
+      },
+      {
+        "name": "Azure Database for MariaDB",
+        "path": "/assets/azure-icons/azure_database_for_mariadb.svg"
+      },
+      {
+        "name": "Azure Table Storage",
+        "path": "/assets/azure-icons/azure_table_storage.svg"
+      }
+    ]
+  },
+  {
+    "category": "Storage",
+    "icons": [
+      {
+        "name": "Azure Blob Storage",
+        "path": "/assets/azure-icons/azure_blob_storage.svg"
+      },
+      {
+        "name": "Azure Files",
+        "path": "/assets/azure-icons/10400-icon-service-Azure-Fileshares.svg"
+      },
+      {
+        "name": "Azure Data Lake Storage",
+        "path": "/assets/azure-icons/azure_data_lake_storage.svg"
+      },
+      {
+        "name": "Azure Managed Disks",
+        "path": "/assets/azure-icons/azure_managed_disks.svg"
+      },
+      {
+        "name": "Azure Queue Storage",
+        "path": "/assets/azure-icons/azure_queue_storage.svg"
+      },
+      {
+        "name": "Azure Storage Account",
+        "path": "/assets/azure-icons/azure_storage_account.svg"
+      },
+      {
+        "name": "Azure NetApp Files",
+        "path": "/assets/azure-icons/10096-icon-service-Azure-NetApp-Files.svg"
       }
     ]
   },
@@ -49,25 +140,280 @@
         "path": "/assets/azure-icons/10061-icon-service-Virtual-Networks.svg"
       },
       {
-        "name": "Load Balancer",
-        "path": "/assets/azure-icons/10062-icon-service-Load-Balancers.svg"
+        "name": "Azure Load Balancer",
+        "path": "/assets/azure-icons/azure_load_balancer.svg"
       },
       {
         "name": "Application Gateway",
         "path": "/assets/azure-icons/10076-icon-service-Application-Gateways.svg"
+      },
+      {
+        "name": "Azure DNS",
+        "path": "/assets/azure-icons/azure_dns.svg"
+      },
+      {
+        "name": "Azure CDN",
+        "path": "/assets/azure-icons/azure_cdn.svg"
+      },
+      {
+        "name": "Azure Front Door",
+        "path": "/assets/azure-icons/azure_front_door.svg"
+      },
+      {
+        "name": "Azure Firewall",
+        "path": "/assets/azure-icons/00271-icon-service-Azure-Firewall-Manager.svg"
+      },
+      {
+        "name": "VPN Gateway",
+        "path": "/assets/azure-icons/vpn_gateway.svg"
+      },
+      {
+        "name": "Azure ExpressRoute",
+        "path": "/assets/azure-icons/azure_expressroute.svg"
+      },
+      {
+        "name": "Azure Bastion",
+        "path": "/assets/azure-icons/azure_bastion.svg"
+      },
+      {
+        "name": "Azure DDoS Protection",
+        "path": "/assets/azure-icons/azure_ddos_protection.svg"
+      },
+      {
+        "name": "Network Security Group",
+        "path": "/assets/azure-icons/10067-icon-service-Network-Security-Groups.svg"
+      },
+      {
+        "name": "Azure Private Link",
+        "path": "/assets/azure-icons/azure_private_link.svg"
+      },
+      {
+        "name": "Traffic Manager",
+        "path": "/assets/azure-icons/10065-icon-service-Traffic-Manager-Profiles.svg"
+      },
+      {
+        "name": "Subnet",
+        "path": "/assets/azure-icons/02742-icon-service-Subnet.svg"
       }
     ]
   },
   {
-    "category": "AI & ML",
+    "category": "Integration",
     "icons": [
       {
-        "name": "Cognitive Services",
-        "path": "/assets/azure-icons/10162-icon-service-Cognitive-Services.svg"
+        "name": "Azure Service Bus",
+        "path": "/assets/azure-icons/10836-icon-service-Azure-Service-Bus.svg"
       },
       {
-        "name": "Machine Learning",
-        "path": "/assets/azure-icons/10166-icon-service-Machine-Learning.svg"
+        "name": "Azure Event Grid",
+        "path": "/assets/azure-icons/azure_event_grid.svg"
+      },
+      {
+        "name": "Azure Event Hubs",
+        "path": "/assets/azure-icons/azure_event_hubs.svg"
+      },
+      {
+        "name": "Azure Logic Apps",
+        "path": "/assets/azure-icons/azure_logic_apps.svg"
+      },
+      {
+        "name": "Azure API Management",
+        "path": "/assets/azure-icons/azure_api_management.svg"
+      }
+    ]
+  },
+  {
+    "category": "Analytics",
+    "icons": [
+      {
+        "name": "Azure Synapse Analytics",
+        "path": "/assets/azure-icons/00606-icon-service-Azure-Synapse-Analytics.svg"
+      },
+      {
+        "name": "Azure Databricks",
+        "path": "/assets/azure-icons/10787-icon-service-Azure-Databricks.svg"
+      },
+      {
+        "name": "Azure Data Factory",
+        "path": "/assets/azure-icons/azure_data_factory.svg"
+      },
+      {
+        "name": "Azure Stream Analytics",
+        "path": "/assets/azure-icons/azure_stream_analytics.svg"
+      },
+      {
+        "name": "Azure Data Explorer",
+        "path": "/assets/azure-icons/10145-icon-service-Azure-Data-Explorer-Clusters.svg"
+      },
+      {
+        "name": "Azure HDInsight",
+        "path": "/assets/azure-icons/azure_hdinsight.svg"
+      },
+      {
+        "name": "Azure Analysis Services",
+        "path": "/assets/azure-icons/azure_analysis_services.svg"
+      },
+      {
+        "name": "Power BI",
+        "path": "/assets/azure-icons/03332-icon-service-Power-BI-Embedded.svg"
+      },
+      {
+        "name": "Azure Purview",
+        "path": "/assets/azure-icons/02517-icon-service-Azure-Purview-Accounts.svg"
+      }
+    ]
+  },
+  {
+    "category": "AI + Machine Learning",
+    "icons": [
+      {
+        "name": "Azure Machine Learning",
+        "path": "/assets/azure-icons/azure_machine_learning.svg"
+      },
+      {
+        "name": "Azure Cognitive Services",
+        "path": "/assets/azure-icons/azure_cognitive_services.svg"
+      },
+      {
+        "name": "Azure OpenAI Service",
+        "path": "/assets/azure-icons/azure_openai_service.svg"
+      },
+      {
+        "name": "Azure Bot Service",
+        "path": "/assets/azure-icons/azure_bot_service.svg"
+      },
+      {
+        "name": "Azure AI Search",
+        "path": "/assets/azure-icons/azure_ai_search.svg"
+      },
+      {
+        "name": "Azure AI Studio",
+        "path": "/assets/azure-icons/azure_ai_studio.svg"
+      }
+    ]
+  },
+  {
+    "category": "Identity",
+    "icons": [
+      {
+        "name": "Azure Active Directory",
+        "path": "/assets/azure-icons/10221-icon-service-Azure-Active-Directory.svg"
+      },
+      {
+        "name": "Microsoft Entra ID",
+        "path": "/assets/azure-icons/microsoft_entra_id.svg"
+      }
+    ]
+  },
+  {
+    "category": "Security",
+    "icons": [
+      {
+        "name": "Azure Key Vault",
+        "path": "/assets/azure-icons/azure_key_vault.svg"
+      },
+      {
+        "name": "Microsoft Defender for Cloud",
+        "path": "/assets/azure-icons/10241-icon-service-Microsoft-Defender-for-Cloud.svg"
+      },
+      {
+        "name": "Microsoft Sentinel",
+        "path": "/assets/azure-icons/microsoft_sentinel.svg"
+      },
+      {
+        "name": "Azure Information Protection",
+        "path": "/assets/azure-icons/10229-icon-service-Azure-Information-Protection.svg"
+      }
+    ]
+  },
+  {
+    "category": "Management + Governance",
+    "icons": [
+      {
+        "name": "Azure Monitor",
+        "path": "/assets/azure-icons/00438-icon-service-Azure-Monitors-for-SAP-Solutions.svg"
+      },
+      {
+        "name": "Azure Log Analytics",
+        "path": "/assets/azure-icons/azure_log_analytics.svg"
+      },
+      {
+        "name": "Application Insights",
+        "path": "/assets/azure-icons/00012-icon-service-Application-Insights.svg"
+      },
+      {
+        "name": "Azure Policy",
+        "path": "/assets/azure-icons/azure_policy.svg"
+      },
+      {
+        "name": "Azure Resource Manager",
+        "path": "/assets/azure-icons/azure_resource_manager.svg"
+      },
+      {
+        "name": "Azure Automation",
+        "path": "/assets/azure-icons/azure_automation.svg"
+      },
+      {
+        "name": "Azure Advisor",
+        "path": "/assets/azure-icons/azure_advisor.svg"
+      },
+      {
+        "name": "Resource Group",
+        "path": "/assets/azure-icons/10007-icon-service-Resource-Groups.svg"
+      },
+      {
+        "name": "Region",
+        "path": "/assets/azure-icons/10116-icon-service-Region-Management.svg"
+      },
+      {
+        "name": "Subscription",
+        "path": "/assets/azure-icons/10002-icon-service-Subscriptions.svg"
+      },
+      {
+        "name": "Availability Zone",
+        "path": "/assets/azure-icons/availability_zone.svg"
+      }
+    ]
+  },
+  {
+    "category": "DevOps",
+    "icons": [
+      {
+        "name": "Azure DevOps",
+        "path": "/assets/azure-icons/10261-icon-service-Azure-DevOps.svg"
+      },
+      {
+        "name": "Azure Repos",
+        "path": "/assets/azure-icons/azure_repos.svg"
+      },
+      {
+        "name": "Azure Pipelines",
+        "path": "/assets/azure-icons/azure_pipelines.svg"
+      },
+      {
+        "name": "Azure Artifacts",
+        "path": "/assets/azure-icons/azure_artifacts.svg"
+      }
+    ]
+  },
+  {
+    "category": "Internet of Things",
+    "icons": [
+      {
+        "name": "Azure IoT Hub",
+        "path": "/assets/azure-icons/azure_iot_hub.svg"
+      },
+      {
+        "name": "Azure IoT Central",
+        "path": "/assets/azure-icons/azure_iot_central.svg"
+      },
+      {
+        "name": "Azure IoT Edge",
+        "path": "/assets/azure-icons/azure_iot_edge.svg"
+      },
+      {
+        "name": "Azure Digital Twins",
+        "path": "/assets/azure-icons/azure_digital_twins.svg"
       }
     ]
   }

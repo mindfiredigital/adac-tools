@@ -7,26 +7,48 @@
         "path": "/assets/gcp-icons/ComputeEngine-512-color-rgb.svg"
       },
       {
+        "name": "Batch",
+        "path": "/assets/gcp-icons/Compute-512-color.svg"
+      }
+    ]
+  },
+  {
+    "category": "Serverless Computing",
+    "icons": [
+      {
         "name": "Cloud Run",
         "path": "/assets/gcp-icons/CloudRun-512-color-rgb.svg"
       },
       {
-        "name": "GKE",
-        "path": "/assets/gcp-icons/GKE-512-color.svg"
+        "name": "Cloud Functions",
+        "path": "/assets/gcp-icons/ServerlessComputing-512-color.svg"
       },
       {
-        "name": "Cloud Functions",
+        "name": "App Engine",
+        "path": "/assets/gcp-icons/ServerlessComputing-512-color.svg"
+      },
+      {
+        "name": "Cloud Run Functions",
         "path": "/assets/gcp-icons/ServerlessComputing-512-color.svg"
       }
     ]
   },
   {
-    "category": "Storage & Database",
+    "category": "Containers",
     "icons": [
       {
-        "name": "Cloud Storage",
-        "path": "/assets/gcp-icons/Cloud_Storage-512-color.svg"
+        "name": "Kubernetes Engine",
+        "path": "/assets/gcp-icons/Containers-512-color.svg"
       },
+      {
+        "name": "Container Registry",
+        "path": "/assets/gcp-icons/Containers-512-color.svg"
+      }
+    ]
+  },
+  {
+    "category": "Databases",
+    "icons": [
       {
         "name": "Cloud SQL",
         "path": "/assets/gcp-icons/CloudSQL-512-color.svg"
@@ -36,8 +58,24 @@
         "path": "/assets/gcp-icons/CloudSpanner-512-color.svg"
       },
       {
-        "name": "BigQuery",
-        "path": "/assets/gcp-icons/BigQuery-512-color.svg"
+        "name": "Firestore",
+        "path": "/assets/gcp-icons/Databases-512-color.svg"
+      },
+      {
+        "name": "Bigtable",
+        "path": "/assets/gcp-icons/Databases-512-color.svg"
+      },
+      {
+        "name": "MongoDB Atlas",
+        "path": "/assets/gcp-icons/Databases-512-color.svg"
+      },
+      {
+        "name": "Datastore",
+        "path": "/assets/gcp-icons/Databases-512-color.svg"
+      },
+      {
+        "name": "Memorystore",
+        "path": "/assets/gcp-icons/Databases-512-color.svg"
       },
       {
         "name": "AlloyDB",
@@ -46,37 +84,284 @@
     ]
   },
   {
+    "category": "Migration",
+    "icons": [
+      {
+        "name": "Database Migration Service",
+        "path": "/assets/gcp-icons/Migration-512-color.svg"
+      }
+    ]
+  },
+  {
+    "category": "Storage",
+    "icons": [
+      {
+        "name": "Cloud Storage",
+        "path": "/assets/gcp-icons/Cloud_Storage-512-color.svg"
+      },
+      {
+        "name": "Persistent Disk",
+        "path": "/assets/gcp-icons/Storage-512-color.svg"
+      },
+      {
+        "name": "Filestore",
+        "path": "/assets/gcp-icons/Storage-512-color.svg"
+      }
+    ]
+  },
+  {
     "category": "Networking",
     "icons": [
       {
-        "name": "VPC",
+        "name": "Virtual Private Cloud",
+        "path": "/assets/gcp-icons/Networking-512-color-rgb.svg"
+      },
+      {
+        "name": "Cloud Load Balancing",
+        "path": "/assets/gcp-icons/Networking-512-color-rgb.svg"
+      },
+      {
+        "name": "Cloud DNS",
+        "path": "/assets/gcp-icons/Networking-512-color-rgb.svg"
+      },
+      {
+        "name": "Cloud CDN",
+        "path": "/assets/gcp-icons/Networking-512-color-rgb.svg"
+      },
+      {
+        "name": "Cloud Armor",
+        "path": "/assets/gcp-icons/Networking-512-color-rgb.svg"
+      },
+      {
+        "name": "Cloud NAT",
+        "path": "/assets/gcp-icons/Networking-512-color-rgb.svg"
+      },
+      {
+        "name": "Cloud Interconnect",
+        "path": "/assets/gcp-icons/Networking-512-color-rgb.svg"
+      },
+      {
+        "name": "Cloud VPN",
+        "path": "/assets/gcp-icons/Networking-512-color-rgb.svg"
+      },
+      {
+        "name": "Traffic Director",
+        "path": "/assets/gcp-icons/Networking-512-color-rgb.svg"
+      },
+      {
+        "name": "Network Connectivity Center",
+        "path": "/assets/gcp-icons/Networking-512-color-rgb.svg"
+      },
+      {
+        "name": "Subnetwork",
         "path": "/assets/gcp-icons/Networking-512-color-rgb.svg"
       }
     ]
   },
   {
-    "category": "AI & ML",
+    "category": "Integration Services",
+    "icons": [
+      {
+        "name": "Pub/Sub",
+        "path": "/assets/gcp-icons/IntegrationServices-512-color.svg"
+      },
+      {
+        "name": "Eventarc",
+        "path": "/assets/gcp-icons/IntegrationServices-512-color.svg"
+      },
+      {
+        "name": "Cloud Tasks",
+        "path": "/assets/gcp-icons/IntegrationServices-512-color.svg"
+      }
+    ]
+  },
+  {
+    "category": "Management Tools",
+    "icons": [
+      {
+        "name": "Cloud Scheduler",
+        "path": "/assets/gcp-icons/ManagementTools-512-color.svg"
+      }
+    ]
+  },
+  {
+    "category": "Data Analytics",
+    "icons": [
+      {
+        "name": "BigQuery",
+        "path": "/assets/gcp-icons/BigQuery-512-color.svg"
+      },
+      {
+        "name": "Dataflow",
+        "path": "/assets/gcp-icons/DataAnalytics-512-color.svg"
+      },
+      {
+        "name": "Dataproc",
+        "path": "/assets/gcp-icons/DataAnalytics-512-color.svg"
+      },
+      {
+        "name": "Cloud Composer",
+        "path": "/assets/gcp-icons/DataAnalytics-512-color.svg"
+      },
+      {
+        "name": "Data Catalog",
+        "path": "/assets/gcp-icons/DataAnalytics-512-color.svg"
+      }
+    ]
+  },
+  {
+    "category": "Business Intelligence",
+    "icons": [
+      {
+        "name": "Looker",
+        "path": "/assets/gcp-icons/Looker-512-color.svg"
+      },
+      {
+        "name": "Looker Studio",
+        "path": "/assets/gcp-icons/BusinessIntelligence-512-color.svg"
+      }
+    ]
+  },
+  {
+    "category": "AI + Machine Learning",
     "icons": [
       {
         "name": "Vertex AI",
         "path": "/assets/gcp-icons/VertexAI-512-color.svg"
       },
       {
-        "name": "AI Machine Learning",
+        "name": "AI Platform",
+        "path": "/assets/gcp-icons/AIMachineLearning-512-color.svg"
+      },
+      {
+        "name": "Natural Language API",
+        "path": "/assets/gcp-icons/AIMachineLearning-512-color.svg"
+      },
+      {
+        "name": "Vision API",
+        "path": "/assets/gcp-icons/AIMachineLearning-512-color.svg"
+      },
+      {
+        "name": "Speech-to-Text",
+        "path": "/assets/gcp-icons/AIMachineLearning-512-color.svg"
+      },
+      {
+        "name": "Translation API",
+        "path": "/assets/gcp-icons/AIMachineLearning-512-color.svg"
+      },
+      {
+        "name": "Document AI",
+        "path": "/assets/gcp-icons/AIMachineLearning-512-color.svg"
+      },
+      {
+        "name": "Recommendations AI",
         "path": "/assets/gcp-icons/AIMachineLearning-512-color.svg"
       }
     ]
   },
   {
-    "category": "Tools",
+    "category": "Agents",
     "icons": [
       {
-        "name": "DevOps",
-        "path": "/assets/gcp-icons/DevOps-512-color.svg"
+        "name": "Dialogflow",
+        "path": "/assets/gcp-icons/Agents-512-color.svg"
+      }
+    ]
+  },
+  {
+    "category": "Security Identity",
+    "icons": [
+      {
+        "name": "Cloud IAM",
+        "path": "/assets/gcp-icons/SecurityIdentity-512-color.svg"
       },
+      {
+        "name": "Identity-Aware Proxy",
+        "path": "/assets/gcp-icons/SecurityIdentity-512-color.svg"
+      },
+      {
+        "name": "Cloud KMS",
+        "path": "/assets/gcp-icons/SecurityIdentity-512-color.svg"
+      },
+      {
+        "name": "Secret Manager",
+        "path": "/assets/gcp-icons/SecurityIdentity-512-color.svg"
+      },
+      {
+        "name": "Security Command Center",
+        "path": "/assets/gcp-icons/SecurityCommandCenter-512-color.svg"
+      },
+      {
+        "name": "Certificate Authority Service",
+        "path": "/assets/gcp-icons/SecurityIdentity-512-color.svg"
+      }
+    ]
+  },
+  {
+    "category": "Operations",
+    "icons": [
+      {
+        "name": "Cloud Monitoring",
+        "path": "/assets/gcp-icons/Operations-512-color.svg"
+      },
+      {
+        "name": "Cloud Logging",
+        "path": "/assets/gcp-icons/Operations-512-color.svg"
+      },
+      {
+        "name": "Cloud Trace",
+        "path": "/assets/gcp-icons/Operations-512-color.svg"
+      },
+      {
+        "name": "Cloud Profiler",
+        "path": "/assets/gcp-icons/Operations-512-color.svg"
+      },
+      {
+        "name": "Error Reporting",
+        "path": "/assets/gcp-icons/Operations-512-color.svg"
+      }
+    ]
+  },
+  {
+    "category": "DevOps",
+    "icons": [
       {
         "name": "Cloud Build",
         "path": "/assets/gcp-icons/DevOps-512-color.svg"
+      },
+      {
+        "name": "Cloud Deploy",
+        "path": "/assets/gcp-icons/DevOps-512-color.svg"
+      }
+    ]
+  },
+  {
+    "category": "Developer Tools",
+    "icons": [
+      {
+        "name": "Artifact Registry",
+        "path": "/assets/gcp-icons/Developer_Tools-512-color.svg"
+      },
+      {
+        "name": "Cloud Source Repositories",
+        "path": "/assets/gcp-icons/Developer_Tools-512-color.svg"
+      }
+    ]
+  },
+  {
+    "category": "Hybrid & Multicloud",
+    "icons": [
+      {
+        "name": "Region",
+        "path": "/assets/gcp-icons/HybridMulticloud-512-color.svg"
+      },
+      {
+        "name": "Zone",
+        "path": "/assets/gcp-icons/HybridMulticloud-512-color.svg"
+      },
+      {
+        "name": "Project",
+        "path": "/assets/gcp-icons/HybridMulticloud-512-color.svg"
       }
     ]
   }

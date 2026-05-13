@@ -1,58 +1,51 @@
-import type { AdacConfig } from '@mindfiredigital/adac-schema';
-import { aws3TierWeb } from './aws-3-tier.js';
-import { awsServerlessApi } from './aws-serverless.js';
-import { gcpMicroservices } from './gcp-microservices.js';
+export const templates = {
+  'aws-basic': `
+version: "1.0"
+provider: aws
+nodes:
+  - id: web-server
+    name: Web Server
+    type: AWS::EC2::Instance
+    properties:
+      instanceType: t3.medium
+  - id: database
+    name: User DB
+    type: AWS::RDS::DBInstance
+    properties:
+      engine: postgres
+edges:
+  - from: web-server
+    to: database
+    label: SQL Connection
+`,
+  'azure-basic': `
+version: "1.0"
+provider: azure
+nodes:
+  - id: app-service
+    name: App Service
+    type: Microsoft.Web/sites
+  - id: sql-server
+    name: SQL Database
+    type: Microsoft.Sql/servers
+edges:
+  - from: app-service
+    to: sql-server
+`,
+};
 
-export { aws3TierWeb, awsServerlessApi, gcpMicroservices };
+export type TemplateName = keyof typeof templates;
 
-export interface AdacTemplate {
-  id: string;
-  name: string;
-  description: string;
-  config: AdacConfig;
+export function getTemplate(name: TemplateName): string {
+  const tpl = templates[name];
+  if (!tpl) {
+    throw new Error(
+      `Unknown template: ${name}. Known: ${listTemplates().join(', ')}`
+    );
+  }
+  return tpl;
 }
 
-export const templates: AdacTemplate[] = [
-  {
-    id: 'aws-3-tier-web',
-    name: 'AWS 3-Tier Web Architecture',
-    description:
-      'A highly available, scalable 3-tier architecture on AWS using ALB, EC2, RDS, and ElastiCache.',
-    config: aws3TierWeb,
-  },
-  {
-    id: 'aws-serverless-api',
-    name: 'AWS Serverless API',
-    description:
-      'A completely serverless REST API using API Gateway, Lambda, DynamoDB, and S3.',
-    config: awsServerlessApi,
-  },
-  {
-    id: 'gcp-microservices',
-    name: 'GCP Microservices',
-    description:
-      'A containerized microservices architecture on GCP using GKE, Cloud SQL, and Pub/Sub.',
-    config: gcpMicroservices,
-  },
-];
-
-/**
- * Get all available architecture templates
- */
-export function getAllTemplates(): AdacTemplate[] {
-  return templates;
-}
-
-/**
- * Get a specific template by its ID
- */
-export function getTemplateById(id: string): AdacTemplate | undefined {
-  return templates.find((t) => t.id === id);
-}
-
-/**
- * Get just the ADAC configuration for a specific template
- */
-export function getTemplateConfig(id: string): AdacConfig | undefined {
-  return getTemplateById(id)?.config;
+export function listTemplates(): string[] {
+  return Object.keys(templates);
 }

@@ -1,0 +1,12 @@
+version: '1.0'
+provider: azure
+nodes:
+  - id: app-service
+    name: App Service
+    type: Microsoft.Web/sites
+  - id: sql-server
+    name: SQL Database
+    type: Microsoft.Sql/servers
+edges:
+  - from: app-service
+    to: sql-server

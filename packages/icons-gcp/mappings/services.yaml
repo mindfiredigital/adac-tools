@@ -35,6 +35,18 @@ cloud-run-functions:
   name: "Cloud Run Functions"
   category: "Serverless Computing"
   color: "#4285F4"
+spot-vms:
+  name: "Spot VMs"
+  category: "Compute"
+  color: "#4285F4"
+bare-metal:
+  name: "Bare Metal"
+  category: "Compute"
+  color: "#4285F4"
+vmware-engine:
+  name: "Google Cloud VMware Engine"
+  category: "Compute"
+  color: "#4285F4"
 
 # Databases
 cloud-sql:
@@ -87,6 +99,10 @@ filestore:
   name: "Filestore"
   category: "Storage"
   color: "#4285F4"
+storage-transfer-service:
+  name: "Storage Transfer Service"
+  category: "Storage"
+  color: "#4285F4"
 
 # Networking
 virtual-private-cloud:
@@ -131,6 +147,10 @@ traffic-director:
   color: "#4285F4"
 network-connectivity-center:
   name: "Network Connectivity Center"
+  category: "Networking"
+  color: "#4285F4"
+service-directory:
+  name: "Service Directory"
   category: "Networking"
   color: "#4285F4"
 
@@ -185,6 +205,14 @@ looker-studio:
   name: "Looker Studio"
   category: "Business Intelligence"
   color: "#4285F4"
+dataplex:
+  name: "Dataplex"
+  category: "Data Analytics"
+  color: "#4285F4"
+data-fusion:
+  name: "Cloud Data Fusion"
+  category: "Data Analytics"
+  color: "#4285F4"
 
 # AI & ML
 vertex-ai:
@@ -223,6 +251,10 @@ recommendations-ai:
   name: "Recommendations AI"
   category: "AI _ Machine Learning"
   color: "#4285F4"
+generative-ai-studio:
+  name: "Generative AI Studio"
+  category: "AI _ Machine Learning"
+  color: "#4285F4"
 
 # Security & Identity
 cloud-iam:
@@ -247,6 +279,10 @@ security-command-center:
   color: "#EA4335"
 certificate-authority-service:
   name: "Certificate Authority Service"
+  category: "Security Identity"
+  color: "#EA4335"
+cloud-asset-inventory:
+  name: "Cloud Asset Inventory"
   category: "Security Identity"
   color: "#EA4335"
 

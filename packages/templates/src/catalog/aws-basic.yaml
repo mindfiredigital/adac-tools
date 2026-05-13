@@ -1,0 +1,17 @@
+version: '1.0'
+provider: aws
+nodes:
+  - id: web-server
+    name: Web Server
+    type: AWS::EC2::Instance
+    properties:
+      instanceType: t3.medium
+  - id: database
+    name: User DB
+    type: AWS::RDS::DBInstance
+    properties:
+      engine: postgres
+edges:
+  - from: web-server
+    to: database
+    label: SQL Connection

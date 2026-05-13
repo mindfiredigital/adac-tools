@@ -7,25 +7,16 @@
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "require": "./dist/index.js",
-      "import": "./dist/index.mjs"
-    }
-  },
-  "scripts": {
-    "build": "tsup src/index.ts --format esm,cjs --dts",
-    "dev": "tsup src/index.ts --format esm,cjs --dts --watch",
-    "test": "vitest run",
-    "test:coverage": "vitest run --coverage"
-  },
   "keywords": [
     "adac",
     "templates",
     "architecture",
     "library"
   ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch"
+  },
   "files": [
     "dist"
   ],
@@ -38,12 +29,8 @@
     "access": "public",
     "registry": "https://npm.pkg.github.com"
   },
-  "dependencies": {
-    "@mindfiredigital/adac-schema": "workspace:*"
-  },
   "devDependencies": {
-    "tsup": "^8.3.5",
-    "typescript": "^5.7.2",
-    "vitest": "^4.0.0"
+    "tsup": "^8.5.1",
+    "typescript": "^5.9.3"
   }
 }
