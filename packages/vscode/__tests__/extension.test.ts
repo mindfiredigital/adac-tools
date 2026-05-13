@@ -140,6 +140,14 @@ vi.mock('vscode', () => {
   };
 });
 
+vi.mock('@mindfiredigital/adac-core', () => ({
+  generateDiagramSvg: vi.fn(async () => ({
+    svg: '<svg xmlns="http://www.w3.org/2000/svg"></svg>',
+    logs: [],
+    duration: 1,
+  })),
+}));
+
 // ─── Test Helpers ─────────────────────────────────────────────────────────────
 
 /** Create a mock TextDocument from YAML content */
