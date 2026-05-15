@@ -38,6 +38,9 @@ export interface LayoutOptions {
   ranksep?: number;
   marginx?: number;
   marginy?: number;
+  edgeMargin?: number;
+  maxIterations?: number;
+  nodePlacementStrategy?: string;
 }
 
 export interface LayoutEngine {
