@@ -37,7 +37,7 @@ function isPublishable(pkgJson) {
 function isAlreadyPublished(name, version) {
   try {
     execSync(
-      `npm view ${name}@${version} version --registry=https://npm.pkg.github.com`,
+      `npm view ${name}@${version} version --registry=https://registry.npmjs.org/`,
       {
         stdio: 'pipe',
       }
@@ -97,7 +97,7 @@ async function main() {
         );
       } else {
         execSync(
-          'pnpm publish --access public --no-git-checks --registry=https://npm.pkg.github.com',
+          'pnpm publish --access public --no-git-checks --registry=https://registry.npmjs.org/',
           {
             cwd: pkgDir,
             stdio: 'inherit',

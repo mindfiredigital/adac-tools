@@ -1,7 +1,11 @@
 import { Graph } from '../graph/graph';
-import { RankMap, OrderingMap } from '../types';
+import { RankMap, OrderingMap, LayoutOptions } from '../types';
 
-export function orderNodes(graph: Graph, ranks: RankMap): OrderingMap {
+export function orderNodes(
+  graph: Graph,
+  ranks: RankMap,
+  options: Required<LayoutOptions>
+): OrderingMap {
   const ordering: OrderingMap = new Map();
 
   // Initial ordering based on rank
@@ -11,7 +15,7 @@ export function orderNodes(graph: Graph, ranks: RankMap): OrderingMap {
   });
 
   // Perform multiple sweeps to reduce crossings (more iterations = fewer crossings)
-  const maxIterations = 24;
+  const maxIterations = options.maxIterations;
 
   let bestCrossings = countTotalCrossings(graph, ordering);
   let bestOrdering = cloneOrdering(ordering);

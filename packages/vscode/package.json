@@ -157,5 +157,12 @@
     "@mindfiredigital/adac-core": "workspace:*",
     "js-yaml": "^4.1.1"
   },
-  "author": "Mindfire Digital"
+  "author": "Mindfire Digital",
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "files": [
+    "dist"
+  ]
 }

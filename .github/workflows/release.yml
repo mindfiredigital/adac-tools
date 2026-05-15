@@ -21,6 +21,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: 'pnpm'
 
       - name: Install pnpm
         uses: pnpm/action-setup@v3
@@ -29,6 +30,9 @@ jobs:
 
       - name: Install Dependencies
         run: pnpm install
+
+      - name: Authenticate to npmjs
+        run: echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > .npmrc
 
       - name: Generate Changeset
         run: pnpm changeset:autogenerate

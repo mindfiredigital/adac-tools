@@ -57,11 +57,11 @@ function main() {
     if (!pkg.publishConfig) {
       pkg.publishConfig = {
         access: 'public',
-        registry: 'https://npm.pkg.github.com',
+        registry: 'https://registry.npmjs.org/',
       };
       changed = true;
-    } else if (!pkg.publishConfig.registry) {
-      pkg.publishConfig.registry = 'https://npm.pkg.github.com';
+    } else if (pkg.publishConfig.registry !== 'https://registry.npmjs.org/') {
+      pkg.publishConfig.registry = 'https://registry.npmjs.org/';
       changed = true;
     }
 

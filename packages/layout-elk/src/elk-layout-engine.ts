@@ -111,8 +111,8 @@ export class ElkLayoutEngine implements LayoutEngine {
           spacing.edgeNodeBetweenLayers,
         'elk.layered.spacing.edgeEdgeBetweenLayers':
           spacing.edgeEdgeBetweenLayers,
-
-        'elk.layered.nodePlacement.strategy': 'BRANDES_KOEPF',
+        'elk.layered.nodePlacement.strategy':
+          this.options.nodePlacementStrategy ?? 'BRANDES_KOEPF',
         'elk.layered.nodePlacement.bk.fixedAlignment': 'BALANCED',
         'elk.layered.nodePlacement.favorStraightEdges': 'true',
         'elk.layered.crossingMinimization.strategy': 'LAYER_SWEEP',

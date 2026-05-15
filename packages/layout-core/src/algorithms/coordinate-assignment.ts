@@ -159,8 +159,9 @@ export function assignCoordinates(
       maxPos = Math.max(maxPos, hi);
     });
 
+    const COMPACTION_THRESHOLD = 0.9;
     const rankSpan = maxPos - minPos;
-    if (rankSpan < globalMax * 0.9) {
+    if (rankSpan < globalMax * COMPACTION_THRESHOLD) {
       const shift = (globalMax - rankSpan) / 2 - minPos;
       if (shift > 0) {
         nodes.forEach((id) => {

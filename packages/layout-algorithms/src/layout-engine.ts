@@ -37,8 +37,6 @@ export class CustomLayoutEngine {
       marginx: options.marginx ?? 40,
       marginy: options.marginy ?? 40,
       edgeMargin: options.edgeMargin ?? 12,
-      maxIterations: options.maxIterations ?? 24,
-      nodePlacementStrategy: options.nodePlacementStrategy ?? 'BRANDES_KOEPF',
     };
   }
 
@@ -91,7 +89,7 @@ export class CustomLayoutEngine {
     });
 
     // 4. Order nodes
-    const ordering = orderNodes(this.graph, ranks, this.options);
+    const ordering = orderNodes(this.graph, ranks);
 
     // 5. Assign coordinates
     const positions = assignCoordinates(

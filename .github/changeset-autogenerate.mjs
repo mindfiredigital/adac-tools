@@ -13,6 +13,13 @@ if (fs.existsSync('.changeset')) {
   }
 }
 
+// Skip merge commits (commits with more than one parent)
+const parents = execSync('git log -1 --format=%P').toString().trim().split(' ');
+if (parents.length > 1) {
+  console.log('ℹ️ Merge commit detected, skipping changeset generation');
+  process.exit(0);
+}
+
 // Get latest commit message
 const commitMessage = execSync('git log -1 --format=%s').toString().trim();
 console.log(`📝 Processing commit message: "${commitMessage}"`);
@@ -51,7 +58,16 @@ const availablePackages = fs.readdirSync(packagesDir);
 
 let targetPackages = [];
 
-if (!scope || scope === 'all' || scope === 'monorepo') {
+if (scope === 'all' || scope === 'monorepo') {
+  // Add all valid packages
+  for (const p of availablePackages) {
+    const pkgPath = path.join(packagesDir, p, 'package.json');
+    if (fs.existsSync(pkgPath)) {
+      const pkgJson = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+      targetPackages.push(pkgJson.name);
+    }
+  }
+} else if (!scope) {
   // If no scope, default to core
   if (availablePackages.includes('core')) {
     const pkgJson = JSON.parse(
