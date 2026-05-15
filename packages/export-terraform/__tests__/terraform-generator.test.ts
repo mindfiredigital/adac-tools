@@ -2,10 +2,12 @@ import { mkdtempSync, rmSync, writeFileSync } from 'fs';
 import { execFileSync } from 'child_process';
 import { join, resolve } from 'path';
 import { tmpdir } from 'os';
+import { fileURLToPath } from 'url';
 import { afterEach, describe, expect, it } from 'vitest';
 import { generateTerraformFromAdacFile } from '../src/terraform-generator.js';
 
-const YAMLS_DIR = resolve(join(import.meta.dirname, '../../../yamls'));
+const TEST_DIR = fileURLToPath(new URL('.', import.meta.url));
+const YAMLS_DIR = resolve(join(TEST_DIR, '../../../yamls'));
 const TEMP_DIR_PREFIX = join(tmpdir(), 'adac-export-terraform-');
 const tempDirs: string[] = [];
 

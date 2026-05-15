@@ -23,3 +23,6 @@ docs/BUILD_REPORT.md
 packages/icons-*/assets/
 packages/icons-*/mappings/
 public/assets/
+
+# Handlebars YAML templates
+*.yaml.hbs
