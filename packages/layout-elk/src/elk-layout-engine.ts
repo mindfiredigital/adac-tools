@@ -71,6 +71,26 @@ export class ElkLayoutEngine implements LayoutEngine {
   }
 
   async layout(): Promise<LayoutResult> {
+    const nodeCount = this.nodes.size;
+    const edgeCount = this.edges.length;
+    const isDenseGraph = nodeCount > 40 || edgeCount > 80;
+    const edgeRoutingMode = isDenseGraph ? 'SPLINES' : 'ORTHOGONAL';
+    const spacing = isDenseGraph
+      ? {
+          nodeNodeBetweenLayers: '140',
+          edgeNodeBetweenLayers: '80',
+          edgeEdgeBetweenLayers: '60',
+          componentComponent: '80',
+          aspectRatio: '2.0',
+        }
+      : {
+          nodeNodeBetweenLayers: '100',
+          edgeNodeBetweenLayers: '40',
+          edgeEdgeBetweenLayers: '20',
+          componentComponent: '48',
+          aspectRatio: '1.8',
+        };
+
     const graph: ElkNode = {
       id: 'root',
       children: Array.from(this.nodes.values()),
@@ -80,30 +100,32 @@ export class ElkLayoutEngine implements LayoutEngine {
         'elk.algorithm': 'layered',
         'elk.direction': this.options.rankdir === 'LR' ? 'RIGHT' : 'DOWN',
 
-        // Hierarchical edge routing across nested containers — without this
-        // option, edges that cross container boundaries get awkward kinks.
         'elk.hierarchyHandling': 'INCLUDE_CHILDREN',
 
-        'elk.edgeRouting': 'ORTHOGONAL',
+        'elk.edgeRouting': edgeRoutingMode,
         'elk.layered.spacing.nodeNodeBetweenLayers': String(
-          this.options.ranksep ?? 80
+          this.options.ranksep ?? parseInt(spacing.nodeNodeBetweenLayers)
         ),
         'elk.spacing.nodeNode': String(this.options.nodesep ?? 40),
-
-        // Aesthetic tuning — same defaults used by buildElkGraph so the two
-        // entry points produce visually consistent layouts.
-        'elk.layered.nodePlacement.strategy': 'BRANDES_KOEPF',
+        'elk.layered.spacing.edgeNodeBetweenLayers':
+          spacing.edgeNodeBetweenLayers,
+        'elk.layered.spacing.edgeEdgeBetweenLayers':
+          spacing.edgeEdgeBetweenLayers,
+        'elk.layered.nodePlacement.strategy':
+          this.options.nodePlacementStrategy ?? 'BRANDES_KOEPF',
         'elk.layered.nodePlacement.bk.fixedAlignment': 'BALANCED',
         'elk.layered.nodePlacement.favorStraightEdges': 'true',
         'elk.layered.crossingMinimization.strategy': 'LAYER_SWEEP',
         'elk.layered.layering.strategy': 'NETWORK_SIMPLEX',
-        'elk.layered.thoroughness': '10',
-        'elk.layered.mergeEdges': 'true',
+        'elk.layered.thoroughness': isDenseGraph ? '7' : '10',
+
+        'elk.layered.mergeEdges': isDenseGraph ? 'false' : 'true',
         'elk.layered.unnecessaryBendpoints': 'true',
         'elk.layered.feedbackEdges': 'true',
         'elk.separateConnectedComponents': 'true',
-        'elk.spacing.componentComponent': '60',
-        'elk.aspectRatio': '1.6',
+        'elk.spacing.componentComponent': spacing.componentComponent,
+
+        'elk.aspectRatio': spacing.aspectRatio,
       },
     };
 

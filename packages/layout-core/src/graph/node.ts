@@ -6,6 +6,12 @@ export class Node {
   incoming: Set<string> = new Set();
   outgoing: Set<string> = new Set();
 
+  x: number = 0;
+  y: number = 0;
+  rank: number = 0;
+  order: number = 0;
+  isVirtual: boolean = false;
+
   constructor(
     id: string,
     width: number,

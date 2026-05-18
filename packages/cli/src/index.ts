@@ -18,7 +18,7 @@ export type CLIOptions = {
   generateDiagram: (
     input: string,
     output: string,
-    layoutOverride?: 'elk' | 'dagre',
+    layoutOverride?: 'elk' | 'dagre' | 'custom',
     validate?: boolean,
     costData?: Record<string, number>,
     period?: CostPeriod,
@@ -80,7 +80,11 @@ export function runCLI(options: CLIOptions) {
   program
     .command('diagram <file>')
     .description('Generate diagram from ADAC YAML file')
-    .option('-l, --layout <type>', 'Layout engine (elk or dagre)', 'elk')
+    .option(
+      '-l, --layout <type>',
+      'Layout engine (elk, dagre or custom)',
+      'elk'
+    )
     .option('-o, --output <path>', 'Output SVG file path')
     .option('--validate', 'Validate schema before generating')
     .option('--cost', 'Print cost breakdown and generate diagram')
@@ -120,7 +124,7 @@ export function runCLI(options: CLIOptions) {
           }
         }
 
-        const layout = opts.layout as 'elk' | 'dagre';
+        const layout = opts.layout as 'elk' | 'dagre' | 'custom';
         // Commander turns --no-optimize into opts.optimize = false
         const skipOptimizer = opts.optimize === false;
         const skipOpen = opts.open === false;

@@ -1,121 +1,53 @@
-# ─────────────────────────────────────────────────────────────
-# Release — publishes npm packages to GitHub Packages registry
-# Triggered when a GitHub Release is published or manually
-# ─────────────────────────────────────────────────────────────
-name: Release Packages
+name: Release
 
 on:
-  release:
-    types: [published]
-  workflow_dispatch:
-    inputs:
-      dry_run:
-        description: 'Perform a dry run (skip actual publish)'
-        required: false
-        default: 'false'
-        type: choice
-        options:
-          - 'false'
-          - 'true'
+  push:
+    branches:
+      - main
 
-permissions:
-  contents: write # needed to upload release assets
-  packages: write # needed to publish to GitHub Packages
+concurrency: ${{ github.workflow }}-${{ github.ref }}
 
 jobs:
   release:
-    name: Build, Publish & Upload Release Assets
+    name: Release
     runs-on: ubuntu-latest
-    environment: release
-
     steps:
-      # ── Checkout ──────────────────────────────────────────
-      - name: Checkout repository
+      - name: Checkout Repo
         uses: actions/checkout@v4
-
-      # ── pnpm + Node ──────────────────────────────────────
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
         with:
-          version: 10
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22
-          registry-url: 'https://npm.pkg.github.com'
-          scope: '@mindfiredigital'
+          node-version: 20
           cache: 'pnpm'
 
-      # ── Install & Build ──────────────────────────────────
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Run security audit
-        run: pnpm audit --audit-level=high
-        continue-on-error: false
-
-      - name: Build all packages
-        run: pnpm run build
-
-      # ── Test ─────────────────────────────────────────────
-      - name: Run tests
-        run: pnpm run test:coverage
-
-      # ── Pack Artifacts (.tgz, .vsix) ─────────────────────
-      - name: Pack release artifacts
-        run: node scripts/pack-release.js
-
-      # ── Upload artifacts (available for download in Actions)
-      - name: Upload release artifacts
-        uses: actions/upload-artifact@v4
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
         with:
-          name: release-artifacts
-          path: releases/
-          retention-days: 90
+          version: 9
 
-      # ── Attach assets to GitHub Release ──────────────────
-      - name: Upload assets to GitHub Release
-        if: github.event_name == 'release'
-        uses: softprops/action-gh-release@v2
-        with:
-          files: releases/*
+      - name: Install Dependencies
+        run: pnpm install
+
+      - name: Authenticate to npmjs
+        run: echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > .npmrc
+
+      - name: Generate Changeset
+        run: pnpm changeset:autogenerate
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # ── Publish to GitHub Packages npm registry ──────────
-      - name: Publish packages (dry run)
-        if: ${{ github.event.inputs.dry_run == 'true' }}
-        run: |
-          echo "🏜️  DRY RUN — packages would be published:"
-          node scripts/publish-packages.mjs --dry-run
+      - name: Create Release Pull Request or Publish
+        id: changesets
+        uses: changesets/action@v1
+        with:
+          version: pnpm changeset:version
+          publish: pnpm release:publish
+          commit: 'chore(release): version packages'
+          title: 'chore(release): version packages'
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Publish packages
-        if: ${{ github.event.inputs.dry_run != 'true' }}
-        run: node scripts/publish-packages.mjs
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      # ── Summary ──────────────────────────────────────────
-      - name: Release summary
-        if: always()
-        run: |
-          echo "## 📦 Release Summary" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Field | Value |" >> $GITHUB_STEP_SUMMARY
-          echo "|-------|-------|" >> $GITHUB_STEP_SUMMARY
-          echo "| **Trigger** | ${{ github.event_name }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| **Tag** | ${{ github.event.release.tag_name || 'manual' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| **Dry Run** | ${{ github.event.inputs.dry_run || 'false' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| **Actor** | @${{ github.actor }} |" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 📄 Artifacts" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          if [ -d releases ]; then
-            for f in releases/*; do
-              size=$(du -h "$f" | cut -f1)
-              echo "- \`$(basename $f)\` ($size)" >> $GITHUB_STEP_SUMMARY
-            done
-          fi
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

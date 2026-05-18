@@ -366,7 +366,7 @@ infrastructure:
           name: 'Analysis Services'
           description: 'OLAP cubes for historical trending'
 
-        # ── AI/ML ─────────────────────────────────────────────────────
+        # ── Machine Learning ─────────────────────────────────────────────────────
         - id: 'ml-workspace-factory'
           service: 'azure-machine-learning'
           name: 'Azure ML (Predictive Maintenance)'

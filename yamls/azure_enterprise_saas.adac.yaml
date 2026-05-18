@@ -6,7 +6,7 @@ metadata:
   description: >
     A production-grade Azure enterprise SaaS platform featuring AKS
     microservices, Azure SQL and Cosmos DB, event-driven architecture
-    with Service Bus and Event Grid, AI-powered features with Azure
+    with Service Bus and Event Grid, Advanced features with Azure
     OpenAI, comprehensive security with Entra ID and Key Vault,
     and full observability with Azure Monitor and Application Insights.
   created: '2026-04-14'
@@ -49,11 +49,11 @@ applications:
     description: 'Tenant usage analytics and reporting'
 
   - id: 'ai-assistant'
-    name: 'AI Assistant'
+    name: 'Intelligent Assistant'
     type: 'backend'
     technology: 'Python FastAPI'
     owner: 'ml-team'
-    description: 'Azure OpenAI-powered intelligent assistant'
+    description: 'Azure OpenAdvanced intelligent assistant'
 
   - id: 'document-processor'
     name: 'Document Processor'
@@ -464,7 +464,7 @@ infrastructure:
           name: 'Microsoft Purview'
           description: 'Data governance and catalog'
 
-        # ── AI & Machine Learning ─────────────────────────────────────
+        # ── Advanced & Machine Learning ─────────────────────────────────────
         - id: 'openai-service'
           service: 'azure-openai-service'
           name: 'Azure OpenAI Service'
@@ -484,7 +484,7 @@ infrastructure:
 
         - id: 'ai-search'
           service: 'azure-ai-search'
-          name: 'Azure AI Search'
+          name: 'Azure Advanced Search'
           description: 'Vector + semantic search for tenant content'
           config:
             sku: 'S2'
@@ -499,7 +499,7 @@ infrastructure:
         - id: 'bot-service'
           service: 'azure-bot-service'
           name: 'Azure Bot Service'
-          description: 'Conversational AI for customer support'
+          description: 'Conversational Advanced for customer support'
 
         # ── Monitoring & Management ───────────────────────────────────
         - id: 'azure-monitor-ws'
@@ -676,7 +676,7 @@ connections:
     to: 'cognitive-services'
     type: 'api-call'
 
-  # ── AI/ML Pipeline ─────────────────────────────────────────────
+  # ── Machine Learning Pipeline ─────────────────────────────────────────────
   - id: 'ai-assistant-to-openai'
     from: 'ai-assistant'
     to: 'openai-service'

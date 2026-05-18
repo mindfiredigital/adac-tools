@@ -22,7 +22,7 @@ const optimizer = new OptimizerEngine();
 
 export async function generateDiagramSvg(
   inputContent: string,
-  layoutOverride?: 'elk' | 'dagre',
+  layoutOverride?: 'elk' | 'dagre' | 'custom',
   validate: boolean = false,
   costData?: Record<string, number>,
   period: CostPeriod = 'monthly',
@@ -138,7 +138,7 @@ export async function generateDiagramSvg(
 export async function generateDiagram(
   input: string,
   output: string,
-  layoutOverride?: 'elk' | 'dagre',
+  layoutOverride?: 'elk' | 'dagre' | 'custom',
   validate: boolean = false,
   costData?: Record<string, number>,
   period: CostPeriod = 'monthly',

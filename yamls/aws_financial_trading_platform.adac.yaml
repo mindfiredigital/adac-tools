@@ -6,7 +6,7 @@ metadata:
   description: >
     A mission-critical financial trading platform with multi-AZ high
     availability, real-time streaming via Kinesis and MSK, CQRS pattern
-    with DynamoDB and Aurora, AI-powered fraud detection via SageMaker,
+    with DynamoDB and Aurora, Advanced fraud detection via SageMaker,
     and full PCI-DSS/SOC2 compliance across all tiers.
   created: '2026-04-14'
   environment: production
@@ -408,7 +408,7 @@ infrastructure:
           service: 'quicksight'
           name: 'QuickSight Dashboards'
 
-        # ── AI/ML ─────────────────────────────────────────────────────
+        # ── Machine Learning ─────────────────────────────────────────────────────
         - id: 'sagemaker-fraud'
           service: 'sagemaker'
           name: 'SageMaker (Fraud Detection)'

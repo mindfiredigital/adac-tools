@@ -16,6 +16,7 @@ export default defineConfig({
     '@mindfiredigital/adac-layout-elk',
     '@mindfiredigital/adac-layout-dagre',
     '@mindfiredigital/adac-layout-core',
+    '@mindfiredigital/adac-layout',
     '@mindfiredigital/adac-compliance',
     '@mindfiredigital/adac-cost',
     '@mindfiredigital/adac-optimizer',

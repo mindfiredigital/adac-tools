@@ -4,10 +4,11 @@ Core types and interfaces for graph layout engines in ADAC. Provides the contrac
 
 ## Features
 
-- 📋 Defines layout engine interface
-- 🔧 Common types for graph structures
-- 📐 Layout configuration types
-- 🎨 Position and dimension types
+- 📐 **Layered Graph Layout**: High-performance implementation of the Sugiyama framework.
+- 🎨 **Crossing Reduction**: Robust Barycenter heuristic for clean, readable diagrams.
+- 📐 **Balanced Positioning**: Symmetrical node placement for professional aesthetics.
+- 🛣️ **Smart Edge Routing**: Polyline routing with support for multi-layer spans.
+- 📋 **Common Types**: Shared contract for all layout engines.
 
 ## Installation
 

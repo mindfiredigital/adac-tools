@@ -155,25 +155,32 @@ async function main() {
   // Map each service key to its local SVG icon path (relative to assets/)
   const iconMap: Record<string, string> = {};
 
+  const cleanString = (str: string) =>
+    str
+      .toLowerCase()
+      .replace(/^azure\s*/, '')
+      .replace(/^microsoft\s*/, '')
+      .replace(/\s*service(s)?$/, '')
+      .replace(/[^a-z0-9]/g, '');
+
   for (const [serviceKey, info] of Object.entries(serviceMappings)) {
-    // Try to find the downloaded icon file matching the service name
+    let foundFile: string | null = null;
+
+    // 1. Try exact matches with common patterns
     const safeName = info.name
       .replace(/[^a-zA-Z0-9\s]/g, '')
       .toLowerCase()
       .replace(/\s+/g, '_');
 
     const possibleFileNames = [
-      // Common Azure icon naming conventions
       `${info.name.replace(/\s+/g, '-')}.svg`,
       `${info.name.replace(/\s+/g, '')}.svg`,
       `${info.name.replace(/\s+/g, '_')}.svg`,
       `${safeName}.svg`,
-      // Azure icon pack specific patterns
       `10${info.name.replace(/\s+/g, '-')}.svg`,
       `Icon-${info.name.replace(/\s+/g, '-')}.svg`,
     ];
 
-    let foundFile: string | null = null;
     for (const fname of possibleFileNames) {
       if (fs.existsSync(path.join(ICONS_DIR, fname))) {
         foundFile = fname;
@@ -181,35 +188,83 @@ async function main() {
       }
     }
 
-    // Try to find by category icon if defined
-    if (!foundFile && info.category) {
-      const category = info.category;
-      const categoryFilenames = [
-        `${category.replace(/[^a-zA-Z0-9]/g, '')}.svg`,
-        `${category.replace(/ /g, '-')}.svg`,
-        `${category.replace(/ /g, '_')}.svg`,
-      ];
+    // 2. Try manual overrides for tricky names
+    if (!foundFile) {
+      const overrides: Record<string, string> = {
+        'Azure Kubernetes Service':
+          '10023-icon-service-Kubernetes-Services.svg',
+        'Azure Functions': '10029-icon-service-Function-Apps.svg',
+        'Azure SQL Database': '10130-icon-service-SQL-Database.svg',
+        'Microsoft Entra ID': '10221-icon-service-Azure-Active-Directory.svg',
+        'Azure Active Directory':
+          '10221-icon-service-Azure-Active-Directory.svg',
+        'Azure Blob Storage': '10086-icon-service-Storage-Accounts.svg',
+        'Azure Storage Account': '10086-icon-service-Storage-Accounts.svg',
+        'Azure Load Balancer': '10062-icon-service-Load-Balancers.svg',
+        'Azure DNS': '10064-icon-service-DNS-Zones.svg',
+        'Azure CDN': '10073-icon-service-Front-Door-and-CDN-Profiles.svg',
+        'Azure Front Door':
+          '10073-icon-service-Front-Door-and-CDN-Profiles.svg',
+        'Azure ExpressRoute': '10079-icon-service-ExpressRoute-Circuits.svg',
+        'Azure Bastion': '02422-icon-service-Bastions.svg',
+        'VPN Gateway': '10063-icon-service-Virtual-Network-Gateways.svg',
+        'Azure DDoS Protection': '10072-icon-service-DDoS-Protection-Plans.svg',
+        'Azure Private Link': '00427-icon-service-Private-Link.svg',
+        'Azure Event Grid': '10206-icon-service-Event-Grid-Topics.svg',
+        'Azure Event Hubs': '00039-icon-service-Event-Hubs.svg',
+        'Azure Logic Apps': '02631-icon-service-Logic-Apps.svg',
+        'Azure API Management':
+          '10042-icon-service-API-Management-Services.svg',
+        'Azure Data Factory': '10126-icon-service-Data-Factories.svg',
+        'Azure Stream Analytics':
+          '00042-icon-service-Stream-Analytics-Jobs.svg',
+        'Azure HDInsight': '10142-icon-service-HD-Insight-Clusters.svg',
+        'Azure Analysis Services': '10148-icon-service-Analysis-Services.svg',
+        'Azure Machine Learning': '10166-icon-service-Machine-Learning.svg',
+        'Azure Cognitive Services': '10162-icon-service-Cognitive-Services.svg',
+        'Azure OpenAI Service': '03438-icon-service-Azure-OpenAI.svg',
+        'Azure Bot Service': '10165-icon-service-Bot-Services.svg',
+        'Azure AI Search': '10044-icon-service-Cognitive-Search.svg',
+        'Azure AI Studio': '03513-icon-service-AI-Studio.svg',
+        'Azure Key Vault': '10245-icon-service-Key-Vaults.svg',
+        'Microsoft Sentinel': '10248-icon-service-Azure-Sentinel.svg',
+        'Azure Log Analytics':
+          '00009-icon-service-Log-Analytics-Workspaces.svg',
+        'Azure Policy': '10316-icon-service-Policy.svg',
+        'Azure Automation': '00022-icon-service-Automation-Accounts.svg',
+        'Azure Advisor': '00003-icon-service-Advisor.svg',
+        'Azure Repos': '10787-icon-service-Code.svg',
+        'Azure Pipelines': '10785-icon-service-Builds.svg',
+        'Azure Container Registry':
+          '10105-icon-service-Container-Registries.svg',
+        'Azure Artifacts': '10800-icon-service-File.svg',
+        'Azure SignalR Service': '10052-icon-service-SignalR.svg',
+        'Azure Static Web Apps': '01007-icon-service-Static-Apps.svg',
+        'Azure IoT Hub': '10182-icon-service-IoT-Hub.svg',
+        'Azure IoT Central': '10184-icon-service-IoT-Central-Applications.svg',
+        'Azure IoT Edge': '10186-icon-service-IoT-Edge.svg',
+        'Azure Digital Twins': '01030-icon-service-Digital-Twins.svg',
+        'Azure Resource Manager': '10011-icon-service-Management-Groups.svg',
+        'Availability Zone': '10025-icon-service-Availability-Sets.svg',
+      };
 
-      for (const fname of categoryFilenames) {
-        if (fs.existsSync(path.join(ICONS_DIR, fname))) {
-          foundFile = fname;
-          break;
+      if (overrides[info.name]) {
+        if (fs.existsSync(path.join(ICONS_DIR, overrides[info.name]))) {
+          foundFile = overrides[info.name];
         }
       }
     }
 
-    // Also try case-insensitive search in extracted files for product name
+    // 3. Try fuzzy matching in extracted files
     if (!foundFile && downloadSucceeded) {
       try {
         const files = await fs.readdir(ICONS_DIR);
-        const lowerServiceName = info.name.toLowerCase().replace(/\s+/g, '');
+        const target = cleanString(info.name);
+
         for (const f of files) {
-          if (
-            f
-              .toLowerCase()
-              .replace(/[^a-z0-9]/g, '')
-              .includes(lowerServiceName.replace(/[^a-z0-9]/g, ''))
-          ) {
+          if (!f.endsWith('.svg') || f.length < 10) continue; // Skip short or non-svg
+          const current = cleanString(f);
+          if (current.includes(target) || target.includes(current)) {
             foundFile = f;
             break;
           }
@@ -219,7 +274,25 @@ async function main() {
       }
     }
 
-    // If no official icon found, generate placeholder SVG
+    // 4. Try category icon if defined
+    if (!foundFile && info.category) {
+      const target = cleanString(info.category);
+      try {
+        const files = await fs.readdir(ICONS_DIR);
+        for (const f of files) {
+          if (!f.endsWith('.svg') || f.length < 10) continue;
+          const current = cleanString(f);
+          if (current.includes(target)) {
+            foundFile = f;
+            break;
+          }
+        }
+      } catch {
+        // ignore
+      }
+    }
+
+    // 5. If still no official icon found, generate placeholder SVG
     if (!foundFile) {
       const placeholderName = `${safeName}.svg`;
       const svgContent = generatePlaceholderSvg(info.name, info.color);

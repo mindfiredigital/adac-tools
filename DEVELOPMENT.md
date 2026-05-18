@@ -311,6 +311,12 @@ npm install -g typedoc
 typedoc packages/*/src/index.ts --out docs/api
 ```
 
+### Layout Algorithms
+
+The core layout engine (`layout-core`) implementation details are documented in:
+
+- [packages/layout-core/ALGORITHMS.md](./packages/layout-core/ALGORITHMS.md) - Sugiyama framework overview and phase details.
+
 ### Update README
 
 - Root: `/README.md`

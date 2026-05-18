@@ -388,7 +388,26 @@ export function buildElkGraph(adac: AdacConfig): ElkNode {
   const isGcp = providers.has('gcp');
   const isAzure = providers.has('azure');
 
-  // Helper to get icon map key for the active provider
+  const estimatedNodeCount =
+    (adac.applications || []).length +
+    (adac.infrastructure?.clouds || []).reduce(
+      (sum, c) => sum + (c.services || []).length,
+      0
+    );
+  const estimatedEdgeCount = (adac.connections || []).length;
+  const isDenseGraph = estimatedNodeCount > 40 || estimatedEdgeCount > 80;
+  const edgeRoutingMode = isDenseGraph ? 'SPLINES' : 'ORTHOGONAL';
+  const edgeSpacing = isDenseGraph
+    ? {
+        nodeNodeBetweenLayers: '140',
+        edgeNodeBetweenLayers: '80',
+        edgeEdgeBetweenLayers: '60',
+      }
+    : {
+        nodeNodeBetweenLayers: '100',
+        edgeNodeBetweenLayers: '40',
+        edgeEdgeBetweenLayers: '20',
+      };
   const getIconPath = (
     key: string,
     forceProvider?: 'aws' | 'gcp' | 'azure'
@@ -1068,37 +1087,31 @@ export function buildElkGraph(adac: AdacConfig): ElkNode {
       'elk.algorithm': 'layered',
       'elk.direction': 'RIGHT',
       'elk.hierarchyHandling': 'INCLUDE_CHILDREN',
-      'elk.edgeRouting': 'ORTHOGONAL',
+      'elk.edgeRouting': edgeRoutingMode,
 
-      // Spacing — slightly more generous than before so labels and icons
-      // don't visually collide in dense diagrams.
-      'elk.layered.spacing.nodeNodeBetweenLayers': '120',
+      'elk.layered.spacing.nodeNodeBetweenLayers':
+        edgeSpacing.nodeNodeBetweenLayers,
       'elk.spacing.nodeNode': '80',
-      'elk.layered.spacing.edgeNodeBetweenLayers': '50',
-      'elk.layered.spacing.edgeEdgeBetweenLayers': '25',
+      'elk.layered.spacing.edgeNodeBetweenLayers':
+        edgeSpacing.edgeNodeBetweenLayers,
+      'elk.layered.spacing.edgeEdgeBetweenLayers':
+        edgeSpacing.edgeEdgeBetweenLayers,
 
-      // Crossing/placement — balanced placement and higher thoroughness give
-      // straighter, more symmetric edge routing.
       'elk.layered.nodePlacement.strategy': 'BRANDES_KOEPF',
       'elk.layered.nodePlacement.bk.fixedAlignment': 'BALANCED',
       'elk.layered.nodePlacement.favorStraightEdges': 'true',
       'elk.layered.crossingMinimization.strategy': 'LAYER_SWEEP',
       'elk.layered.layering.strategy': 'NETWORK_SIMPLEX',
-      'elk.layered.thoroughness': '10',
+      'elk.layered.thoroughness': isDenseGraph ? '7' : '10',
 
-      // Edges — bundle parallel edges into trunks, drop redundant bends, and
-      // route feedback edges cleanly.
-      'elk.layered.mergeEdges': 'true',
+      'elk.layered.mergeEdges': isDenseGraph ? 'false' : 'true',
       'elk.layered.unnecessaryBendpoints': 'true',
       'elk.layered.feedbackEdges': 'true',
 
-      // Disconnected sub-graphs are laid out side-by-side instead of
-      // overlapping each other.
       'elk.separateConnectedComponents': 'true',
-      'elk.spacing.componentComponent': '60',
+      'elk.spacing.componentComponent': isDenseGraph ? '80' : '60',
 
-      // Bias toward a landscape aspect ratio — easier on slides/docs.
-      'elk.aspectRatio': '1.6',
+      'elk.aspectRatio': isDenseGraph ? '2.0' : '1.6',
     },
     children: rootChildren,
     edges,

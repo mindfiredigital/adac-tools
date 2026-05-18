@@ -30,7 +30,7 @@ runCLI({
   generateDiagram: async (
     input: string,
     output: string,
-    layoutOverride?: 'elk' | 'dagre',
+    layoutOverride?: 'elk' | 'dagre' | 'custom',
     validate?: boolean,
     _costData?: Record<string, number>,
     period?: string,

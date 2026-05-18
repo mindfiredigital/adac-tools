@@ -22,7 +22,9 @@
     "release:pack": "node scripts/pack-release.js",
     "release:publish": "node scripts/publish-packages.mjs",
     "release:publish:dry-run": "node scripts/publish-packages.mjs --dry-run",
-    "release:setup": "node scripts/setup-publish-config.mjs"
+    "release:setup": "node scripts/setup-publish-config.mjs",
+    "changeset:autogenerate": "node .github/changeset-autogenerate.mjs",
+    "changeset:version": "node .github/changeset-version.js"
   },
   "keywords": [
     "adac",
@@ -30,7 +32,7 @@
     "diagram"
   ],
   "author": "Mindfire Digital",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "dependencies": {
     "adm-zip": "^0.5.16",
     "axios": "^1.16.0",
@@ -42,6 +44,7 @@
     "js-yaml": "^4.1.1"
   },
   "devDependencies": {
+    "@changesets/changelog-github": "^0.7.0",
     "@changesets/cli": "^2.30.0",
     "@commitlint/cli": "^20.3.1",
     "@commitlint/config-conventional": "^20.3.1",

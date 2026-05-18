@@ -22,6 +22,13 @@ export class Graph {
     this.nodes.get(to)?.incoming.add(from);
   }
 
+  addVirtualNode(id: string): Node {
+    const node = new Node(id, 0, 0);
+    node.isVirtual = true;
+    this.nodes.set(id, node);
+    return node;
+  }
+
   nodeCount() {
     return this.nodes.size;
   }

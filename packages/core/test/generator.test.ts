@@ -313,7 +313,7 @@ describe('ADAC Core Renderer', () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const svg = await renderSvg(graph as any, 'dagre');
     expect(svg).toContain('aws-edge');
-    expect(svg).toContain('M 50 25 L 100 25 L 200 25'); // bend point logic SVG
+    expect(svg).toContain('M 90 65 L 140 65 L 240 65'); // bend point logic SVG
     expect(svg).toContain('&lt;&amp;&gt; &quot;escape&apos;'); // escapeXml
     expect(svg).toContain('long text indeed'); // split lines
 

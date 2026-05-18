@@ -1,9 +1,9 @@
 version: '0.1'
 
 metadata:
-  name: 'GCP AI Data Pipeline'
-  author: 'ADAC Team'
-  description: 'A comprehensive data & AI pipeline using native GCP services.'
+  name: 'GCP Modern Data Pipeline'
+  author: 'Data Engineering Team'
+  description: 'A high-performance pipeline architecture using modern GCP data services.'
   created: '2026-03-10'
   environment: production
 
@@ -63,7 +63,7 @@ infrastructure:
 
         - id: 'vertex-ai-training'
           service: 'vertex-ai'
-          name: 'Vertex AI Training'
+          name: 'Vertex Advanced Training'
           runs: ['ml-training']
 
         - id: 'looker-bi'

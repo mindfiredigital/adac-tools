@@ -25,14 +25,14 @@ describe('ELK Builder', () => {
           id: 'app-web',
           name: 'Front End',
           type: 'client', // forces it to root or utility depending on type
-          ai_tags: { group: 'Client Apps' },
+          annotations: { group: 'Client Apps' },
         },
         {
           id: 'app-api',
           name: 'Backend API',
           technology: 'Node.js',
           type: 'service',
-          ai_tags: { group: 'Backend Services', icon: 'Lambda' }, // uses icon
+          annotations: { group: 'Backend Services', icon: 'Lambda' }, // uses icon
         },
         {
           id: 'user-app',
@@ -76,7 +76,7 @@ describe('ELK Builder', () => {
                 id: 'orphan-db',
                 name: 'Database',
                 service: 'rds',
-                ai_tags: { group: 'Backend Services' },
+                annotations: { group: 'Backend Services' },
               },
               {
                 id: 'unknown-service',
@@ -176,7 +176,7 @@ describe('ELK Builder', () => {
           id: 'repeated-app',
           name: 'App',
           type: 'service',
-          ai_tags: { group: 'AppGroup' },
+          annotations: { group: 'AppGroup' },
         },
       ],
       infrastructure: {
@@ -200,12 +200,12 @@ describe('ELK Builder', () => {
               {
                 id: 'service-with-icon',
                 service: 'lambda',
-                ai_tags: { icon: 'Amazon EC2' },
+                annotations: { icon: 'Amazon EC2' },
               }, // hits 322-323
               {
                 id: 'orphan-1',
                 service: 'rds',
-                ai_tags: { group: 'AppGroup' },
+                annotations: { group: 'AppGroup' },
               },
               { id: 'orphan-2', service: 'lambda' },
               { id: 'orphan-3', service: 'dynamodb' }, // hits ensureUtilityGroup already created
@@ -229,7 +229,7 @@ describe('ELK Builder', () => {
           id: 'custom-icon',
           name: 'App',
           type: 'service',
-          ai_tags: { icon: 'Amazon EC2' },
+          annotations: { icon: 'Amazon EC2' },
         }, // hits loop
         {
           id: 'app-react',
@@ -248,13 +248,13 @@ describe('ELK Builder', () => {
           id: 'alias-test',
           name: 'ECS Service',
           type: 'service',
-          ai_tags: { icon: 'ecs' },
+          annotations: { icon: 'ecs' },
         },
         {
           id: 'fuzzy-test',
           name: 'Something DB',
           type: 'database',
-          ai_tags: { icon: 'My Database' },
+          annotations: { icon: 'My Database' },
         },
       ],
       infrastructure: { clouds: [] },

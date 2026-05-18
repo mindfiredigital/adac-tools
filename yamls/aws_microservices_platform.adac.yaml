@@ -7,7 +7,7 @@ metadata:
     A large-scale, production-grade AWS microservices platform for an
     e-commerce application featuring multi-AZ VPC networking, container
     orchestration on ECS Fargate, event-driven architecture with EventBridge
-    and SQS, data analytics with Kinesis and Redshift, AI-powered search
+    and SQS, data analytics with Kinesis and Redshift, Advanced search
     with SageMaker, and comprehensive security with WAF, Shield, and GuardDuty.
   created: '2026-04-14'
   environment: production
@@ -549,7 +549,7 @@ infrastructure:
           runs: ['admin-dashboard']
           description: 'Business intelligence dashboards'
 
-        # ── AI/ML ─────────────────────────────────────────────────────
+        # ── Machine Learning ─────────────────────────────────────────────────────
         - id: 'sagemaker-recommender'
           service: 'sagemaker'
           name: 'SageMaker Endpoint'
@@ -786,7 +786,7 @@ connections:
     to: 'quicksight-bi'
     type: 'api-call'
 
-  # ── AI/ML ───────────────────────────────────────────────────────
+  # ── Machine Learning ───────────────────────────────────────────────────────
   - id: 'catalog-to-sagemaker'
     from: 'product-catalog-api'
     to: 'sagemaker-recommender'

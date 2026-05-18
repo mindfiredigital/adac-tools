@@ -6,10 +6,11 @@ export async function layoutDagre(root: ElkNode): Promise<ElkNode> {
 
   g.setGraph({
     rankdir: 'LR',
-    align: 'DL', // UL, UR, DL, DR
-    nodesep: 60,
-    ranksep: 80,
+    align: 'DL',
+    nodesep: 50,
+    ranksep: 70,
     edgesep: 20,
+    ranker: 'network-simplex',
     marginx: 40,
     marginy: 40,
   });
