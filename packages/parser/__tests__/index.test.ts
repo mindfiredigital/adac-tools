@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { parseAdacFromContent, AdacParseError } from '../src/index';
+import { parseAdacFromContent, parseAdac, AdacParseError } from '../src/index';
+import fs from 'fs';
 // AdacConfig import removed as it was unused
 
 describe('Adac Parser', () => {
@@ -69,5 +70,40 @@ infrastructure:
     const result = parseAdacFromContent(invalidSchemaYaml, { validate: false });
     expect(result.applications![0].id).toBe('app1');
     // It parsed but is technically invalid schema-wise
+  });
+
+  describe('parseAdac', () => {
+    it('should throw AdacParseError when file does not exist', () => {
+      expect(() => parseAdac('non-existent.yaml')).toThrow(AdacParseError);
+      expect(() => parseAdac('non-existent.yaml')).toThrow(/File not found/);
+    });
+
+    it('should parse valid file correctly', () => {
+      // Create a temporary file
+      const tempFile = 'temp-test.yaml';
+      fs.writeFileSync(tempFile, validYaml);
+
+      try {
+        const result = parseAdac(tempFile);
+        expect(result.applications![0].id).toBe('app1');
+      } finally {
+        // Cleanup
+        if (fs.existsSync(tempFile)) fs.unlinkSync(tempFile);
+      }
+    });
+
+    it('should parse valid file with validation disabled', () => {
+      // Create a temporary file
+      const tempFile = 'temp-invalid.yaml';
+      fs.writeFileSync(tempFile, invalidSchemaYaml);
+
+      try {
+        const result = parseAdac(tempFile, { validate: false });
+        expect(result.applications![0].id).toBe('app1');
+      } finally {
+        // Cleanup
+        if (fs.existsSync(tempFile)) fs.unlinkSync(tempFile);
+      }
+    });
   });
 });

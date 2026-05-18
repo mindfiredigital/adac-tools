@@ -2,8 +2,8 @@
   "name": "@mindfiredigital/adac-diagram",
   "version": "0.1.0",
   "description": "Core engine and CLI for ADAC (AWS Diagram As Code) generator",
-  "author": "Yogesh Sharma",
-  "license": "ISC",
+  "author": "Mindfire Digital",
+  "license": "MIT",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
@@ -16,8 +16,9 @@
   ],
   "scripts": {
     "build": "tsup",
-    "prepublishOnly": "npm run build",
-    "test": "echo \"No tests specified\" && exit 0"
+    "prepublishOnly": "pnpm run build",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage"
   },
   "repository": {
     "type": "git",
@@ -33,18 +34,23 @@
     "cloud"
   ],
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
   },
   "dependencies": {
+    "@mindfiredigital/adac-compliance": "workspace:*",
+    "@mindfiredigital/adac-cost": "workspace:*",
+    "@mindfiredigital/adac-export-terraform": "workspace:*",
     "elkjs": "^0.11.0",
     "fs-extra": "^11.3.3"
   },
   "devDependencies": {
-    "@mindfiredigital/adac-core": "workspace:*",
     "@mindfiredigital/adac-cli": "workspace:*",
+    "@mindfiredigital/adac-core": "workspace:*",
     "@types/fs-extra": "^11.0.4",
     "@types/node": "^25.2.3",
     "tsup": "^8.3.5",
-    "vitest": "^4.0.18"
+    "vitest": "^4.0.18",
+    "@vitest/coverage-v8": "^4.0.18"
   }
 }

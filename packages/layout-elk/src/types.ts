@@ -1,4 +1,10 @@
-export interface ElkNode {
+import type {
+  ElkNode as BaseElkNode,
+  ElkExtendedEdge,
+  ElkEdgeSection as BaseElkEdgeSection,
+} from 'elkjs';
+
+export interface ElkNode extends BaseElkNode {
   id: string;
   width?: number;
   height?: number;
@@ -8,25 +14,80 @@ export interface ElkNode {
   layoutOptions?: Record<string, string>;
   x?: number;
   y?: number;
-  // Visual properties
+  // Visual properties used by renderer
   properties?: {
     type?: string;
     iconPath?: string;
     description?: string;
     cssClass?: string;
     title?: string;
+    insight_tags?: string[];
   };
 }
 
-export interface ElkEdge {
+export interface ElkEdge extends ElkExtendedEdge {
   id: string;
   sources: string[];
   targets: string[];
   container?: string;
   labels?: { text: string }[];
-  sections?: {
-    startPoint: { x: number; y: number };
-    endPoint: { x: number; y: number };
-    bendPoints?: { x: number; y: number }[];
-  }[];
+  sections?: ElkEdgeSection[];
+}
+
+export interface ElkEdgeSection extends BaseElkEdgeSection {
+  id: string;
+  startPoint: { x: number; y: number };
+  endPoint: { x: number; y: number };
+  bendPoints?: { x: number; y: number }[];
+}
+
+export interface LayoutNodeData {
+  width: number;
+  height: number;
+  parent?: string;
+  [key: string]: unknown;
+}
+
+export interface LayoutEdgeData {
+  label?: string;
+  [key: string]: unknown;
+}
+
+export interface LayoutNodePosition {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+export interface LayoutEdgePath {
+  points: { x: number; y: number }[];
+}
+
+export interface LayoutBounds {
+  width: number;
+  height: number;
+}
+
+export interface LayoutResult {
+  nodes: Record<string, LayoutNodePosition>;
+  edges: Record<string, LayoutEdgePath>;
+  bounds: LayoutBounds;
+}
+
+export interface LayoutOptions {
+  rankdir?: 'TB' | 'LR';
+  nodesep?: number;
+  ranksep?: number;
+  marginx?: number;
+  marginy?: number;
+  edgeMargin?: number;
+  maxIterations?: number;
+  nodePlacementStrategy?: string;
+}
+
+export interface LayoutEngine {
+  addNode(id: string, data: LayoutNodeData): void;
+  addEdge(from: string, to: string, data?: LayoutEdgeData): void;
+  layout(): LayoutResult | Promise<LayoutResult>;
 }

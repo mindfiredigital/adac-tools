@@ -65,16 +65,18 @@ packages/*/mappings/
 *.pptx
 
 # Exceptions: Allow source icons (AWS/Azure/GCP) to be committed
-!packages/icons-*/assets/
-!packages/icons-*/assets/**
-!packages/icons-*/mappings/
-!packages/icons-*/mappings/**
+# !packages/icons-*/assets/
+# !packages/icons-*/assets/**
+# !packages/icons-*/mappings/
+# !packages/icons-*/mappings/**
 
 # Exceptions: Allow web public assets
-!packages/web/public/*.svg
+# !packages/web/public/*.svg
 !packages/web/public/*.png
 !packages/web/public/*.jpg
 
 # Temporary
 tmp/
 temp/
+*.tgz
+*.vsix

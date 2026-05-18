@@ -1,8 +1,19 @@
 {
   "name": "@mindfiredigital/adac-layout-elk",
   "version": "0.0.1",
+  "description": "Professional graph layout engine using ELK for ADAC diagrams",
+  "author": "Mindfire Digital",
+  "license": "MIT",
   "main": "dist/index.js",
+  "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
+  "keywords": [
+    "adac",
+    "layout",
+    "elkjs",
+    "graph",
+    "diagram"
+  ],
   "scripts": {
     "build": "tsc",
     "test": "vitest run"
@@ -13,7 +24,18 @@
   "dependencies": {
     "elkjs": "^0.11.0",
     "@mindfiredigital/adac-layout-core": "workspace:*",
-    "@mindfiredigital/adac-schema": "workspace:*"
+    "@mindfiredigital/adac-schema": "workspace:*",
+    "@mindfiredigital/adac-icons-aws": "workspace:*",
+    "@mindfiredigital/adac-icons-gcp": "workspace:*",
+    "@mindfiredigital/adac-icons-azure": "workspace:*"
   },
-  "license": "ISC"
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mindfiredigital/adac-tools.git",
+    "directory": "packages/layout-elk"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  }
 }

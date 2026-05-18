@@ -17,19 +17,25 @@
     "format:check": "prettier --check .",
     "prepare": "husky",
     "cli": "node packages/diagram/dist/cli.js",
-    "setup:icons": "pnpm --filter @mindfiredigital/adac-icons-aws run setup-icons",
-    "release:pack": "node scripts/pack-release.js"
+    "setup:icons": "pnpm --filter @mindfiredigital/adac-icons-aws run setup-icons && pnpm --filter @mindfiredigital/adac-icons-gcp run setup-icons && pnpm --filter @mindfiredigital/adac-icons-azure run setup-icons",
+    "prerelease:pack": "pnpm setup:icons && pnpm build",
+    "release:pack": "node scripts/pack-release.js",
+    "release:publish": "node scripts/publish-packages.mjs",
+    "release:publish:dry-run": "node scripts/publish-packages.mjs --dry-run",
+    "release:setup": "node scripts/setup-publish-config.mjs",
+    "changeset:autogenerate": "node .github/changeset-autogenerate.mjs",
+    "changeset:version": "node .github/changeset-version.js"
   },
   "keywords": [
     "adac",
     "aws",
     "diagram"
   ],
-  "author": "Yogesh Sharma",
-  "license": "ISC",
+  "author": "Mindfire Digital",
+  "license": "Apache-2.0",
   "dependencies": {
     "adm-zip": "^0.5.16",
-    "axios": "^1.13.2",
+    "axios": "^1.16.0",
     "commander": "^14.0.2",
     "dagre": "^0.8.5",
     "elkjs": "^0.11.0",
@@ -38,22 +44,59 @@
     "js-yaml": "^4.1.1"
   },
   "devDependencies": {
+    "@changesets/changelog-github": "^0.7.0",
+    "@changesets/cli": "^2.30.0",
     "@commitlint/cli": "^20.3.1",
     "@commitlint/config-conventional": "^20.3.1",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
     "@types/adm-zip": "^0.5.7",
     "@types/dagre": "^0.7.53",
     "@types/express": "^5.0.6",
     "@types/fs-extra": "^11.0.4",
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^25.0.3",
-    "@typescript-eslint/eslint-plugin": "^8.53.0",
-    "@typescript-eslint/parser": "^8.53.0",
-    "@vercel/node": "^5.5.22",
+    "@typescript-eslint/eslint-plugin": "^8.58.2",
+    "@typescript-eslint/parser": "^8.58.2",
+    "@vercel/node": "^5.7.10",
+    "@vitejs/plugin-react": "^5.1.4",
     "@vitest/coverage-v8": "^4.0.18",
+    "@vitest/ui": "^4.1.0",
     "eslint": "^8.57.1",
+    "eslint-plugin-unicorn": "51.0.1",
     "husky": "^9.1.7",
+    "jsdom": "^29.0.0",
+    "lint-staged": "^15.2.2",
     "prettier": "^3.7.4",
+    "tsx": "^4.21.0",
     "typescript": "^5.9.3",
     "vitest": "^4.0.18"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md,yaml,yml}": [
+      "prettier --write"
+    ]
+  },
+  "pnpm": {
+    "overrides": {
+      "axios": "^1.15.2",
+      "qs": "^6.14.2",
+      "smol-toml": "^1.6.1",
+      "brace-expansion": "^2.0.3",
+      "braces": "^3.0.3",
+      "fast-xml-parser": "^5.7.0",
+      "postcss": "^8.5.10",
+      "esbuild": "^0.25.0",
+      "minimatch@>=10.0.0 <10.2.3": "^10.2.3",
+      "undici@<6.24.0": "^6.24.0",
+      "flatted@<=3.4.1": "^3.4.2",
+      "fast-uri@<=3.1.1": "^3.1.2",
+      "fast-xml-builder@<=1.1.6": "^1.1.7"
+    }
   }
 }

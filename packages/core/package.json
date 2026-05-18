@@ -2,8 +2,16 @@
   "name": "@mindfiredigital/adac-core",
   "version": "0.1.0",
   "description": "Core integration package for ADAC (Parser, Validator, and Layouts)",
-  "author": "Yogesh Sharma",
-  "license": "ISC",
+  "author": "Mindfire Digital",
+  "license": "MIT",
+  "keywords": [
+    "adac",
+    "core",
+    "diagram",
+    "parser",
+    "layout",
+    "validation"
+  ],
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
@@ -15,16 +23,28 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@mindfiredigital/adac-compliance": "workspace:*",
+    "@mindfiredigital/adac-layout": "workspace:*",
+    "@mindfiredigital/adac-optimizer": "workspace:*",
     "elkjs": "^0.11.0"
   },
   "devDependencies": {
+    "@mindfiredigital/adac-layout-core": "workspace:*",
+    "@mindfiredigital/adac-layout-dagre": "workspace:*",
+    "@mindfiredigital/adac-layout-elk": "workspace:*",
     "@mindfiredigital/adac-parser": "workspace:*",
     "@mindfiredigital/adac-schema": "workspace:*",
-    "@mindfiredigital/adac-layout-elk": "workspace:*",
-    "@mindfiredigital/adac-layout-dagre": "workspace:*",
-    "@mindfiredigital/adac-layout-core": "workspace:*",
     "tsup": "^8.3.5",
-    "vitest": "^4.0.18",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.18"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mindfiredigital/adac-tools.git",
+    "directory": "packages/core"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
   }
 }

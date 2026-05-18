@@ -6,10 +6,11 @@ export async function layoutDagre(root: ElkNode): Promise<ElkNode> {
 
   g.setGraph({
     rankdir: 'LR',
-    align: 'DL', // UL, UR, DL, DR
-    nodesep: 60,
-    ranksep: 80,
+    align: 'DL',
+    nodesep: 50,
+    ranksep: 70,
     edgesep: 20,
+    ranker: 'network-simplex',
     marginx: 40,
     marginy: 40,
   });
@@ -49,7 +50,7 @@ export async function layoutDagre(root: ElkNode): Promise<ElkNode> {
     }
 
     if (node.children) {
-      node.children.forEach((child) => traverse(child, node.id));
+      node.children.forEach((child: ElkNode) => traverse(child, node.id));
     }
   }
 
@@ -61,12 +62,12 @@ export async function layoutDagre(root: ElkNode): Promise<ElkNode> {
 
   function collectEdges(node: ElkNode) {
     if (node.edges) {
-      node.edges.forEach((e) =>
+      node.edges.forEach((e: ElkEdge) =>
         allEdges.push({ edge: e, containerId: node.id })
       );
     }
     if (node.children) {
-      node.children.forEach((c) => collectEdges(c));
+      node.children.forEach((c: ElkNode) => collectEdges(c));
     }
   }
 
@@ -311,6 +312,7 @@ export async function layoutDagre(root: ElkNode): Promise<ElkNode> {
 
         edge.sections = [
           {
+            id: `${edge.id}-section`,
             startPoint: points[0],
             endPoint: points[points.length - 1],
             bendPoints: points.slice(1, points.length - 1),

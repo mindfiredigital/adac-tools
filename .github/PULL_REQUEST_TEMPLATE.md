@@ -25,14 +25,27 @@ _Link any related issue(s) with references to help reviewers understand the cont
 - [ ] 🔧 Configuration or CI/CD change
 - [ ] 🧹 Maintenance or dependency update
 
+## Commit Message Format
+
+For this **21-package monorepo**, use conventional commits with the package scope:
+
+- `feat(adac-core): add new layout engine` - New feature in a specific package
+- `fix(adac-parser): handle edge case in YAML parsing`
+- `docs(adac-cli): update usage examples`
+- `test(adac-diagram): add integration tests`
+
+**Scope should match the package name from `/packages/*` (without `@mindfiredigital/` prefix).**
+
 ## Checklist
 
 _Please ensure the following have been completed before submitting:_
 
-- [ ] I have linted my code using `npm run lint`.
+- [ ] I have linted my code using `pnpm lint`.
+- [ ] I have formatted my code using `pnpm format`.
 - [ ] I have updated the documentation as needed.
 - [ ] I have added or updated tests for the changes in this PR.
-- [ ] I have verified that my changes work in all supported environments (e.g., Chrome, Firefox, Safari).
+- [ ] I have included a scope in my commit message matching a package name.
+- [ ] All tests pass locally with `pnpm test`.
 
 ## Screenshots (if applicable)
 

@@ -1,0 +1,202 @@
+{
+  "ADAC Scaffold": {
+    "prefix": "adac-scaffold",
+    "description": "Complete ADAC file scaffold with metadata, applications, infrastructure, and connections",
+    "body": [
+      "version: '0.1'",
+      "",
+      "metadata:",
+      "  name: '${1:My Architecture}'",
+      "  author: '${2:Author Name}'",
+      "  description: '${3:Architecture description}'",
+      "  created: '${CURRENT_YEAR}-${CURRENT_MONTH}-${CURRENT_DATE}'",
+      "  environment: ${4|development,staging,production,test,demo|}",
+      "",
+      "applications:",
+      "  - id: '${5:app-1}'",
+      "    name: '${6:Application}'",
+      "    type: ${7|frontend,backend,api,database,cache,queue,worker,microservice|}",
+      "    technology: '${8:Node.js}'",
+      "",
+      "infrastructure:",
+      "  clouds:",
+      "    - id: '${9:cloud-primary}'",
+      "      provider: ${10|aws,gcp,azure|}",
+      "      region: '${11:us-east-1}'",
+      "      services:",
+      "        - id: '${12:service-1}'",
+      "          service: ${13:ec2}",
+      "          name: '${14:Service Name}'",
+      "",
+      "connections:",
+      "  - id: '${15:conn-1}'",
+      "    from: '${5:app-1}'",
+      "    to: '${12:service-1}'",
+      "    type: ${16|api-call,database-query,cache-read,message-publish|}"
+    ]
+  },
+  "ADAC AWS Service": {
+    "prefix": "adac-aws-service",
+    "description": "Add an AWS service",
+    "body": [
+      "- id: '${1:service-id}'",
+      "  service: ${2|ec2,ecs-fargate,ecs-ec2,eks,lambda,rds-postgres,rds-mysql,rds-aurora-postgres,dynamodb,s3,alb,nlb,cloudfront,route53,api-gateway-rest,sqs,sns,elasticache-redis,cognito,kms|}",
+      "  name: '${3:Service Name}'",
+      "  description: '${4:Service description}'",
+      "  runs: [${5}]"
+    ]
+  },
+  "ADAC GCP Service": {
+    "prefix": "adac-gcp-service",
+    "description": "Add a GCP service",
+    "body": [
+      "- id: '${1:service-id}'",
+      "  service: ${2|cloud-run,cloud-functions,gke,cloud-sql,cloud-spanner,bigquery,cloud-storage,pub-sub,cloud-cdn,cloud-dns,vertex-ai|}",
+      "  name: '${3:Service Name}'",
+      "  description: '${4:Service description}'"
+    ]
+  },
+  "ADAC Connection": {
+    "prefix": "adac-connection",
+    "description": "Add a connection between services",
+    "body": [
+      "- id: '${1:conn-id}'",
+      "  from: '${2:source-id}'",
+      "  to: '${3:target-id}'",
+      "  type: ${4|api-call,database-query,cache-read,cache-write,message-publish,message-consume,file-upload,file-download,stream-read,stream-write,load-balancing,authentication,database|}",
+      "  protocol: ${5|HTTPS,HTTP,gRPC,WebSocket,PostgreSQL,MySQL,Redis,TCP|}"
+    ]
+  },
+  "ADAC Application": {
+    "prefix": "adac-application",
+    "description": "Add a logical application",
+    "body": [
+      "- id: '${1:app-id}'",
+      "  name: '${2:App Name}'",
+      "  type: ${3|frontend,backend,api,database,cache,queue,worker,batch-job,mobile,desktop,iot,ml-model,data-pipeline,microservice|}",
+      "  technology: '${4:Technology}'",
+      "  owner: '${5:Team Name}'"
+    ]
+  },
+  "ADAC AWS Cloud": {
+    "prefix": "adac-aws-cloud",
+    "description": "Add an AWS cloud configuration",
+    "body": [
+      "- id: '${1:aws-primary}'",
+      "  provider: aws",
+      "  region: '${2|us-east-1,us-west-2,eu-west-1,eu-central-1,ap-southeast-1,ap-northeast-1|}'",
+      "  tier: ${3|primary,secondary,failover,disaster-recovery,development,test|}",
+      "  services:",
+      "    $0"
+    ]
+  },
+  "ADAC VPC Setup": {
+    "prefix": "adac-vpc",
+    "description": "Add a VPC with public and private subnets",
+    "body": [
+      "- id: '${1:vpc-main}'",
+      "  type: 'network'",
+      "  subtype: 'vpc'",
+      "  config:",
+      "    cidr: '${2:10.0.0.0/16}'",
+      "    dns_support: true",
+      "    dns_hostnames: true",
+      "",
+      "- id: '${3:public-subnet}'",
+      "  type: 'network'",
+      "  subtype: 'subnet'",
+      "  config:",
+      "    vpc: '${1:vpc-main}'",
+      "    cidr: '${4:10.0.1.0/24}'",
+      "    availability_zone: '${5:us-east-1a}'",
+      "    public: true",
+      "",
+      "- id: '${6:private-subnet}'",
+      "  type: 'network'",
+      "  subtype: 'subnet'",
+      "  config:",
+      "    vpc: '${1:vpc-main}'",
+      "    cidr: '${7:10.0.2.0/24}'",
+      "    availability_zone: '${5:us-east-1a}'",
+      "    public: false"
+    ]
+  },
+  "ADAC ECS Fargate Service": {
+    "prefix": "adac-ecs-fargate",
+    "description": "Add an ECS Fargate service with auto-scaling",
+    "body": [
+      "- id: '${1:ecs-service}'",
+      "  type: 'compute'",
+      "  subtype: 'ecs-fargate'",
+      "  runs: ['${2:app-id}']",
+      "  config:",
+      "    cpu: ${3|256,512,1024,2048,4096|}",
+      "    memory: ${4|512,1024,2048,4096,8192|}",
+      "    containers:",
+      "      - name: '${5:container}'",
+      "        image: '${6:image:latest}'",
+      "        port: ${7:8080}"
+    ]
+  },
+  "ADAC RDS Database": {
+    "prefix": "adac-rds",
+    "description": "Add an RDS database instance",
+    "body": [
+      "- id: '${1:rds-db}'",
+      "  type: 'database'",
+      "  subtype: ${2|rds-postgres,rds-mysql,rds-aurora-postgres,rds-aurora-mysql|}",
+      "  runs: ['${3:database-app}']",
+      "  compliance:",
+      "    - ${4|pci-dss,hipaa,soc2,gdpr|}",
+      "  config:",
+      "    engine_version: '${5:14}'",
+      "    instance_class: '${6:db.t3.micro}'",
+      "    allocated_storage: ${7:20}",
+      "    multi_az: ${8|false,true|}",
+      "    encrypted: true",
+      "    backupRetentionPeriod: ${9:7}"
+    ]
+  },
+  "ADAC Cost Configuration": {
+    "prefix": "adac-cost",
+    "description": "Add cost configuration to a service",
+    "body": [
+      "cost:",
+      "  monthly_estimate: ${1:100}",
+      "  currency: ${2|USD,EUR,GBP,JPY,INR|}",
+      "  pricing_model: ${3|on-demand,reserved-1yr,reserved-3yr,spot,savings-plan|}"
+    ]
+  },
+  "ADAC Monitoring": {
+    "prefix": "adac-monitoring",
+    "description": "Add monitoring configuration",
+    "body": [
+      "monitoring:",
+      "  enabled: true",
+      "  metrics:",
+      "    - '${1:CPUUtilization}'",
+      "    - '${2:MemoryUtilization}'",
+      "  alarms:",
+      "    - name: '${3:High CPU}'",
+      "      metric: '${1:CPUUtilization}'",
+      "      threshold: ${4:80}",
+      "      comparison: ${5|GreaterThan,LessThan,GreaterThanOrEqualTo,LessThanOrEqualTo|}"
+    ]
+  },
+  "ADAC Metadata": {
+    "prefix": "adac-metadata",
+    "description": "ADAC metadata section",
+    "body": [
+      "metadata:",
+      "  name: '${1:Architecture Name}'",
+      "  author: '${2:Author}'",
+      "  description: '${3:Description}'",
+      "  created: '${CURRENT_YEAR}-${CURRENT_MONTH}-${CURRENT_DATE}'",
+      "  version: '${4:1.0.0}'",
+      "  organization: '${5:Organization}'",
+      "  environment: ${6|development,staging,production,test,demo|}",
+      "  tags:",
+      "    - '${7:tag}'"
+    ]
+  }
+}

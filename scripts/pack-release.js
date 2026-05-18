@@ -30,11 +30,16 @@ async function pack() {
 
     // 2. Pack
     console.log(`⭐ Running pack...`);
-    execSync('pnpm pack', { cwd: pkgPath, stdio: 'inherit' });
-
-    // 3. Move .tgz to releases folder
-    const files = await fs.readdir(pkgPath);
-    const tarball = files.find((f) => f.endsWith('.tgz'));
+    const packOutput = execSync('pnpm pack --json', { cwd: pkgPath })
+      .toString()
+      .trim();
+    // Parse JSON reliably, ignoring potential warnings before the JSON object
+    const jsonStart = packOutput.indexOf('{');
+    let tarball = '';
+    if (jsonStart !== -1) {
+      const packJson = JSON.parse(packOutput.substring(jsonStart));
+      tarball = packJson.filename;
+    }
 
     if (tarball) {
       const src = path.join(pkgPath, tarball);
@@ -46,7 +51,55 @@ async function pack() {
     }
   }
 
-  console.log('\n✨ All releases packed in /releases folder');
+  // ── 2. Pack VS Code extension (.vsix) ───────────────────
+  console.log('\n📦 Packing VS Code extension...');
+  const vscodePath = path.resolve(root, 'packages/vscode');
+
+  // Build the extension
+  console.log('🔨 Building VS Code extension...');
+  execSync('node esbuild.js --production', {
+    cwd: vscodePath,
+    stdio: 'inherit',
+  });
+
+  // Package as .vsix (npx to avoid needing vsce globally installed)
+  console.log('⭐ Creating .vsix package...');
+  execSync('echo "y" | npx @vscode/vsce package --no-dependencies', {
+    cwd: vscodePath,
+    stdio: 'inherit',
+  });
+
+  // Find and move .vsix to releases folder (deterministic: pick newest)
+  const vscodeFiles = (await fs.readdir(vscodePath))
+    .filter((f) => f.endsWith('.vsix'))
+    .map((name) => ({
+      name,
+      time: fs.statSync(path.join(vscodePath, name)).mtime.getTime(),
+    }))
+    .sort((a, b) => b.time - a.time);
+
+  const vsix = vscodeFiles.length > 0 ? vscodeFiles[0].name : null;
+
+  if (vsix) {
+    const src = path.join(vscodePath, vsix);
+    const dest = path.join(releasesDir, vsix);
+    await fs.move(src, dest, { overwrite: true });
+    console.log(`✅ Created: releases/${vsix}`);
+  } else {
+    console.error('❌ Error: Could not find .vsix file');
+  }
+
+  // ── Summary ─────────────────────────────────────────────
+  console.log('\n' + '─'.repeat(60));
+  console.log('📋 RELEASE ARTIFACTS');
+  console.log('─'.repeat(60));
+  const artifacts = await fs.readdir(releasesDir);
+  for (const file of artifacts) {
+    const stat = await fs.stat(path.join(releasesDir, file));
+    const size = (stat.size / 1024).toFixed(1);
+    console.log(`  📄 ${file} (${size} KB)`);
+  }
+  console.log(`\n✨ ${artifacts.length} artifacts packed in /releases`);
 }
 
 pack().catch((err) => {

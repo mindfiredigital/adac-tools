@@ -1,11 +1,42 @@
 {
   "name": "@mindfiredigital/adac-cost",
   "version": "0.0.1",
+  "description": "Cost analysis tool for cloud architectures",
+  "author": "Mindfire Digital",
+  "license": "MIT",
+  "type": "commonjs",
   "main": "dist/index.js",
+  "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
+  "keywords": [
+    "adac",
+    "cost",
+    "pricing",
+    "analysis",
+    "aws"
+  ],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsc",
-    "test": "echo \"No tests specified\" && exit 0"
+    "test": "vitest run"
   },
-  "license": "ISC"
+  "dependencies": {
+    "js-yaml": "^4.1.1"
+  },
+  "devDependencies": {
+    "@aws-sdk/client-pricing": "^3.1031.0",
+    "@types/js-yaml": "^4.0.9",
+    "vitest": "^4.0.18"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mindfiredigital/adac-tools.git",
+    "directory": "packages/cost"
+  }
 }

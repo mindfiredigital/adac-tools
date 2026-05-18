@@ -2,21 +2,44 @@
   "name": "@mindfiredigital/adac-cli",
   "version": "0.1.0",
   "description": "CLI command reader for ADAC",
+  "author": "Mindfire Digital",
+  "license": "MIT",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
+  "keywords": [
+    "adac",
+    "cli",
+    "commander",
+    "command-line"
+  ],
   "scripts": {
-    "build": "tsup"
+    "build": "tsup",
+    "test": "vitest run"
   },
   "dependencies": {
     "commander": "^14.0.3"
   },
   "devDependencies": {
     "@mindfiredigital/adac-core": "workspace:*",
+    "@mindfiredigital/adac-cost": "workspace:*",
     "tsup": "^8.3.5",
     "typescript": "^5.9.3",
     "fs-extra": "^11.3.3",
     "@types/fs-extra": "^11.0.4",
-    "@types/node": "^25.2.3"
-  }
+    "@types/node": "^25.2.3",
+    "vitest": "^4.0.18"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mindfiredigital/adac-tools.git",
+    "directory": "packages/cli"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "files": [
+    "dist"
+  ]
 }

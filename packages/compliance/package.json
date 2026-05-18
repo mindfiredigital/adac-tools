@@ -1,11 +1,44 @@
 {
   "name": "@mindfiredigital/adac-compliance",
   "version": "0.0.1",
+  "description": "Compliance validation and security framework checks for cloud architectures",
+  "author": "Mindfire Digital",
+  "license": "MIT",
+  "type": "module",
   "main": "dist/index.js",
+  "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
+  "keywords": [
+    "adac",
+    "compliance",
+    "pci-dss",
+    "soc2",
+    "hipaa",
+    "security",
+    "framework"
+  ],
+  "files": [
+    "dist"
+  ],
   "scripts": {
-    "build": "tsc",
-    "test": "echo \"No tests specified\" && exit 0"
+    "build": "tsup src/index.ts --format esm,cjs --dts",
+    "test": "vitest run"
   },
-  "license": "ISC"
+  "dependencies": {
+    "@mindfiredigital/adac-schema": "workspace:*"
+  },
+  "devDependencies": {
+    "vitest": "^4.0.18",
+    "tsup": "^8.0.0",
+    "typescript": "^5.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mindfiredigital/adac-tools.git",
+    "directory": "packages/compliance"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  }
 }

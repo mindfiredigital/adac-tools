@@ -20,5 +20,5 @@ if (result.valid) {
 ## Features
 
 - **JSON Schema Validation**: Uses Ajv for high-performance validation against the ADAC specification.
-- **TypeScript Types**: Shared interfaces for `AdacConfig`, `AdacService`, etc.
-- **Multi-Cloud Support**: Initial support for AWS with flexibility for other providers.
+- **TypeScript Types**: Shared interfaces for `AdacConfig`, `AdacService`, `GcpService`, etc.
+- **Multi-Cloud Support**: Robust support for both AWS and Google Cloud Platform (GCP) architectures with provider-specific schema definitions.

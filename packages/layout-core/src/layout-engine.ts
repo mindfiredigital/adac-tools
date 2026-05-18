@@ -4,12 +4,18 @@ import { Graph } from './graph/graph';
 
 import { detectCycles, breakCycles } from './algorithms/cycle-detection';
 
-import { assignRanks } from './algorithms/rank-assignment';
+import { assignRanks, normalize } from './algorithms/rank-assignment';
 import { orderNodes } from './algorithms/node-ordering';
 import { assignCoordinates } from './algorithms/coordinate-assignment';
 import { routeEdges } from './algorithms/edge-routing';
 
-import { LayoutOptions, PositionedNode, EdgePath } from './types';
+import {
+  LayoutOptions,
+  NodePosition,
+  EdgePath,
+  NodeData,
+  EdgeData,
+} from './types';
 
 /**
  * CustomLayoutEngine
@@ -26,32 +32,35 @@ export class CustomLayoutEngine {
 
     this.options = {
       rankdir: options.rankdir ?? 'TB',
-      nodesep: options.nodesep ?? 40,
-      ranksep: options.ranksep ?? 50,
-      marginx: options.marginx ?? 20,
-      marginy: options.marginy ?? 20,
+      nodesep: options.nodesep ?? 80,
+      ranksep: options.ranksep ?? 100,
+      marginx: options.marginx ?? 40,
+      marginy: options.marginy ?? 40,
+      edgeMargin: options.edgeMargin ?? 12,
+      maxIterations: options.maxIterations ?? 24,
+      nodePlacementStrategy: options.nodePlacementStrategy ?? 'BRANDES_KOEPF',
     };
   }
 
   /**
    * Add node
    */
-  addNode(id: string, data: { width: number; height: number }) {
+  addNode(id: string, data: NodeData) {
     this.graph.addNode(id, data);
   }
 
   /**
    * Add edge
    */
-  addEdge(from: string, to: string) {
-    this.graph.addEdge(from, to);
+  addEdge(from: string, to: string, data?: EdgeData) {
+    this.graph.addEdge(from, to, data);
   }
 
   /**
    * Run layout pipeline
    */
   layout(): {
-    nodes: Record<string, PositionedNode>;
+    nodes: Record<string, NodePosition>;
     edges: Record<string, EdgePath>;
     bounds: { width: number; height: number };
   } {
@@ -70,12 +79,21 @@ export class CustomLayoutEngine {
     }
 
     // 2. Assign ranks
-    const ranks = assignRanks(this.graph);
+    assignRanks(this.graph);
 
-    // 3. Order nodes
-    const ordering = orderNodes(this.graph, ranks);
+    // 3. Normalize (insert virtual nodes)
+    normalize(this.graph);
 
-    // 4. Assign coordinates
+    // Re-collect ranks from nodes as normalization adds new nodes
+    const ranks: Map<string, number> = new Map();
+    this.graph.nodes.forEach((node, id) => {
+      ranks.set(id, node.rank);
+    });
+
+    // 4. Order nodes
+    const ordering = orderNodes(this.graph, ranks, this.options);
+
+    // 5. Assign coordinates
     const positions = assignCoordinates(
       this.graph,
       ranks,
@@ -83,14 +101,22 @@ export class CustomLayoutEngine {
       this.options
     );
 
-    // 5. Route edges
+    // 6. Route edges
     const edgePaths = routeEdges(this.graph, positions, this.options);
 
-    // 6. Calculate bounds
+    // 7. Calculate bounds
     const bounds = this.calculateBounds(positions);
 
+    // 8. Filter results (remove virtual nodes from node positions)
+    const finalNodes: Record<string, NodePosition> = {};
+    Object.entries(positions).forEach(([id, pos]) => {
+      if (!this.graph.getNode(id)?.isVirtual) {
+        finalNodes[id] = pos;
+      }
+    });
+
     return {
-      nodes: positions,
+      nodes: finalNodes,
       edges: edgePaths,
       bounds,
     };
@@ -99,7 +125,7 @@ export class CustomLayoutEngine {
   /**
    * Compute diagram bounds
    */
-  private calculateBounds(positions: Record<string, PositionedNode>): {
+  private calculateBounds(positions: Record<string, NodePosition>): {
     width: number;
     height: number;
   } {

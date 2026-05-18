@@ -1,0 +1,522 @@
+# ─────────────────────────────────────────────────────────────────────────────
+#  CodeRabbit Configuration for mindfiredigital/adac-tools
+#
+#  Stack   : Node.js + React 18 + TypeScript · Tailwind CSS
+#  Tooling : pnpm · Vitest · ESLint · Prettier
+#  Pattern : Monorepo (pnpm workspaces) with 23 packages (@mindfiredigital/adac-*)
+#
+#  Validate : https://docs.coderabbit.ai/configuration/yaml-validator
+#  Reference: https://docs.coderabbit.ai/reference/configuration
+# ─────────────────────────────────────────────────────────────────────────────
+
+language: 'en-US'
+
+# Max 250 characters
+tone_instructions: 'Senior Node.js/TypeScript and React engineer reviewer. Be concise and specific. Cite AWS architecture, Node.js, React, or TypeScript best-practices when flagging issues. Suggest concrete fixes. Praise good patterns as well as flagging problems.'
+
+early_access: false
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  REVIEWS
+# ─────────────────────────────────────────────────────────────────────────────
+reviews:
+  profile: 'assertive'
+  request_changes_workflow: true
+
+  # PR description enrichment
+  high_level_summary: true
+  high_level_summary_instructions: >
+    Summarise the PR as a concise bullet-point list. Group changes by:
+    (1) Architecture / Package API changes,
+    (2) Core Logic / Generators,
+    (3) Web UI / Components,
+    (4) Tooling / Docs.
+    End with a "Breaking changes" section (write "None" if absent).
+  high_level_summary_in_walkthrough: false
+  # Walkthrough & diagnostics
+  collapse_walkthrough: false
+  changed_files_summary: true
+  sequence_diagrams: true
+  estimate_code_review_effort: true
+  assess_linked_issues: true
+  related_issues: true
+  related_prs: true
+
+  # Labels
+  suggested_labels: true
+  auto_apply_labels: false
+  labeling_instructions:
+    - label: 'core'
+      instructions: 'Apply when the PR touches core generator, layout, parser, or schema logic.'
+    - label: 'exporter'
+      instructions: 'Apply when the PR touches export-cloudformation, export-terraform, or export-k8s packages.'
+    - label: 'web'
+      instructions: 'Apply when the PR changes the React frontend or web-server in packages/web and packages/web-server.'
+    - label: 'vscode'
+      instructions: 'Apply when the PR affects the VS Code extension package.'
+    - label: 'cli'
+      instructions: 'Apply when the PR touches packages/cli or packages/diagram CLI entry.'
+    - label: 'icons'
+      instructions: 'Apply when the PR updates cloud provider icons in packages/icons-*.'
+    - label: 'docs'
+      instructions: 'Apply when the PR only changes documentation, README files, or JSDoc.'
+    - label: 'tests'
+      instructions: 'Apply when the PR adds or modifies Vitest test files (*.test.ts / *.spec.ts / *.test.tsx).'
+    - label: 'build'
+      instructions: 'Apply when the PR changes package configs, package.json scripts, or GitHub workflows.'
+    - label: 'dependencies'
+      instructions: 'Apply when the PR bumps or removes npm/pnpm dependencies.'
+    - label: 'layout'
+      instructions: 'Apply when the PR touches packages/layout, layout-core, layout-dagre, or layout-elk.'
+    - label: 'compliance'
+      instructions: 'Apply when the PR touches packages/compliance, cost, or optimizer.'
+    - label: 'export'
+      instructions: 'Apply when the PR touches export-cloudformation, export-k8s, or export-terraform.'
+
+  # Reviewer suggestions
+  suggested_reviewers: true
+  auto_assign_reviewers: false
+
+  # Commit status
+  commit_status: true
+  fail_commit_status: false
+  review_status: true
+  review_details: true
+
+  # Display
+  poem: false
+  in_progress_fortune: false
+
+  # Auto-review triggers
+  auto_review:
+    enabled: true
+    branches:
+      - main
+      - dev
+
+  # Files excluded from review (still cloned for context)
+  path_filters:
+    - '!dist/**'
+    - '!packages/*/dist/**'
+    - '!packages/*/out/**'
+    - '!node_modules/**'
+    - '!pnpm-lock.yaml'
+    - '!package-lock.json'
+    - '!yarn.lock'
+    - '!**/*.snap'
+    - '!**/__snapshots__/**'
+    - '!.husky/**'
+    - '!coverage/**'
+    - '!.turbo/**'
+    - '!.next/**'
+    - '!storybook-static/**'
+    - '!packages/icons-*/**'
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  #  PATH-SPECIFIC REVIEW INSTRUCTIONS (one section per package)
+  # ─────────────────────────────────────────────────────────────────────────────
+  path_instructions:
+    # ── FOUNDATION: schema ────────────────────────────────────────────────────
+    - path: 'packages/schema/**/*.ts'
+      instructions: |
+        ## adac-schema Review Checklist
+        CRITICAL: This is the zero-dependency foundation of the entire monorepo.
+        - **No workspace imports allowed** — `adac-schema` must have zero internal ADAC dependencies.
+          Flag any `@mindfiredigital/adac-*` import immediately as a blocking issue.
+        - All AJV schema definitions must be versioned and backward-compatible.
+          Removing or renaming a required field is a breaking change; flag it.
+        - Every exported validator function must return a discriminated union
+          (`{ success: true; document: T } | { success: false; errors: ValidationError[] }`),
+          never raw throws reaching callers.
+        - No `any` types — use `unknown` + explicit type guards.
+        - Public API exports must go through `src/index.ts` only; never import from sibling `src/` paths.
+        - Every public export requires a JSDoc comment with `@param`, `@returns`, and `@example`.
+
+    # ── PARSER ────────────────────────────────────────────────────────────────
+    - path: 'packages/parser/**/*.ts'
+      instructions: |
+        ## adac-parser Review Checklist
+        - Parser functions must return discriminated union `ParseResult`; never throw raw errors to callers.
+        - Error messages must include file path, line number, and column when available — no opaque error strings.
+        - Pure parse/transform functions must be side-effect-free (no filesystem access, no logging).
+          Filesystem I/O belongs only in entry-point wrappers.
+        - Validate parsed output against `adac-schema` before returning `success: true`.
+        - No `any` types; use `unknown` + type guards for YAML-parsed values.
+        - Ensure all edge cases are handled: empty files, missing required fields, duplicate node IDs,
+          unknown connection types.
+        - `import type` must be used for type-only imports from `adac-schema`.
+
+    # ── LAYOUT-CORE (interfaces only) ─────────────────────────────────────────
+    - path: 'packages/layout-core/**/*.ts'
+      instructions: |
+        ## adac-layout-core Review Checklist
+        - This package contains ONLY interfaces, types, and constants — no runtime algorithm logic.
+        - No workspace imports allowed beyond `adac-schema` types (type-only imports only).
+        - All types must be exported from `src/index.ts`; no implementation leakage.
+        - Every interface change is a potential breaking change across all layout adapters;
+          flag additions of required properties and renames as breaking.
+        - Use `import type` exclusively — this package should produce zero runtime code.
+
+    # ── LAYOUT-DAGRE ──────────────────────────────────────────────────────────
+    - path: 'packages/layout-dagre/**/*.ts'
+      instructions: |
+        ## adac-layout-dagre Review Checklist
+        - Must fully implement the `LayoutEngine` interface defined in `adac-layout-core`.
+          Flag any unimplemented interface method.
+        - No imports from `adac-core`, `adac-diagram`, or `adac-cli` — only `layout-core` types
+          and the `dagre` library.
+        - Dagre options (rankdir, ranksep, nodesep, etc.) must be configurable via strategy options,
+          not hardcoded.
+        - Node/edge coordinates returned must be in the same coordinate space expected by `adac-core`.
+        - Verify performance: flag any O(n²) or worse algorithm on the hot path for large graphs.
+
+    # ── LAYOUT-ELK ────────────────────────────────────────────────────────────
+    - path: 'packages/layout-elk/**/*.ts'
+      instructions: |
+        ## adac-layout-elk Review Checklist
+        - Must fully implement the `LayoutEngine` interface from `adac-layout-core`.
+        - ELK algorithm and layout options must be configurable; no hardcoded option objects on the hot path.
+        - ELK runs asynchronously — ensure the public API is `async` and callers can `await` safely.
+        - No imports from `adac-core`, `adac-diagram`, or `adac-cli`.
+        - Flag memory leaks: ELK workers must be terminated after use if using the web worker variant.
+        - Validate that node/edge output coordinates match the coordinate system expected by `adac-core`.
+
+    # ── LAYOUT ORCHESTRATOR ───────────────────────────────────────────────────
+    - path: 'packages/layout/**/*.ts'
+      instructions: |
+        ## adac-layout (orchestrator) Review Checklist
+        - This package is a thin orchestrator — it selects and delegates to layout engines.
+          No layout algorithm logic should live here; flag any such additions.
+        - Engine selection must be based on the strategy enum from `adac-layout-core`.
+        - Must handle unknown strategy values gracefully with a typed error, not a runtime crash.
+        - Imports must only use `adac-layout-core`, `adac-layout-dagre`, and `adac-layout-elk`.
+          Importing from `adac-core` or higher creates a circular dependency — flag immediately.
+
+    # ── CORE (integration hub) ────────────────────────────────────────────────
+    - path: 'packages/core/**/*.ts'
+      instructions: |
+        ## adac-core Review Checklist
+        CRITICAL: `adac-core` must bundle all workspace deps for npm consumers (zero-dep distribution).
+        - **No new workspace dependencies** without explicit justification in the PR description.
+          Each new dep expands the bundle; flag unlisted additions.
+        - Prefer functional, stateless operations; avoid shared mutable state.
+        - Validate input against `adac-schema` early in each public function; reject invalid documents
+          before any layout or generation work.
+        - Never expose raw `any` types in public API — use `unknown` + type guards.
+        - All public functions require JSDoc with `@param`, `@returns`, and `@throws` where applicable.
+        - Circular dependency check: `adac-core` must not import from `adac-diagram`, `adac-cli`,
+          `adac-web`, or `adac-web-server`. Flag any such import.
+        - Unhandled exceptions are forbidden; use discriminated union results or meaningful typed throws.
+
+    # ── DIAGRAM (primary release entry point) ─────────────────────────────────
+    - path: 'packages/diagram/**/*.ts'
+      instructions: |
+        ## adac-diagram Review Checklist
+        CRITICAL: This is the PRIMARY consumer-facing package and CLI entry point.
+        - **Must bundle all workspace deps** — this package is zero-dependency for npm consumers.
+          Flag any unbundled `@mindfiredigital/adac-*` peer dependency.
+        - Every public API change (new export, removed export, changed signature) requires a semver
+          bump noted in the PR; flag if version is not updated.
+        - CLI flags added via Commander must include `.description()` text and appear in `--help`.
+        - Error paths must print human-readable messages; never expose raw stack traces to end users
+          unless `--debug` flag is set.
+        - Smoke test coverage is mandatory — flag PRs that remove or skip `test/smoke.test.ts`.
+        - Output formats (SVG, PNG, etc.) must be validated before writing to disk.
+
+    # ── CLI ───────────────────────────────────────────────────────────────────
+    - path: 'packages/cli/**/*.ts'
+      instructions: |
+        ## adac-cli Review Checklist
+        - All user-facing output must use chalk/ora correctly: spinners for async work,
+          `chalk.red` for errors, `chalk.green` for success.
+        - Never leak stack traces on standard user errors; reserve full traces for `--debug` / `--verbose` mode.
+        - Commander commands must have `.description()`, `.argument()`, and `.option()` documentation.
+        - Exit codes must be consistent: 0 = success, 1 = user error, 2 = unexpected internal error.
+        - No direct business logic in command handlers — delegate to `adac-diagram` or `adac-core`.
+        - Test that `--help` output is accurate after any command change.
+
+    # ── COMPLIANCE ────────────────────────────────────────────────────────────
+    - path: 'packages/compliance/**/*.ts'
+      instructions: |
+        ## adac-compliance Review Checklist
+        - Each compliance rule must have a unique, stable rule ID (e.g. `PCI-DSS-3.1`) and a
+          human-readable `description` and `remediation` field.
+        - Rules must be independently testable in isolation; no shared mutable state between rules.
+        - Checker functions must be pure — no filesystem access, no network calls, no side effects.
+        - Always return a typed `ComplianceResult`; never throw uncaught exceptions to callers.
+        - New frameworks (GDPR, ISO-27001, etc.) must include at least one test file covering
+          both passing and failing architecture cases.
+        - Flag any hardcoded AWS account IDs, ARNs, or region strings that should be config-driven.
+
+    # ── COST ──────────────────────────────────────────────────────────────────
+    - path: 'packages/cost/**/*.ts'
+      instructions: |
+        ## adac-cost Review Checklist
+        - Pricing figures must never be hardcoded inline — they must come from constants files or
+          config objects with source attribution (e.g. AWS pricing page reference).
+        - Return a typed `CostResult` with a per-service breakdown; never return a raw number.
+        - Handle unknown service types gracefully with a typed `unknown` entry in the breakdown,
+          not a thrown error or silent zero.
+        - Cost calculation functions must be pure (no I/O, no global state).
+        - Verify that unit tests cover: empty architecture, single-service, multi-region, and
+          unknown service type scenarios.
+
+    # ── DOC ───────────────────────────────────────────────────────────────────
+    - path: 'packages/doc/**/*.ts'
+      instructions: |
+        ## adac-doc Review Checklist
+        - Document generation functions must be deterministic — same input must always produce
+          identical output (no timestamps, no random IDs in generated content).
+        - Generator functions must return document content as a string/buffer; callers are
+          responsible for writing to disk. No direct `fs.writeFile` inside generator functions.
+        - Output format (Markdown, HTML, etc.) must be validated for well-formedness before return.
+        - New output formats must have at least one snapshot or fixture-based test.
+        - No `adac-diagram`, `adac-cli`, or `adac-web` imports — only `adac-schema`, `adac-parser`,
+          and `adac-core`.
+
+    # ── EXPORT: CLOUDFORMATION ────────────────────────────────────────────────
+    - path: 'packages/export-cloudformation/**/*.ts'
+      instructions: |
+        ## adac-export-cloudformation Review Checklist
+        - Output must be syntactically valid CloudFormation YAML/JSON.
+          Flag any template generation that produces untested structure.
+        - CloudFormation resource logical IDs must be deterministic (derived from node ID or name),
+          not random — randomness breaks idempotent deployments.
+        - Resource types must use the official `AWS::Service::Resource` naming format.
+        - Unsupported ADAC node types must produce a clear error or a documented passthrough comment,
+          not silent omission.
+        - Validate output against the CloudFormation resource specification schema where possible.
+        - Flag any hardcoded AWS region or account ID that should be a template parameter.
+
+    # ── EXPORT: KUBERNETES ────────────────────────────────────────────────────
+    - path: 'packages/export-k8s/**/*.ts'
+      instructions: |
+        ## adac-export-k8s Review Checklist
+        - All generated manifests must include `apiVersion` and `kind` using supported, documented
+          Kubernetes API versions (avoid deprecated/removed APIs).
+        - Resource names must be valid DNS subdomain names (lowercase, alphanumeric, hyphens only).
+        - Every generated manifest must include a `metadata.labels` block with at least
+          `app.kubernetes.io/managed-by: adac`.
+        - Namespace handling: default to `default` but allow override via export options.
+        - Flag any hardcoded cluster-specific values (cluster domain, node selectors, storage classes)
+          that should be parameterised.
+        - Unsupported ADAC node types must produce a typed error, not silent omission.
+
+    # ── EXPORT: TERRAFORM ─────────────────────────────────────────────────────
+    - path: 'packages/export-terraform/**/*.ts'
+      instructions: |
+        ## adac-export-terraform Review Checklist
+        - Output must be valid HCL2 Terraform syntax; flag any string concatenation that could
+          produce malformed HCL.
+        - Provider and resource type strings (e.g. `aws_lambda_function`) must match the
+          Terraform Registry naming convention.
+        - Resource names in generated HCL must be valid identifiers (alphanumeric + underscores).
+        - Sensitive values (passwords, keys) must use `sensitive = true` on variable definitions.
+        - Flag hardcoded provider versions — they should come from export options or a versions file.
+        - Unsupported ADAC node types must produce a typed error or a documented `null_resource`
+          placeholder, not silent omission.
+
+    # ── WEB (React frontend) ──────────────────────────────────────────────────
+    - path: 'packages/web/**/*.tsx'
+      instructions: |
+        ## adac-web React Review Checklist
+        - All components must be React functional components using hooks; no class components.
+        - Accessibility: use semantic HTML elements; add `aria-label` / `aria-describedby` where
+          interactive elements lack visible labels; ensure keyboard navigability.
+        - Decouple UI from data fetching — extract API calls and state management into custom hooks.
+        - Respect Tailwind CSS conventions; no inline `style={}` props for layout/visual concerns.
+        - Avoid unnecessary `useEffect` for derived state; prefer `useMemo` or computed values.
+        - Components receiving diagram data must handle loading, error, and empty states explicitly.
+        - No direct `@mindfiredigital/adac-core` imports in UI components — use `adac-web-server`
+          API calls or a dedicated hook layer.
+
+    - path: 'packages/web/**/*.ts'
+      instructions: |
+        ## adac-web TypeScript (non-component) Review Checklist
+        - Hooks must have typed return values; avoid implicit `any` from fetch responses.
+        - API client functions must handle HTTP error status codes explicitly (not only `catch`).
+        - Shared types used by both web and web-server must live in a shared package, not duplicated.
+
+    # ── WEB-SERVER (Express API) ───────────────────────────────────────────────
+    - path: 'packages/web-server/**/*.ts'
+      instructions: |
+        ## adac-web-server Review Checklist
+        - All Express route handlers must validate and sanitize request bodies before passing to
+          business logic — use a schema validator (AJV or zod), not ad-hoc `if` checks.
+        - Never return raw error stack traces in API responses; use the error-formatter pattern
+          to produce `{ error: string; code: string }` JSON responses.
+        - Authorization/authentication middleware must execute before any business logic middleware
+          on protected routes.
+        - Async route handlers must be wrapped to catch unhandled promise rejections
+          (Express 5 does this natively — confirm the version being used).
+        - Flag any route that performs synchronous I/O on the request thread.
+        - CORS configuration must be explicit; reject wildcard origins in production config.
+        - No `adac-web` imports (no circular dependency between web and web-server).
+
+    # ── VS CODE EXTENSION ─────────────────────────────────────────────────────
+    - path: 'packages/vscode/**/*.ts'
+      instructions: |
+        ## adac-vscode Extension Review Checklist
+        - All registered commands must be non-blocking; use `vscode.window.withProgress` for
+          long-running operations.
+        - Dispose of Webviews, event listeners, and file-system watchers in the `deactivate()`
+          function or via a `Disposable` pattern; flag resource leaks.
+        - Error notifications must use `vscode.window.showErrorMessage` with a human-readable
+          message; never surface raw stack traces to users.
+        - Extension activation events must be as specific as possible
+          (`onLanguage:yaml` + when-clause) to avoid unnecessary activation cost.
+        - All new commands must be declared in `package.json` under `contributes.commands`.
+        - Test that the extension activates and the primary command runs in the extension host.
+
+    # ── OPTIMIZER ─────────────────────────────────────────────────────────────
+    - path: 'packages/optimizer/**/*.ts'
+      instructions: |
+        ## adac-optimizer Review Checklist
+        - Every recommendation must cite a specific, verifiable cloud best-practice
+          (e.g. AWS Well-Architected Framework pillar + principle, Azure CAF rule).
+        - Optimizer functions must be pure — accept an `AdacDocument`, return typed
+          `OptimizationResult[]`. Never mutate the input document.
+        - Each `OptimizationResult` must include: `ruleId`, `severity` (INFO/WARN/ERROR),
+          `message`, `affectedNodeIds[]`, and optionally `remediation`.
+        - New optimization rules must have unit tests covering both matching and non-matching
+          architecture patterns.
+        - Flag hardcoded service-specific thresholds (e.g. "more than 5 Lambda functions") that
+          should be configurable rule parameters.
+
+    # ── TEMPLATES ─────────────────────────────────────────────────────────────
+    - path: 'packages/templates/**/*.ts'
+      instructions: |
+        ## adac-templates Review Checklist
+        - Every template must be validated against `adac-schema` at build time or in tests;
+          flag templates without a schema-validation test.
+        - Template metadata must include: `name`, `description`, `tags[]`, `provider`
+          (aws/gcp/azure/generic), and `version`.
+        - Templates must not contain hardcoded account IDs, resource ARNs, or region strings.
+        - New templates must include a representative example YAML file under `examples/`.
+        - Template IDs must be stable (slug format, kebab-case) — renaming is a breaking change.
+
+    # ── ICONS (static data packages) ─────────────────────────────────────────
+    - path: 'packages/icons-aws/**'
+      instructions: |
+        ## adac-icons-aws Review Checklist
+        - Icon mapping keys must match the service identifiers used in `adac-schema`.
+          Mismatches silently produce missing icons at render time — flag any new key not present
+          in the schema's service enum.
+        - SVG files must be optimized (no unnecessary whitespace, comments, or metadata).
+        - No runtime logic beyond lookup functions; no external HTTP calls, no filesystem writes.
+        - Every new service icon addition requires a corresponding entry in the type mapping.
+
+    - path: 'packages/icons-azure/**'
+      instructions: |
+        ## adac-icons-azure Review Checklist
+        - Same rules as adac-icons-aws. Icon mapping keys must match `adac-schema` Azure service identifiers.
+        - SVG files must be optimized.
+        - No runtime logic beyond lookup functions.
+        - Every new service icon addition requires a corresponding entry in the type mapping.
+
+    - path: 'packages/icons-gcp/**'
+      instructions: |
+        ## adac-icons-gcp Review Checklist
+        - Same rules as adac-icons-aws. Icon mapping keys must match `adac-schema` GCP service identifiers.
+        - SVG files must be optimized.
+        - No runtime logic beyond lookup functions.
+        - Every new service icon addition requires a corresponding entry in the type mapping.
+
+    # ── TESTS (all packages) ──────────────────────────────────────────────────
+    - path: 'packages/**/*.test.ts'
+      instructions: |
+        ## Test Review Checklist (Vitest)
+        - Tests must cover both the happy path AND all documented error/edge cases.
+        - Mocking must not obscure the logic being tested; prefer integration-style tests
+          over deep mocking for business-logic packages.
+        - Verify strict type assertions — avoid `as any` casts in test assertions.
+        - Each `describe` block must map to a single unit (function, class, or module).
+        - Minimum coverage targets: schema/parser/core/diagram/cli ≥ 60%, compliance/cost ≥ 70%.
+          Flag PRs that reduce coverage below these thresholds.
+        - Snapshot tests must use `.toMatchInlineSnapshot()` or committed fixture files;
+          never commit auto-generated snapshot blobs without review.
+
+    - path: 'packages/**/*.test.tsx'
+      instructions: |
+        ## React Component Test Review Checklist (Vitest + Testing Library)
+        - Use `@testing-library/react` queries; prefer accessible queries
+          (`getByRole`, `getByLabelText`) over `getByTestId`.
+        - Test user interactions, not implementation details (avoid testing internal state or hooks directly).
+        - Ensure async interactions use `waitFor` or `findBy*` queries correctly.
+        - Mock only external dependencies (API calls, vscode API); don't mock internal modules.
+
+    # ── CONFIG & BUILD FILES ──────────────────────────────────────────────────
+    - path: 'eslint.config.*'
+      instructions: |
+        - Workspace-wide ESLint rules must be preserved and not silently weakened.
+        - Disabling `@typescript-eslint/no-explicit-any` or `no-console` requires explicit
+          justification in the PR description.
+        - New rule additions must not conflict with existing Prettier config.
+
+    - path: 'packages/*/package.json'
+      instructions: |
+        ## Per-Package package.json Review Checklist
+        - Workspace cross-package imports must use `workspace:*` protocol, not version ranges.
+        - `publishConfig.access` must be `"public"` on all `@mindfiredigital/*` scoped packages.
+        - `main`, `module`, and `exports` fields must point to built `dist/` artifacts, not `src/`.
+        - `files` array must explicitly list `dist/` and exclude `src/`, `test/`, and config files.
+        - New `scripts` must follow existing naming conventions (`build`, `test`, `lint`, `format`).
+        - Do not add `dependencies` without discussion — prefer built-in Node.js APIs.
+          Flag new third-party `dependencies` (non-dev) additions.
+
+    - path: 'package.json'
+      instructions: |
+        ## Root package.json Review Checklist
+        - Changes to `workspaces` configuration require cross-package stability verification.
+        - New root-level scripts must align with the monorepo conventions in `04_CODING_STANDARDS.md`.
+        - The `license` field must be `Apache-2.0`; flag any other value.
+        - Do not add production `dependencies` to the root — it is a workspace root, not a published package.
+
+    - path: '.github/workflows/**'
+      instructions: |
+        ## GitHub Actions Workflow Review Checklist
+        - All `uses:` action references must be pinned to a full SHA commit hash for security;
+          tag-only pins (e.g. `@v3`) are acceptable only for official GitHub-maintained actions.
+        - `continue-on-error` must be `false` by default; flag any `true` usage without justification.
+        - pnpm cache must be configured (`actions/cache` or `setup-node` with `cache: pnpm`) to
+          speed up CI and reduce cost.
+        - Monorepo builds must use `--filter` or Rush change detection to avoid rebuilding unchanged packages.
+        - Secrets must be referenced via `${{ secrets.NAME }}`; never hardcoded in workflow files.
+        - Matrix strategies must include the minimum supported Node.js version (20 LTS).
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  #  STATIC ANALYSIS TOOLS
+  # ─────────────────────────────────────────────────────────────────────────────
+  tools:
+    eslint:
+      enabled: true
+    biome:
+      enabled: false
+    markdownlint:
+      enabled: true
+    actionlint:
+      enabled: true
+    gitleaks:
+      enabled: true
+    htmlhint:
+      enabled: true
+    checkov:
+      enabled: true
+    languagetool:
+      enabled: true
+      enabled_rules:
+        - 'OXFORD_COMMA'
+        - 'EN_QUOTES'
+        - 'COMMA_PARENTHESIS_WHITESPACE'
+      disabled_categories:
+        - 'TYPOGRAPHY'
+    yamllint:
+      enabled: true
+    ast-grep:
+      essential_rules: true
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  CHAT
+# ─────────────────────────────────────────────────────────────────────────────
+chat:
+  auto_reply: true

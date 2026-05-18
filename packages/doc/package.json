@@ -1,11 +1,41 @@
 {
   "name": "@mindfiredigital/adac-doc",
   "version": "0.0.1",
+  "description": "Documentation generator for ADAC schemas and compliance reports",
+  "author": "Mindfire Digital",
+  "license": "MIT",
+  "type": "module",
   "main": "dist/index.js",
+  "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
+  "keywords": [
+    "adac",
+    "documentation",
+    "schema",
+    "markdown",
+    "generator"
+  ],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsc",
-    "test": "echo \"No tests specified\" && exit 0"
+    "test": "vitest run"
   },
-  "license": "ISC"
+  "dependencies": {
+    "handlebars": "^4.7.9",
+    "marked": "^15.0.0",
+    "@mindfiredigital/adac-schema": "workspace:*",
+    "@mindfiredigital/adac-parser": "workspace:*",
+    "@mindfiredigital/adac-compliance": "workspace:*"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mindfiredigital/adac-tools.git",
+    "directory": "packages/doc"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  }
 }

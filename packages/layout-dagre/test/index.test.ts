@@ -7,14 +7,13 @@ describe('Dagre Layout', () => {
       id: 'root',
       children: [
         { id: 'n1', width: 100, height: 100 },
-        { id: 'n2', width: 100, height: 100 }
+        { id: 'n2', width: 100, height: 100 },
       ],
-      edges: [
-        { id: 'e1', sources: ['n1'], targets: ['n2'] }
-      ]
+      edges: [{ id: 'e1', sources: ['n1'], targets: ['n2'] }],
     };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const result = await layoutDagre(graph as any);
-    expect(result.children?.some(c => c.x !== undefined)).toBe(true);
+    expect(result.children?.some((c) => c.x !== undefined)).toBe(true);
     expect(result.edges?.[0].sections).toBeDefined();
   });
 
@@ -24,13 +23,14 @@ describe('Dagre Layout', () => {
       children: [
         { id: 'n1', width: 100, height: 100 },
         { id: 'n2', width: 100, height: 100 },
-        { id: 'n3', width: 100, height: 100 }
+        { id: 'n3', width: 100, height: 100 },
       ],
       edges: [
         { id: 'e1', sources: ['n1'], targets: ['n2'] },
-        { id: 'e2', sources: ['n1'], targets: ['n3'] }
-      ]
+        { id: 'e2', sources: ['n1'], targets: ['n3'] },
+      ],
     };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const result = await layoutDagre(graph as any);
     expect(result.edges?.length).toBe(2);
   });
