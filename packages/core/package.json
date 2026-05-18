@@ -26,7 +26,7 @@
     "@mindfiredigital/adac-compliance": "workspace:*",
     "@mindfiredigital/adac-layout": "workspace:*",
     "@mindfiredigital/adac-optimizer": "workspace:*",
-    "elkjs": "^0.11.0"
+    "elkjs": "^0.11.1"
   },
   "devDependencies": {
     "@mindfiredigital/adac-layout-core": "workspace:*",

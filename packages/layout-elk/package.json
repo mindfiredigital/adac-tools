@@ -22,7 +22,7 @@
     "dist"
   ],
   "dependencies": {
-    "elkjs": "^0.11.0",
+    "elkjs": "^0.11.1",
     "@mindfiredigital/adac-layout-core": "workspace:*",
     "@mindfiredigital/adac-schema": "workspace:*",
     "@mindfiredigital/adac-icons-aws": "workspace:*",
