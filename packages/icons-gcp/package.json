@@ -30,7 +30,8 @@
     "directory": "packages/icons-gcp"
   },
   "devDependencies": {
-    "vitest": "^4.0.18"
+    "vitest": "^4.0.18",
+    "ts-node": "^10.9.2"
   },
   "publishConfig": {
     "access": "public",

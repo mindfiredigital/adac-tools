@@ -348,6 +348,9 @@ importers:
 
   packages/icons-aws:
     devDependencies:
+      ts-node:
+        specifier: ^10.9.2
+        version: 10.9.2(@types/node@25.3.0)(typescript@5.9.3)
       vitest:
         specifier: ^4.0.18
         version: 4.0.18(@edge-runtime/vm@3.2.0)(@types/node@25.3.0)(@vitest/ui@4.1.1)(jiti@2.6.1)(jsdom@29.0.1(@noble/hashes@1.8.0))(tsx@4.21.0)(yaml@2.8.3)
@@ -381,6 +384,9 @@ importers:
 
   packages/icons-gcp:
     devDependencies:
+      ts-node:
+        specifier: ^10.9.2
+        version: 10.9.2(@types/node@25.3.0)(typescript@5.9.3)
       vitest:
         specifier: ^4.0.18
         version: 4.0.18(@edge-runtime/vm@3.2.0)(@types/node@25.3.0)(@vitest/ui@4.1.1)(jiti@2.6.1)(jsdom@29.0.1(@noble/hashes@1.8.0))(tsx@4.21.0)(yaml@2.8.3)
