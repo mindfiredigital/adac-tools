@@ -182,19 +182,16 @@ importers:
 
   packages/core:
     dependencies:
+      elkjs:
+        specifier: ^0.11.0
+        version: 0.11.0
+    devDependencies:
       '@mindfiredigital/adac-compliance':
         specifier: workspace:*
         version: link:../compliance
       '@mindfiredigital/adac-layout':
         specifier: workspace:*
         version: link:../layout
-      '@mindfiredigital/adac-optimizer':
-        specifier: workspace:*
-        version: link:../optimizer
-      elkjs:
-        specifier: ^0.11.0
-        version: 0.11.0
-    devDependencies:
       '@mindfiredigital/adac-layout-core':
         specifier: workspace:*
         version: link:../layout-core
@@ -204,6 +201,9 @@ importers:
       '@mindfiredigital/adac-layout-elk':
         specifier: workspace:*
         version: link:../layout-elk
+      '@mindfiredigital/adac-optimizer':
+        specifier: workspace:*
+        version: link:../optimizer
       '@mindfiredigital/adac-parser':
         specifier: workspace:*
         version: link:../parser
@@ -238,15 +238,6 @@ importers:
 
   packages/diagram:
     dependencies:
-      '@mindfiredigital/adac-compliance':
-        specifier: workspace:*
-        version: link:../compliance
-      '@mindfiredigital/adac-cost':
-        specifier: workspace:*
-        version: link:../cost
-      '@mindfiredigital/adac-export-terraform':
-        specifier: workspace:*
-        version: link:../export-terraform
       elkjs:
         specifier: ^0.11.0
         version: 0.11.0
@@ -257,9 +248,18 @@ importers:
       '@mindfiredigital/adac-cli':
         specifier: workspace:*
         version: link:../cli
+      '@mindfiredigital/adac-compliance':
+        specifier: workspace:*
+        version: link:../compliance
       '@mindfiredigital/adac-core':
         specifier: workspace:*
         version: link:../core
+      '@mindfiredigital/adac-cost':
+        specifier: workspace:*
+        version: link:../cost
+      '@mindfiredigital/adac-export-terraform':
+        specifier: workspace:*
+        version: link:../export-terraform
       '@types/fs-extra':
         specifier: ^11.0.4
         version: 11.0.4
