@@ -31,6 +31,12 @@ function isPublishable(pkgJson) {
   if (pkgJson.private) return false;
   // Must have a name under @mindfiredigital scope
   if (!pkgJson.name?.startsWith('@mindfiredigital/')) return false;
+  // ONLY publish core and diagram packages
+  const allowedPackages = [
+    '@mindfiredigital/adac-core',
+    '@mindfiredigital/adac-diagram',
+  ];
+  if (!allowedPackages.includes(pkgJson.name)) return false;
   return true;
 }
 

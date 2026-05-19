@@ -164,5 +164,6 @@
   },
   "files": [
     "dist"
-  ]
+  ],
+  "private": true
 }

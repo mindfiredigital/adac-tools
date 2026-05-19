@@ -23,12 +23,12 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@mindfiredigital/adac-compliance": "workspace:*",
-    "@mindfiredigital/adac-layout": "workspace:*",
-    "@mindfiredigital/adac-optimizer": "workspace:*",
     "elkjs": "^0.11.1"
   },
   "devDependencies": {
+    "@mindfiredigital/adac-compliance": "workspace:*",
+    "@mindfiredigital/adac-layout": "workspace:*",
+    "@mindfiredigital/adac-optimizer": "workspace:*",
     "@mindfiredigital/adac-layout-core": "workspace:*",
     "@mindfiredigital/adac-layout-dagre": "workspace:*",
     "@mindfiredigital/adac-layout-elk": "workspace:*",

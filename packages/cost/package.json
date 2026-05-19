@@ -38,5 +38,6 @@
     "type": "git",
     "url": "https://github.com/mindfiredigital/adac-tools.git",
     "directory": "packages/cost"
-  }
+  },
+  "private": true
 }
