@@ -46,7 +46,7 @@ runCLI({
     return generateDiagram(
       input,
       output,
-      layoutOverride,
+      layoutOverride === 'custom' ? undefined : layoutOverride,
       validate,
       perServiceCosts,
       period as CostPeriod,

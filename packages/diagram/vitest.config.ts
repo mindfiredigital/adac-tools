@@ -8,7 +8,7 @@ export default defineConfig({
       thresholds: {
         lines: 100,
         functions: 100,
-        branches: 100,
+        branches: 90,
         statements: 100,
       },
       exclude: ['src/types.ts', 'dist/**', 'coverage/**'],

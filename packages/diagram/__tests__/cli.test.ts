@@ -131,7 +131,44 @@ describe('cli.ts', () => {
       false
     );
     // In current implementation, generateDiagram does not return a value, we can just assert it was called.
-  });
+});
+
+    it('should pass undefined for custom layoutOverride', async () => {
+      vi.mocked(fs.readFileSync).mockReturnValue(
+        JSON.stringify({ version: '1.2.3' })
+      );
+      await loadCli();
+
+      const runCLIArg = vi.mocked(runCLI).mock.calls[0][0] as Parameters<typeof runCLI>[0];
+
+      vi.mocked(parseAdac).mockReturnValue({ some: 'config' });
+      vi.mocked(calculatePerServiceCosts).mockReturnValue({ s3: 10 });
+      vi.mocked(generateDiagram).mockResolvedValue(undefined);
+
+      await runCLIArg.generateDiagram(
+        'input.yaml',
+        'output.png',
+        'custom',
+        true,
+        {},
+        'monthly',
+        'on_demand',
+        false
+      );
+
+      expect(parseAdac).toHaveBeenCalledWith('input.yaml', { validate: false });
+      expect(calculatePerServiceCosts).toHaveBeenCalledWith({ some: 'config' }, 'monthly', 'on_demand');
+      expect(generateDiagram).toHaveBeenCalledWith(
+        'input.yaml',
+        'output.png',
+        undefined,
+        true,
+        { s3: 10 },
+        'monthly',
+        false
+      );
+    });
+  
 
   it('should handle undefined pricingModel in generateDiagram', async () => {
     vi.mocked(fs.readFileSync).mockReturnValue(
