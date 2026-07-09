@@ -5,7 +5,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Monorepo managed with pnpm](https://img.shields.io/badge/managed%20with-pnpm-blue)](https://pnpm.io)
 
-ADAC is a comprehensive ecosystem for generating high-quality multi-cloud architecture diagrams (currently supporting AWS and GCP). It provides a powerful command-line interface (CLI), a developer-friendly core engine, and a modern Web UI for both programmatic and visual diagram creation.
+ADAC is a comprehensive ecosystem for generating high-quality multi-cloud architecture diagrams (currently supporting AWS, Azure and GCP). It provides a powerful command-line interface (CLI), a developer-friendly core engine, and a modern Web UI for both programmatic and visual diagram creation.
 
 ## 📂 Project Overview & Structure
 
