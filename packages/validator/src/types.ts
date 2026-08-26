@@ -1,6 +1,8 @@
 export interface AdacApplication {
   id: string;
   name: string;
+  direction?: string;
+  contents?: string[];
   type: string;
   technology?: string;
   description?: string;
@@ -45,6 +47,7 @@ export interface AdacService {
   security_groups?: string[];
   subnets?: string[];
   iam_role?: string;
+  direction?: string;
 
   visual?: {
     icon?: string;

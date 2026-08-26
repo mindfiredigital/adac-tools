@@ -24,6 +24,8 @@ export interface ElkNode extends BaseElkNode {
     title?: string;
     insight_tags?: string[];
     isStacked?: boolean;
+    direction?: string;
+    contents?: string[];
   };
 }
 

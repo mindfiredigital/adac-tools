@@ -1,4 +1,3 @@
-import fs from 'fs-extra';
 import { parseAdacFromContent } from '@mindfiredigital/adac-parser';
 import { buildElkGraph } from '@mindfiredigital/adac-layout-elk';
 import {
@@ -10,6 +9,10 @@ import {
   type OptimizationResult,
 } from '@mindfiredigital/adac-layout-core';
 import { renderSvg } from './renderer.js';
+
+let fsPromise: Promise<typeof import('fs-extra')> | undefined;
+
+const getFs = () => (fsPromise ??= import('fs-extra').then((m) => m.default));
 
 type CostPeriod = 'hourly' | 'daily' | 'monthly' | 'yearly';
 export type DiagramLayoutEngine = 'elk' | 'custom' | 'orthogonal' | 'tsm';
@@ -156,6 +159,7 @@ export async function generateDiagram(
   complianceProvider?: ComplianceTooltipProvider,
   iconResolver?: IconResolver
 ): Promise<void> {
+  const fs = await getFs();
   const raw = await fs.readFile(input, 'utf8');
   const { svg } = await generateDiagramSvg(
     raw,
