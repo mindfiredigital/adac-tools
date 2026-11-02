@@ -272,7 +272,8 @@ connections:
   - id: users-to-edge
     from: users
     to: edge-layer
-    type: https
+    type: api-call
+    protocol: HTTPS
     layout:
       fromSide: right
       toSide: left
@@ -281,18 +282,18 @@ connections:
   - id: cloudfront-to-s3-static
     from: cloudfront
     to: s3-static-frontend
-    type: static-content
+    type: cdn-origin
 
   - id: cloudfront-to-waf
     from: cloudfront
     to: waf
-    type: security
+    type: api-call
 
   - id: vpc-to-cloudwatch
     bidirectional: true
     from: vpc-main
     to: cloudwatch
-    type: monitoring
+    type: api-call
     layout:
       fromSide: left
       toSide: right
@@ -301,7 +302,8 @@ connections:
   - id: edge-to-alb
     from: edge-layer
     to: alb
-    type: https
+    type: api-call
+    protocol: HTTPS
     layout:
       fromSide: right
       toSide: left
@@ -310,7 +312,8 @@ connections:
   - id: alb-to-ecs
     from: alb
     to: ecs-fargate
-    type: https
+    type: load-balancing
+    protocol: HTTPS
     layout:
       fromSide: right
       toSide: left
@@ -319,12 +322,12 @@ connections:
   - id: secrets-to-ecs
     from: secrets-manager
     to: ecs-fargate
-    type: secrets
+    type: api-call
 
   - id: ecs-to-sqs
     from: ecs-fargate
     to: sqs
-    type: message
+    type: message-publish
     layout:
       fromSide: right
       toSide: left
@@ -333,7 +336,7 @@ connections:
   - id: sqs-to-worker
     from: sqs
     to: ecs-fargate-worker
-    type: message
+    type: message-consume
     layout:
       fromSide: right
       toSide: left
@@ -343,10 +346,10 @@ connections:
     bidirectional: true
     from: ecs-fargate
     to: data-layer
-    type: https
+    type: database
 
   - id: ecs-worker-to-data-layer
     bidirectional: true
     from: ecs-fargate-worker
     to: data-layer
-    type: https
+    type: database

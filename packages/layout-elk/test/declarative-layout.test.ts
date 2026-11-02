@@ -735,7 +735,8 @@ describe('declarative layout', () => {
     });
 
     it('justify:space-around leaves equal space around each item', async () => {
-      const r = await run(config(row({ justify: 'space-around' })));
+      // no fixed gap, so the free space is shared out by justify alone
+      const r = await run(config(row({ justify: 'space-around', gap: 0 })));
       const vpc = r.box('vpc');
       const a = r.box('small');
       const b = r.box('tall');
@@ -744,7 +745,9 @@ describe('declarative layout', () => {
       const after = vpc.x + vpc.w - 40 - right(b);
       expect(before).toBeCloseTo(after, 0);
       expect(between).toBeGreaterThan(0);
-      expect(before * 2).toBeCloseTo(between - (between - before * 2), 0);
+      // each item gets half a share on both sides, so the space between two
+      // items is twice the space before the first
+      expect(between).toBeCloseTo(before * 2, 0);
     });
 
     it('align positions items across the main axis', async () => {

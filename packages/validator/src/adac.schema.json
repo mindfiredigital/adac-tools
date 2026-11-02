@@ -138,7 +138,8 @@
             "iot",
             "ml-model",
             "data-pipeline",
-            "microservice"
+            "microservice",
+            "user"
           ],
           "description": "Application type"
         },
