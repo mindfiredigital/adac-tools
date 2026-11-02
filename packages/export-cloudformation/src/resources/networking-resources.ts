@@ -87,8 +87,7 @@ export function mapNetworkingServices(
         ? cfg.ingress.map((rule) => {
             const ingressRule = rule as Record<string, unknown>;
             const sourceSecurityGroup = ingressRule.source_security_group as
-              | string
-              | undefined;
+              string | undefined;
 
             return {
               IpProtocol: (ingressRule.protocol as string | undefined) ?? 'tcp',

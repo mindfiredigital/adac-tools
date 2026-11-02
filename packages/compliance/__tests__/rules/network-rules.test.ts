@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { requirePrivateSubnetsRule } from '../../src/rules/network-rules';
-import { AdacConfig } from '@mindfiredigital/adac-schema';
+import type { AdacConfig } from '@mindfiredigital/adac-validator';
 
 type AdacService = AdacConfig['infrastructure']['clouds'][0]['services'][0];
 

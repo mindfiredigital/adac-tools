@@ -4,6 +4,8 @@
 
 Full IDE support for `.adac.yaml` files with syntax highlighting, IntelliSense, real-time validation, diagram preview, and code snippets.
 
+**Note:** This package is built and released exclusively as a VS Code Extension via the Visual Studio Marketplace (it is not an npm module).
+
 ## Features
 
 ### 🎨 Syntax Highlighting
@@ -81,14 +83,14 @@ Every diagram preview includes an **Optimizer** panel below the diagram that aut
 
 ## Configuration
 
-| Setting                     | Default | Description                                 |
-| --------------------------- | ------- | ------------------------------------------- |
-| `adac.validation.enabled`   | `true`  | Enable real-time validation                 |
-| `adac.validation.onSave`    | `true`  | Validate on file save                       |
-| `adac.validation.onType`    | `true`  | Validate as you type                        |
-| `adac.diagram.theme`        | `auto`  | Diagram theme (auto/light/dark)             |
-| `adac.diagram.layoutEngine` | `elk`   | Layout engine (elk/dagre)                   |
-| `adac.diagram.optimize`     | `true`  | Run architecture optimizer on every preview |
+| Setting                     | Default  | Description                                 |
+| --------------------------- | -------- | ------------------------------------------- |
+| `adac.validation.enabled`   | `true`   | Enable real-time validation                 |
+| `adac.validation.onSave`    | `true`   | Validate on file save                       |
+| `adac.validation.onType`    | `true`   | Validate as you type                        |
+| `adac.diagram.theme`        | `auto`   | Diagram theme (auto/light/dark)             |
+| `adac.diagram.layoutEngine` | `custom` | Layout engine (elk/custom/orthogonal/tsm)   |
+| `adac.diagram.optimize`     | `true`   | Run architecture optimizer on every preview |
 
 ## Getting Started
 
@@ -129,6 +131,21 @@ connections:
     to: 'my-service'
     type: api-call
 ```
+
+## Run Standalone
+
+This package is a standalone VS Code extension package, not an npm CLI.
+
+From the monorepo root:
+
+```bash
+pnpm --filter adac-vscode build
+pnpm --filter adac-vscode package
+```
+
+During extension development, open `packages/vscode` in VS Code and launch the
+extension host from the debugger. The built extension entrypoint is
+`packages/vscode/dist/extension.js`.
 
 ## Development
 

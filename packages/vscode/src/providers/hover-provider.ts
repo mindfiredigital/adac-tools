@@ -108,7 +108,7 @@ export class HoverProvider implements vscode.HoverProvider {
         '**Connections** - Relationships between applications and services with protocol and type info',
       cost: '**Cost Summary** - Overall architecture cost estimation',
       layout:
-        '**Layout Engine** - Diagram layout engine selection (`elk` or `dagre`)',
+        '**Layout Engine** - Diagram layout engine selection (`elk`, `custom`, `orthogonal`, or `tsm`)',
     };
 
     const keyMatch = line.match(/^(\w+)\s*:/);

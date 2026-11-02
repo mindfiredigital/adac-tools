@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { requireStorageEncryptionRule } from '../../src/rules/encryption-rules';
-import type { AdacConfig } from '@mindfiredigital/adac-schema';
+import type { AdacConfig } from '@mindfiredigital/adac-validator';
 
 type AdacService = AdacConfig['infrastructure']['clouds'][0]['services'][0];
 type ServiceParam = Parameters<typeof requireStorageEncryptionRule.evaluate>[0];

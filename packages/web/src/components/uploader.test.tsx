@@ -1,6 +1,8 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { Uploader } from './uploader';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { generateDiagramBrowser } from '../helper/diagram-generator';
+const USE_BACKEND = import.meta.env.VITE_USE_BACKEND === 'true';
 
 // Mock Lucide icons
 vi.mock('lucide-react', () => ({
@@ -12,6 +14,10 @@ vi.mock('lucide-react', () => ({
   ArrowRight: () => <div data-testid="arrow-right-icon" />,
   Loader: () => <div data-testid="loader-icon" />,
   Download: () => <div data-testid="download-icon" />,
+}));
+
+vi.mock('../helper/diagram-generator', () => ({
+  generateDiagramBrowser: vi.fn(),
 }));
 
 describe('Uploader', () => {
@@ -36,14 +42,22 @@ describe('Uploader', () => {
     // Mock file.text()
     mockFile.text = vi.fn().mockResolvedValue('content: test');
 
-    // Mock fetch for generation
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockResolvedValue({
-        ok: true,
-        json: () => Promise.resolve({ svg: '<svg id="test-svg">test</svg>' }),
-      })
-    );
+    if (USE_BACKEND) {
+      // Mock fetch for generation
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: true,
+          json: () => Promise.resolve({ svg: '<svg id="test-svg">test</svg>' }),
+        })
+      );
+    } else {
+      vi.mocked(generateDiagramBrowser).mockResolvedValue({
+        svg: '<svg id="test-svg">test</svg>',
+        logs: [],
+        duration: 0,
+      });
+    }
 
     const { container } = render(<Uploader onBack={onBack} />);
     const input = container.querySelector('input[type="file"]')!;
@@ -75,13 +89,19 @@ describe('Uploader', () => {
     });
     mockFile.text = vi.fn().mockResolvedValue('content: test');
 
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockResolvedValue({
-        ok: false,
-        json: () => Promise.resolve({ error: 'Invalid schema' }),
-      })
-    );
+    if (USE_BACKEND) {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: false,
+          json: () => Promise.resolve({ error: 'Invalid schema' }),
+        })
+      );
+    } else {
+      vi.mocked(generateDiagramBrowser).mockRejectedValue(
+        new Error('Invalid schema')
+      );
+    }
 
     render(<Uploader onBack={vi.fn()} />);
     const input = document.querySelector('input[type="file"]')!;

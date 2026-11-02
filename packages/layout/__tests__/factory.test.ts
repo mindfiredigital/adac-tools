@@ -3,11 +3,15 @@ import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { createLayoutEngine } from '../src/factory';
 import * as autoSelector from '../src/auto-selector';
 import { CustomLayoutEngineAdapter } from '../src/custom-layout-engine-adapter';
+import { OrthogonalLayoutEngine } from '../src/orthogonal-layout-engine';
 
 // Mock engines
 vi.mock('@mindfiredigital/adac-layout-core', () => ({
   CustomLayoutEngine: vi.fn().mockImplementation(function () {
     return { type: 'custom' };
+  }),
+  OrthogonalLayoutEngine: vi.fn().mockImplementation(function () {
+    return { type: 'orthogonal' };
   }),
 }));
 
@@ -41,6 +45,18 @@ describe('createLayoutEngine', () => {
   it('returns ElkLayoutEngine when type is elk', async () => {
     const engine = await createLayoutEngine('elk');
     expect(engine).toEqual({ type: 'elk' });
+  });
+
+  it('returns OrthogonalLayoutEngine when type is orthogonal', async () => {
+    const options = { nodesep: 100, ranksep: 100 };
+    const engine = await createLayoutEngine('orthogonal', options);
+    expect(engine).toEqual({ type: 'orthogonal' });
+    expect(OrthogonalLayoutEngine).toHaveBeenCalledWith(options);
+  });
+
+  it('returns OrthogonalLayoutEngine when type is tsm', async () => {
+    const engine = await createLayoutEngine('tsm');
+    expect(engine).toEqual({ type: 'orthogonal' });
   });
 
   it('uses custom engine in auto mode when complexity is false', async () => {

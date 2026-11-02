@@ -67,7 +67,7 @@ reviews:
     - label: 'dependencies'
       instructions: 'Apply when the PR bumps or removes npm/pnpm dependencies.'
     - label: 'layout'
-      instructions: 'Apply when the PR touches packages/layout, layout-core, layout-dagre, or layout-elk.'
+      instructions: 'Apply when the PR touches packages/layout, layout-core, or layout-elk.'
     - label: 'compliance'
       instructions: 'Apply when the PR touches packages/compliance, cost, or optimizer.'
     - label: 'export'
@@ -116,22 +116,6 @@ reviews:
   #  PATH-SPECIFIC REVIEW INSTRUCTIONS (one section per package)
   # ─────────────────────────────────────────────────────────────────────────────
   path_instructions:
-    # ── FOUNDATION: schema ────────────────────────────────────────────────────
-    - path: 'packages/schema/**/*.ts'
-      instructions: |
-        ## adac-schema Review Checklist
-        CRITICAL: This is the zero-dependency foundation of the entire monorepo.
-        - **No workspace imports allowed** — `adac-schema` must have zero internal ADAC dependencies.
-          Flag any `@mindfiredigital/adac-*` import immediately as a blocking issue.
-        - All AJV schema definitions must be versioned and backward-compatible.
-          Removing or renaming a required field is a breaking change; flag it.
-        - Every exported validator function must return a discriminated union
-          (`{ success: true; document: T } | { success: false; errors: ValidationError[] }`),
-          never raw throws reaching callers.
-        - No `any` types — use `unknown` + explicit type guards.
-        - Public API exports must go through `src/index.ts` only; never import from sibling `src/` paths.
-        - Every public export requires a JSDoc comment with `@param`, `@returns`, and `@example`.
-
     # ── PARSER ────────────────────────────────────────────────────────────────
     - path: 'packages/parser/**/*.ts'
       instructions: |
@@ -140,35 +124,22 @@ reviews:
         - Error messages must include file path, line number, and column when available — no opaque error strings.
         - Pure parse/transform functions must be side-effect-free (no filesystem access, no logging).
           Filesystem I/O belongs only in entry-point wrappers.
-        - Validate parsed output against `adac-schema` before returning `success: true`.
+        - Validate parsed output against `adac-validator` before returning `success: true`.
         - No `any` types; use `unknown` + type guards for YAML-parsed values.
         - Ensure all edge cases are handled: empty files, missing required fields, duplicate node IDs,
           unknown connection types.
-        - `import type` must be used for type-only imports from `adac-schema`.
+        - `import type` must be used for type-only imports from `adac-validator`.
 
     # ── LAYOUT-CORE (interfaces only) ─────────────────────────────────────────
     - path: 'packages/layout-core/**/*.ts'
       instructions: |
         ## adac-layout-core Review Checklist
         - This package contains ONLY interfaces, types, and constants — no runtime algorithm logic.
-        - No workspace imports allowed beyond `adac-schema` types (type-only imports only).
+        - No workspace imports allowed beyond `adac-validator` types (type-only imports only).
         - All types must be exported from `src/index.ts`; no implementation leakage.
         - Every interface change is a potential breaking change across all layout adapters;
           flag additions of required properties and renames as breaking.
         - Use `import type` exclusively — this package should produce zero runtime code.
-
-    # ── LAYOUT-DAGRE ──────────────────────────────────────────────────────────
-    - path: 'packages/layout-dagre/**/*.ts'
-      instructions: |
-        ## adac-layout-dagre Review Checklist
-        - Must fully implement the `LayoutEngine` interface defined in `adac-layout-core`.
-          Flag any unimplemented interface method.
-        - No imports from `adac-core`, `adac-diagram`, or `adac-cli` — only `layout-core` types
-          and the `dagre` library.
-        - Dagre options (rankdir, ranksep, nodesep, etc.) must be configurable via strategy options,
-          not hardcoded.
-        - Node/edge coordinates returned must be in the same coordinate space expected by `adac-core`.
-        - Verify performance: flag any O(n²) or worse algorithm on the hot path for large graphs.
 
     # ── LAYOUT-ELK ────────────────────────────────────────────────────────────
     - path: 'packages/layout-elk/**/*.ts'
@@ -189,7 +160,7 @@ reviews:
           No layout algorithm logic should live here; flag any such additions.
         - Engine selection must be based on the strategy enum from `adac-layout-core`.
         - Must handle unknown strategy values gracefully with a typed error, not a runtime crash.
-        - Imports must only use `adac-layout-core`, `adac-layout-dagre`, and `adac-layout-elk`.
+        - Imports must only use `adac-layout-core` and `adac-layout-elk`.
           Importing from `adac-core` or higher creates a circular dependency — flag immediately.
 
     # ── CORE (integration hub) ────────────────────────────────────────────────
@@ -200,7 +171,7 @@ reviews:
         - **No new workspace dependencies** without explicit justification in the PR description.
           Each new dep expands the bundle; flag unlisted additions.
         - Prefer functional, stateless operations; avoid shared mutable state.
-        - Validate input against `adac-schema` early in each public function; reject invalid documents
+        - Validate input against `adac-validator` early in each public function; reject invalid documents
           before any layout or generation work.
         - Never expose raw `any` types in public API — use `unknown` + type guards.
         - All public functions require JSDoc with `@param`, `@returns`, and `@throws` where applicable.
@@ -271,7 +242,7 @@ reviews:
           responsible for writing to disk. No direct `fs.writeFile` inside generator functions.
         - Output format (Markdown, HTML, etc.) must be validated for well-formedness before return.
         - New output formats must have at least one snapshot or fixture-based test.
-        - No `adac-diagram`, `adac-cli`, or `adac-web` imports — only `adac-schema`, `adac-parser`,
+        - No `adac-diagram`, `adac-cli`, or `adac-web` imports — only `adac-validator`, `adac-parser`,
           and `adac-core`.
 
     # ── EXPORT: CLOUDFORMATION ────────────────────────────────────────────────
@@ -368,26 +339,11 @@ reviews:
         - All new commands must be declared in `package.json` under `contributes.commands`.
         - Test that the extension activates and the primary command runs in the extension host.
 
-    # ── OPTIMIZER ─────────────────────────────────────────────────────────────
-    - path: 'packages/optimizer/**/*.ts'
-      instructions: |
-        ## adac-optimizer Review Checklist
-        - Every recommendation must cite a specific, verifiable cloud best-practice
-          (e.g. AWS Well-Architected Framework pillar + principle, Azure CAF rule).
-        - Optimizer functions must be pure — accept an `AdacDocument`, return typed
-          `OptimizationResult[]`. Never mutate the input document.
-        - Each `OptimizationResult` must include: `ruleId`, `severity` (INFO/WARN/ERROR),
-          `message`, `affectedNodeIds[]`, and optionally `remediation`.
-        - New optimization rules must have unit tests covering both matching and non-matching
-          architecture patterns.
-        - Flag hardcoded service-specific thresholds (e.g. "more than 5 Lambda functions") that
-          should be configurable rule parameters.
-
     # ── TEMPLATES ─────────────────────────────────────────────────────────────
     - path: 'packages/templates/**/*.ts'
       instructions: |
         ## adac-templates Review Checklist
-        - Every template must be validated against `adac-schema` at build time or in tests;
+        - Every template must be validated against `adac-validator` at build time or in tests;
           flag templates without a schema-validation test.
         - Template metadata must include: `name`, `description`, `tags[]`, `provider`
           (aws/gcp/azure/generic), and `version`.
@@ -399,7 +355,7 @@ reviews:
     - path: 'packages/icons-aws/**'
       instructions: |
         ## adac-icons-aws Review Checklist
-        - Icon mapping keys must match the service identifiers used in `adac-schema`.
+        - Icon mapping keys must match the service identifiers used in `adac-validator`.
           Mismatches silently produce missing icons at render time — flag any new key not present
           in the schema's service enum.
         - SVG files must be optimized (no unnecessary whitespace, comments, or metadata).
@@ -409,7 +365,7 @@ reviews:
     - path: 'packages/icons-azure/**'
       instructions: |
         ## adac-icons-azure Review Checklist
-        - Same rules as adac-icons-aws. Icon mapping keys must match `adac-schema` Azure service identifiers.
+        - Same rules as adac-icons-aws. Icon mapping keys must match `adac-validator` Azure service identifiers.
         - SVG files must be optimized.
         - No runtime logic beyond lookup functions.
         - Every new service icon addition requires a corresponding entry in the type mapping.
@@ -417,7 +373,7 @@ reviews:
     - path: 'packages/icons-gcp/**'
       instructions: |
         ## adac-icons-gcp Review Checklist
-        - Same rules as adac-icons-aws. Icon mapping keys must match `adac-schema` GCP service identifiers.
+        - Same rules as adac-icons-aws. Icon mapping keys must match `adac-validator` GCP service identifiers.
         - SVG files must be optimized.
         - No runtime logic beyond lookup functions.
         - Every new service icon addition requires a corresponding entry in the type mapping.

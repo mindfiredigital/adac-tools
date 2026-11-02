@@ -5,7 +5,7 @@ YAML parser for ADAC (Architecture Diagram As Code) files.
 ## Features
 
 - Parses ADAC YAML files into structured JSON.
-- Built-in schema validation using `@mindfiredigital/adac-schema`.
+- Built-in schema validation using `@mindfiredigital/adac-validator`.
 - Supports ESM and TypeScript.
 
 ## Usage

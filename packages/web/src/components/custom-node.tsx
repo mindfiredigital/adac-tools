@@ -21,10 +21,7 @@ const CustomNode = ({ id, data, selected }: NodeProps) => {
   const complianceFrameworks = (data.complianceFrameworks as string[]) || [];
   const hasCompliance = complianceFrameworks.length > 0;
   const complianceStatus = data.complianceStatus as
-    | 'pass'
-    | 'fail'
-    | 'unchecked'
-    | undefined;
+    'pass' | 'fail' | 'unchecked' | undefined;
 
   return (
     <div

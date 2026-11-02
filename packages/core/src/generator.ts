@@ -1,15 +1,32 @@
-import fs from 'fs-extra';
 import { parseAdacFromContent } from '@mindfiredigital/adac-parser';
 import { buildElkGraph } from '@mindfiredigital/adac-layout-elk';
-import { validateAdacConfig } from '@mindfiredigital/adac-schema';
-import { ComplianceChecker } from '@mindfiredigital/adac-compliance';
+import {
+  validateAdacConfig,
+  type AdacConfig,
+} from '@mindfiredigital/adac-validator';
 import {
   OptimizerEngine,
   type OptimizationResult,
-} from '@mindfiredigital/adac-optimizer';
+} from '@mindfiredigital/adac-layout-core';
 import { renderSvg } from './renderer.js';
 
+let fsPromise: Promise<typeof import('fs-extra')> | undefined;
+
+const getFs = () => (fsPromise ??= import('fs-extra').then((m) => m.default));
+
 type CostPeriod = 'hourly' | 'daily' | 'monthly' | 'yearly';
+export type DiagramLayoutEngine = 'elk' | 'custom' | 'orthogonal' | 'tsm';
+
+export type ComplianceTooltipMap = Record<
+  string,
+  { frameworks: string[]; violations: string[] }
+>;
+
+export type ComplianceTooltipProvider = (
+  adac: AdacConfig
+) => ComplianceTooltipMap | Promise<ComplianceTooltipMap>;
+
+export type IconResolver = (iconName: string) => Promise<string | null>;
 
 export interface GenerationResult {
   svg: string;
@@ -22,11 +39,13 @@ const optimizer = new OptimizerEngine();
 
 export async function generateDiagramSvg(
   inputContent: string,
-  layoutOverride?: 'elk' | 'dagre' | 'custom',
+  layoutOverride?: DiagramLayoutEngine,
   validate: boolean = false,
   costData?: Record<string, number>,
   period: CostPeriod = 'monthly',
-  skipOptimizer: boolean = false
+  skipOptimizer: boolean = false,
+  complianceProvider?: ComplianceTooltipProvider,
+  iconResolver?: IconResolver
 ): Promise<GenerationResult> {
   const logs: string[] = [];
   const start = Date.now();
@@ -69,43 +88,32 @@ export async function generateDiagramSvg(
       }
     }
 
-    const graph = buildElkGraph(adac, {
+    // the CLI / caller override, then layoutOptions.engine, then the top-level
+    // layout; ELK when none is declared (the declarative layout needs it)
+    const engine = normalizeLayoutEngine(
+      layoutOverride ?? adac.layoutOptions?.engine ?? adac.layout ?? 'elk'
+    );
+    const graph = await buildElkGraph(adac, {
+      // icon-sized nodes and the declarative container rules are the ELK look
+      declarativeStyle: engine === 'elk',
       // validation has already reported deprecated aliases
       onWarning: (message) => {
         if (validate && /is deprecated/.test(message)) return;
         log(`Warning: ${message}`);
       },
     });
-    const declaredEngine = adac.layoutOptions?.engine as
-      'elk' | 'dagre' | 'custom' | undefined;
-    // only layoutOptions.engine picks the engine; without it ELK is used
-    const engine = layoutOverride || declaredEngine || 'elk';
-    if (adac.layout && adac.layout !== engine) {
+
+    let complianceTooltipMap: ComplianceTooltipMap | undefined;
+
+    try {
+      complianceTooltipMap = complianceProvider
+        ? await complianceProvider(adac)
+        : undefined;
+    } catch (compErr) {
       log(
-        `Warning: the top-level layout (${adac.layout}) is ignored; set layoutOptions.engine to choose the engine (using ${engine})`
+        `Compliance provider error: ${compErr instanceof Error ? compErr.message : String(compErr)}`
       );
-    }
-    const checker = new ComplianceChecker();
-    const { byService } = checker.checkCompliance(adac);
-
-    const complianceTooltipMap: Record<
-      string,
-      { frameworks: string[]; violations: string[] }
-    > = {};
-    for (const [serviceId, results] of Object.entries(byService)) {
-      const frameworks = results.map((r) => r.framework);
-      const violations: string[] = [];
-
-      for (const result of results) {
-        if (!result.isCompliant) {
-          result.violations.forEach((v) => {
-            violations.push(
-              `[${result.framework.toUpperCase()} - ${v.severity.toUpperCase()}] ${v.message}`
-            );
-          });
-        }
-      }
-      complianceTooltipMap[serviceId] = { frameworks, violations };
+      complianceTooltipMap = undefined;
     }
 
     const optimizationTooltipMap: Record<
@@ -134,7 +142,8 @@ export async function generateDiagramSvg(
       complianceTooltipMap,
       optimizationTooltipMap,
       costData,
-      period
+      period,
+      iconResolver
     );
 
     const duration = Date.now() - start;
@@ -153,12 +162,15 @@ export async function generateDiagramSvg(
 export async function generateDiagram(
   input: string,
   output: string,
-  layoutOverride?: 'elk' | 'dagre' | 'custom',
+  layoutOverride?: DiagramLayoutEngine,
   validate: boolean = false,
   costData?: Record<string, number>,
   period: CostPeriod = 'monthly',
-  skipOptimizer: boolean = false
+  skipOptimizer: boolean = false,
+  complianceProvider?: ComplianceTooltipProvider,
+  iconResolver?: IconResolver
 ): Promise<void> {
+  const fs = await getFs();
   const raw = await fs.readFile(input, 'utf8');
   const { svg } = await generateDiagramSvg(
     raw,
@@ -166,8 +178,25 @@ export async function generateDiagram(
     validate,
     costData,
     period,
-    skipOptimizer
+    skipOptimizer,
+    complianceProvider,
+    iconResolver
   );
   await fs.outputFile(output, svg);
   console.log(`Diagram generated: ${output}`);
+}
+
+function normalizeLayoutEngine(value: unknown): DiagramLayoutEngine {
+  if (
+    value === 'elk' ||
+    value === 'custom' ||
+    value === 'orthogonal' ||
+    value === 'tsm'
+  ) {
+    return value;
+  }
+
+  throw new Error(
+    `Unsupported layout engine "${String(value)}". Expected elk, custom, orthogonal, or tsm.`
+  );
 }

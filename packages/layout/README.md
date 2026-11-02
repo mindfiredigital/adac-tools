@@ -5,15 +5,22 @@ Layout orchestration for ADAC diagrams. Provides a unified interface for differe
 ## Features
 
 - 🎯 Unified layout orchestration API
-- 🔀 Multiple layout engine support (ELK, Dagre)
+- 🔀 Multiple layout engine support (ELK)
 - ⚡ Automatic engine selection based on diagram complexity
 - 🎨 Consistent layout output across engines
 
 ## Installation
 
-```bash
-npm install @mindfiredigital/adac-layout
-pnpm add @mindfiredigital/adac-layout
+> **Note:** This is an internal workspace package and is **not** distributed as a standalone npm module. It is intended to be used within the ADAC monorepo.
+
+To use it in another workspace package, add it to your `package.json`:
+
+```json
+{
+  "dependencies": {
+    "@mindfiredigital/adac-layout": "workspace:*"
+  }
+}
 ```
 
 ## Usage
@@ -33,13 +40,12 @@ console.log(layout.positions); // Node positions
 ## Supported Layout Engines
 
 - **ELK**: Professional hierarchical layout for complex diagrams (50-500+ nodes)
-- **Dagre**: Fast directed graph layout for medium complexity diagrams
 
 ## Configuration
 
 ```typescript
 const options = {
-  engine: 'elk', // 'elk' or 'dagre'
+  engine: 'elk', // 'elk' or 'custom'
   direction: 'DOWN', // DOWN, RIGHT, UP, LEFT
   spacing: 100,
 };
@@ -51,7 +57,7 @@ const layout = await createLayout(graph, options);
 
 - [@mindfiredigital/adac-layout-core](../layout-core) - Core types and interfaces
 - [@mindfiredigital/adac-layout-elk](../layout-elk) - ELK layout engine
-- [@mindfiredigital/adac-layout-dagre](../layout-dagre) - Dagre layout engine
+
 - [@mindfiredigital/adac-diagram](../diagram) - Diagram generator using this layout
 
 ## License

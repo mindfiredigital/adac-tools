@@ -30,14 +30,19 @@ export class CustomLayoutEngine {
   constructor(options: LayoutOptions = {}) {
     this.graph = new Graph();
 
+    // Defaults favor readable spacing and fewer crossings. Large graphs can
+    // reduce nodesep/ranksep/maxIterations/edgeRoutingMaxAttempts; explicit
+    // caller values are preserved by the nullish coalescing below.
     this.options = {
       rankdir: options.rankdir ?? 'TB',
-      nodesep: options.nodesep ?? 80,
-      ranksep: options.ranksep ?? 100,
-      marginx: options.marginx ?? 40,
-      marginy: options.marginy ?? 40,
-      edgeMargin: options.edgeMargin ?? 12,
-      maxIterations: options.maxIterations ?? 24,
+      nodesep: options.nodesep ?? 120,
+      ranksep: options.ranksep ?? 140,
+      marginx: options.marginx ?? 50,
+      marginy: options.marginy ?? 50,
+      edgeMargin: options.edgeMargin ?? 20,
+      edgeRoutingMaxAttempts: options.edgeRoutingMaxAttempts ?? 20,
+      logger: options.logger ?? { warn: () => {} },
+      maxIterations: options.maxIterations ?? 48,
       nodePlacementStrategy: options.nodePlacementStrategy ?? 'BRANDES_KOEPF',
     };
   }

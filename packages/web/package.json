@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "setup:icons": "node -e \"const fs=require('fs');const path=require('path');const copy=(s,d,n)=>{const src=path.resolve(__dirname,s);const dest=path.resolve(__dirname,d);if(!fs.existsSync(dest)&&fs.existsSync(src)){fs.cpSync(src,dest,{recursive:true});console.log(n+' icons copied successfully');}else if(fs.existsSync(dest)){console.log(n+' icons already present');}else{console.warn('Warning: '+n+' assets not found at',src);}};copy('../icons-aws/assets/Architecture-Service-Icons_07312025','public/assets/Architecture-Service-Icons_07312025','AWS');copy('../icons-gcp/assets/gcp-icons','public/assets/gcp-icons','GCP');copy('../icons-azure/assets/azure-icons','public/assets/azure-icons','Azure');\"",
+    "setup:icons": "node -e \"const fs=require('fs');const path=require('path');const copy=(s,d,n)=>{const src=path.resolve(__dirname,s);const dest=path.resolve(__dirname,d);if(fs.existsSync(src)){fs.cpSync(src,dest,{recursive:true,force:true});console.log(n+' icons copied successfully');}else{console.warn('Warning: '+n+' assets not found at',src);}};copy('../icons-aws/assets/Architecture-Service-Icons_07312025','public/assets/Architecture-Service-Icons_07312025','AWS architecture');copy('../icons-aws/assets/aws-icons','public/assets/aws-icons','AWS sidebar');copy('../icons-gcp/assets/gcp-icons','public/assets/gcp-icons','GCP');copy('../icons-azure/assets/azure-icons','public/assets/azure-icons','Azure');copy('../icons-azure/mappings/icon-map.json', 'public/mappings/azure-icons.json', 'Azure Mapping');copy('../icons-aws/mappings/icon-map.json', 'public/mappings/aws-icons.json', 'AWS Mapping');copy('../icons-gcp/mappings/icon-map.json', 'public/mappings/gcp-icons.json', 'GCP Mapping');\"",
     "predev": "npm run setup:icons",
     "dev": "vite",
     "build": "tsc -b && vite build",
@@ -15,9 +15,8 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@mindfiredigital/adac-core": "workspace:*",
     "@mindfiredigital/adac-diagram": "workspace:*",
-    "@mindfiredigital/adac-parser": "workspace:*",
-    "@mindfiredigital/adac-schema": "workspace:*",
     "@xyflow/react": "^12.0.0",
     "clsx": "^2.1.1",
     "framer-motion": "^12.0.0",
@@ -47,7 +46,7 @@
     "tailwindcss": "^3.4.0",
     "typescript": "~5.9.0",
     "typescript-eslint": "^8.0.0",
-    "vite": "^6.0.0",
+    "vite": "^8.1.3",
     "vitest": "^4.0.18"
   }
 }

@@ -1,4 +1,4 @@
-import { AdacConfig, AdacService } from '@mindfiredigital/adac-schema';
+import type { AdacConfig, AdacService } from '@mindfiredigital/adac-validator';
 import { Violation } from './violation';
 
 export interface EvaluationContext {

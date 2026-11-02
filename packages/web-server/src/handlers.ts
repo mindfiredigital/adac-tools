@@ -1,12 +1,12 @@
-import { generateDiagramSvg } from '@mindfiredigital/adac-diagram';
-import { ComplianceChecker } from '@mindfiredigital/adac-compliance';
 import {
+  generateDiagramSvg,
+  ComplianceChecker,
   CostCalculator,
   mapAdacServicesToCostConfig,
-} from '@mindfiredigital/adac-cost';
-import { analyzeOptimizations } from '@mindfiredigital/adac-optimizer';
+  analyzeOptimizations,
+  type AdacConfig,
+} from '@mindfiredigital/adac-diagram';
 import jsYaml from 'js-yaml';
-import type { AdacConfig } from '@mindfiredigital/adac-schema';
 import type { Request, Response } from 'express';
 
 const complianceChecker = new ComplianceChecker();

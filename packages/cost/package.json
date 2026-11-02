@@ -18,12 +18,17 @@
   "files": [
     "dist"
   ],
+  "bin": {
+    "adac-cost": "dist/cli.js"
+  },
   "scripts": {
     "build": "tsc",
     "test": "vitest run"
   },
   "dependencies": {
-    "js-yaml": "^4.1.1"
+    "@mindfiredigital/adac-validator": "workspace:*",
+    "js-yaml": "^4.1.1",
+    "commander": "^12.0.0"
   },
   "devDependencies": {
     "@aws-sdk/client-pricing": "^3.1031.0",

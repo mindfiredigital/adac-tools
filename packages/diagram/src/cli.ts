@@ -1,13 +1,12 @@
 #!/usr/bin/env node
 import { runCLI } from '@mindfiredigital/adac-cli';
-import {
-  generateDiagram,
-  parseAdac,
-  validateAdacConfig,
-} from '@mindfiredigital/adac-core';
+import { parseAdac } from '@mindfiredigital/adac-core';
+import type { DiagramLayoutEngine } from '@mindfiredigital/adac-core';
+import { generateDiagram as generateDiagramWithCompliance } from './generator.js';
 import {
   aggregateCostFromYaml,
   calculatePerServiceCosts,
+  validateAdacCostConfig,
 } from '@mindfiredigital/adac-cost';
 import { generateTerraformFromAdacFile } from '@mindfiredigital/adac-export-terraform';
 import type { CostPeriod } from '@mindfiredigital/adac-cost';
@@ -30,7 +29,7 @@ runCLI({
   generateDiagram: async (
     input: string,
     output: string,
-    layoutOverride?: 'elk' | 'dagre' | 'custom',
+    layoutOverride?: DiagramLayoutEngine,
     validate?: boolean,
     _costData?: Record<string, number>,
     period?: string,
@@ -43,7 +42,7 @@ runCLI({
       period as CostPeriod,
       pricingModel ?? 'on_demand'
     );
-    return generateDiagram(
+    return generateDiagramWithCompliance(
       input,
       output,
       layoutOverride,
@@ -75,6 +74,6 @@ runCLI({
     console.log(`Terraform files written to ${targetDir}`);
   },
   parseAdac,
-  validateAdacConfig,
+  validateAdacCostConfig,
   version,
 });

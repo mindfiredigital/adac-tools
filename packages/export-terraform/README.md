@@ -15,8 +15,24 @@ It is designed for file-based generation from ADAC YAML.
 
 ## CLI Usage
 
-This package is also wired into the ADAC CLI as a standalone Terraform
-generation command:
+## Run Standalone
+
+This package exposes the `adac-export-terraform` binary.
+
+After installing the package:
+
+```bash
+adac-export-terraform architecture.adac.yaml --output ./terraform-out
+```
+
+From the monorepo root:
+
+```bash
+pnpm --filter @mindfiredigital/adac-export-terraform build
+node packages/export-terraform/dist/cli.js yamls/aws.adac.yaml --output ./temp-terraform-output
+```
+
+It is also wired into the main ADAC CLI:
 
 ```powershell
 pnpm cli terraform .\yamls\aws.adac.yaml
@@ -30,9 +46,8 @@ pnpm cli terraform .\yamls\aws.adac.yaml --output .\temp-terraform-output
 
 This generates:
 
-- `main.tf`
-- `variables.tf`
-- `outputs.tf`
+- Standalone package binary: `<input-name>.tf`
+- Main ADAC CLI: `main.tf`, `variables.tf`, and `outputs.tf`
 
 ## Module Support
 

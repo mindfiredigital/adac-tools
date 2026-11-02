@@ -6,9 +6,9 @@
     "baseUrl": ".",
     "paths": {
       "@mindfiredigital/adac-parser": ["../parser/dist/index.d.ts"],
-      "@mindfiredigital/adac-schema": ["../schema/dist/index.d.ts"]
+      "@mindfiredigital/adac-validator": ["../validator/dist/index.d.ts"]
     }
   },
   "include": ["src/**/*"],
-  "references": [{ "path": "../parser" }, { "path": "../schema" }]
+  "references": [{ "path": "../parser" }, { "path": "../validator" }]
 }

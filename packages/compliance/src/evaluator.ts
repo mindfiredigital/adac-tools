@@ -1,6 +1,9 @@
-import { AdacConfig, AdacService } from '@mindfiredigital/adac-schema';
+import type { AdacConfig } from '@mindfiredigital/adac-validator';
 import { ComplianceResult, Violation } from './types';
 import { getRulesForFramework } from './frameworks';
+
+type AdacService =
+  AdacConfig['infrastructure']['clouds'][number]['services'][number];
 
 /** Normalize framework names to lowercase (YAML may use 'PCI-DSS' or 'pci-dss') */
 const normalizeFramework = (fw: string): string => fw.toLowerCase().trim();

@@ -722,7 +722,7 @@ export const COMPLIANCE_FRAMEWORKS = [
  * LAYOUT_ENGINES
  * @description Provides IDE suggestions for LAYOUT_ENGINES
  */
-export const LAYOUT_ENGINES = ['elk', 'dagre'];
+export const LAYOUT_ENGINES = ['elk', 'custom', 'orthogonal', 'tsm'];
 
 /** AWS regions */
 /**

@@ -1,6 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
 import { EventEmitter } from 'events';
-import request from 'supertest';
 
 // Mock middleware that causes issues with non-standard Response objects
 vi.mock('cors', () => ({
@@ -629,7 +628,7 @@ describe('Web Server API', () => {
 
       const res = await mockRequest('POST', '/api/generate', {
         content: adacContent,
-        layout: 'dagre',
+        layout: 'custom',
       });
 
       expect([200, 500]).toContain(res.status);
@@ -649,22 +648,23 @@ describe('Web Server API', () => {
 
   describe('Integration Tests (Supertest)', () => {
     it('should serve static files', async () => {
-      const res = await request(app).get('/');
+      const res = await mockRequest('GET', '/');
       // If public/index.html doesn't exist, it might be 404, but we're testing the middleware
       expect([200, 404]).toContain(res.status);
     });
 
     it('should handle 404', async () => {
-      const res = await request(app).get('/api/not-found');
+      const res = await mockRequest('GET', '/api/not-found');
       expect(res.status).toBe(404);
     });
 
     it('should use global error handler', async () => {
       // Trigger global error handler by sending invalid JSON
-      const res = await request(app)
-        .post('/api/generate')
-        .set('Content-Type', 'application/json')
-        .send('{"invalid": json}');
+      const res = await mockRequest(
+        'POST',
+        '/api/generate',
+        '{"invalid": json}'
+      );
 
       expect(res.status).toBe(400); // Express.json() returns 400 for bad JSON
     });

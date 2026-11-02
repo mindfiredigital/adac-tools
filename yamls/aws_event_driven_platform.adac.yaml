@@ -1,0 +1,173 @@
+version: '1.0'
+
+metadata:
+  name: 'AWS Event Driven Platform'
+  author: 'ADAC Test Suite'
+  description: 'AWS architecture with CloudFront, WAF, ECS, SQS, Secrets Manager and Data Layer'
+  created: '2026-07-10'
+  adac_version: '1.0'
+
+applications:
+  - id: users
+    name: Users
+    type: user
+    technology: Human
+
+  - id: frontend
+    name: Frontend
+    type: frontend
+    technology: React
+    owner: frontend-team
+
+  - id: waf
+    name: AWS WAF
+    type: security
+    technology: AWS WAF
+
+  - id: cloudfront
+    name: AWS CloudFront
+    type: network
+    technology: AWS CloudFront
+
+  - id: application-load-balancer
+    name: Application Load Balancer
+    type: network
+    technology: AWS ELB
+
+  - id: ecs-fargate
+    name: ECS Fargate
+    type: compute
+    technology: AWS ECS
+    contents:
+      - API Service 1
+      - API Service 2
+      - API Service 3
+
+  - id: ecs-fargate-worker
+    name: ECS Fargate Worker
+    type: compute
+    technology: AWS ECS
+    contents:
+      - Worker 1
+      - Worker 2
+      - Worker 3
+
+  - id: secrets-manager
+    name: AWS Secrets Manager
+    type: security
+    technology: AWS Secrets Manager
+
+  - id: redis
+    name: AWS ElastiCache Redis
+    type: storage
+    technology: AWS Redis
+
+  - id: sqs
+    name: AWS SQS
+    type: queue
+    technology: AWS SQS
+
+  - id: s3
+    name: AWS S3
+    type: storage
+    technology: AWS S3
+
+infrastructure:
+  clouds:
+    - id: aws-primary
+      provider: aws
+      region: us-east-1
+      tier: 'primary'
+
+      services:
+        # ---------- Edge Layer ----------
+        - id: edge-layer
+          type: container
+          name: Edge Layer
+          subtype: edge
+          # direction: vertical
+          runs:
+            - cloudfront
+            - waf
+
+        # ---------- Data Layer ----------
+        - id: data-layer
+          type: data
+          name: Data Layer
+          subtype: data
+          runs:
+            - redis
+            - s3
+
+        # ---------- VPC ----------
+        - id: vpc-main
+          name: VPC main
+          type: network
+          subtype: vpc
+          runs:
+            - application-load-balancer
+            - ecs-fargate
+            - sqs
+            - data-layer
+            - ecs-fargate-worker
+
+        # ---------- Shared Services ----------
+        - id: shared-services
+          type: container
+          subtype: shared-services
+          runs:
+            - frontend
+            - edge-layer
+            - vpc-main
+            - secrets-manager
+
+connections:
+  - id: users-to-edge
+    from: users
+    to: edge-layer
+    type: https
+
+  - id: cloudfront-to-frontend
+    from: cloudfront
+    to: frontend
+    type: static-content
+
+  - id: cloudfront-to-waf
+    from: cloudfront
+    to: waf
+    type: security
+
+  - id: edge-to-alb
+    from: edge-layer
+    to: application-load-balancer
+    type: https
+
+  - id: alb-to-ecs
+    from: application-load-balancer
+    to: ecs-fargate
+    type: https
+
+  - id: ecs-to-secrets
+    from: ecs-fargate
+    to: secrets-manager
+    type: secrets
+
+  - id: ecs-to-sqs
+    from: ecs-fargate
+    to: sqs
+    type: message
+
+  - id: sqs-to-worker
+    from: sqs
+    to: ecs-fargate-worker
+    type: message
+
+  - id: ecs-to-data-layer
+    from: ecs-fargate
+    to: data-layer
+    type: https
+
+  - id: ecs-fargate-worker-to-data-layer
+    from: ecs-fargate-worker
+    to: data-layer
+    type: https

@@ -21,7 +21,7 @@ vi.mock('vscode', () => {
         dispose: vi.fn(),
       })),
       getConfiguration: vi.fn().mockReturnValue({
-        get: vi.fn().mockReturnValue('elk'),
+        get: vi.fn().mockReturnValue('custom'),
       }),
     },
     ViewColumn: {

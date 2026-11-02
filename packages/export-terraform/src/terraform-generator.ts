@@ -5,7 +5,7 @@ import { mapStorageServices } from './resources/storage-resources.js';
 import { hclOutput, hclString, hclVariable } from './utils/hcl-builder.js';
 import { terraformLabel } from './utils/terraform-names.js';
 import { parseAdac } from '@mindfiredigital/adac-parser';
-import type { AdacConfig } from '@mindfiredigital/adac-schema';
+import type { AdacConfig } from '@mindfiredigital/adac-validator';
 import type {
   AdacService,
   CloudProvider,

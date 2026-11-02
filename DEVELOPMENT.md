@@ -89,21 +89,6 @@ pnpm cli diagram path/to/architecture.adac.yaml -o output.svg
 pnpm cli diagram path/to/architecture.adac.yaml --no-optimize -o output.svg
 ```
 
-### Run Optimizer standalone
-
-```typescript
-import { analyzeOptimizations } from '@mindfiredigital/adac-optimizer';
-import { parseAdac } from '@mindfiredigital/adac-parser';
-
-const config = parseAdac('architecture.adac.yaml');
-const result = analyzeOptimizations(config, { minSeverity: 'high' });
-
-console.log(`${result.summary.critical} critical, ${result.summary.high} high`);
-result.recommendations.forEach((r) =>
-  console.log(`[${r.severity}] ${r.title}: ${r.affectedResources.join(', ')}`)
-);
-```
-
 ### Run Web UI
 
 ```bash

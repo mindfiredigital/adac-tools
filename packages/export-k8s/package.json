@@ -4,8 +4,8 @@
   "description": "Export ADAC diagrams to Kubernetes manifests",
   "author": "Mindfire Digital",
   "license": "MIT",
+  "type": "module",
   "main": "dist/index.js",
-  "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
   "keywords": [
     "adac",
@@ -21,6 +21,25 @@
     "type": "git",
     "url": "https://github.com/mindfiredigital/adac-tools.git",
     "directory": "packages/export-k8s"
+  },
+  "bin": {
+    "adac-export-k8s": "dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@mindfiredigital/adac-parser": "workspace:*",
+    "@mindfiredigital/adac-validator": "workspace:*",
+    "js-yaml": "^4.1.1",
+    "commander": "^12.0.0"
+  },
+  "devDependencies": {
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^25.2.3",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.18"
   },
   "publishConfig": {
     "access": "public",

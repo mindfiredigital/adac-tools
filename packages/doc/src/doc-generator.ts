@@ -1,5 +1,5 @@
 import Handlebars from 'handlebars';
-import { AdacConfig } from '@mindfiredigital/adac-schema';
+import type { AdacConfig } from '@mindfiredigital/adac-validator';
 import { DocOptions, DocOutput, DocFile } from './types/index.js';
 import { ComplianceChecker } from '@mindfiredigital/adac-compliance';
 import {
@@ -9,6 +9,10 @@ import {
   CostReportTemplate,
   ComplianceTemplate,
 } from './templates/index.js';
+
+type CostAnnotatedAdacConfig = AdacConfig & {
+  cost?: Record<string, unknown>;
+};
 
 export class DocumentationGenerator {
   private options: DocOptions;
@@ -111,7 +115,9 @@ export class DocumentationGenerator {
     };
   }
 
-  private async generateCostReport(model: AdacConfig): Promise<DocFile> {
+  private async generateCostReport(
+    model: CostAnnotatedAdacConfig
+  ): Promise<DocFile> {
     const template = Handlebars.compile(CostReportTemplate);
     const content = template({ cost: model.cost });
 

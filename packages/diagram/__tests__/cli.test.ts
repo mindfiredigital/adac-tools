@@ -2,14 +2,11 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import * as fs from 'fs';
 import path from 'path';
 import { runCLI } from '@mindfiredigital/adac-cli';
-import {
-  generateDiagram,
-  parseAdac,
-  validateAdacConfig,
-} from '@mindfiredigital/adac-core';
+import { generateDiagram, parseAdac } from '@mindfiredigital/adac-core';
 import {
   calculatePerServiceCosts,
   aggregateCostFromYaml,
+  validateAdacCostConfig,
 } from '@mindfiredigital/adac-cost';
 import { generateTerraformFromAdacFile } from '@mindfiredigital/adac-export-terraform';
 
@@ -37,12 +34,13 @@ vi.mock('@mindfiredigital/adac-cli', () => ({
 vi.mock('@mindfiredigital/adac-core', () => ({
   generateDiagram: vi.fn(),
   parseAdac: vi.fn(),
-  validateAdacConfig: vi.fn(),
+  validateAdacCostConfig: vi.fn(),
 }));
 
 vi.mock('@mindfiredigital/adac-cost', () => ({
   calculatePerServiceCosts: vi.fn(),
   aggregateCostFromYaml: vi.fn(),
+  validateAdacCostConfig: vi.fn(),
 }));
 
 vi.mock('@mindfiredigital/adac-export-terraform', () => ({
@@ -75,7 +73,7 @@ describe('cli.ts', () => {
     const runCLIArg = vi.mocked(runCLI).mock.calls[0][0];
     expect(runCLIArg.version).toBe('1.2.3');
     expect(runCLIArg.parseAdac).toBe(parseAdac);
-    expect(runCLIArg.validateAdacConfig).toBe(validateAdacConfig);
+    expect(runCLIArg.validateAdacCostConfig).toBe(validateAdacCostConfig);
     expect(runCLIArg.calculateCostFromYaml).toBe(aggregateCostFromYaml);
   });
 
@@ -95,6 +93,7 @@ describe('cli.ts', () => {
       JSON.stringify({ version: '1.2.3' })
     );
     await loadCli();
+    const { buildComplianceTooltipMap } = await import('../src/generator');
 
     const runCLIArg = vi.mocked(runCLI).mock.calls[0][0] as Parameters<
       typeof runCLI
@@ -128,7 +127,8 @@ describe('cli.ts', () => {
       true,
       { s3: 10 },
       'monthly',
-      false
+      false,
+      buildComplianceTooltipMap
     );
     // In current implementation, generateDiagram does not return a value, we can just assert it was called.
   });
@@ -146,7 +146,7 @@ describe('cli.ts', () => {
     await runCLIArg.generateDiagram(
       'in.yaml',
       'out.png',
-      'dagre',
+      'elk',
       false,
       undefined,
       'hourly'

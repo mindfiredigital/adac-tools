@@ -20,6 +20,7 @@ export interface ElkNode extends BaseElkNode {
     iconPath?: string;
     description?: string;
     cssClass?: string;
+    nodeRole?: string;
     title?: string;
     insight_tags?: string[];
     /** Resolved `visual.style.background` (falls back to the global default). */
@@ -41,6 +42,9 @@ export interface ElkNode extends BaseElkNode {
      * layout and moved into `edges`.
      */
     deferredEdges?: ElkEdge[];
+    isStacked?: boolean;
+    direction?: string;
+    contents?: string[];
   };
 }
 

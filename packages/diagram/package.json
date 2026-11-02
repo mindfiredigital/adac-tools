@@ -1,6 +1,6 @@
 {
   "name": "@mindfiredigital/adac-diagram",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Core engine and CLI for ADAC (AWS Diagram As Code) generator",
   "author": "Mindfire Digital",
   "license": "MIT",
@@ -39,14 +39,23 @@
   },
   "dependencies": {
     "elkjs": "^0.11.1",
-    "fs-extra": "^11.3.3"
-  },
-  "devDependencies": {
+    "fs-extra": "^11.3.3",
     "@mindfiredigital/adac-compliance": "workspace:*",
     "@mindfiredigital/adac-cost": "workspace:*",
     "@mindfiredigital/adac-export-terraform": "workspace:*",
-    "@mindfiredigital/adac-cli": "workspace:*",
+    "@mindfiredigital/adac-export-cloudformation": "workspace:*",
+    "@mindfiredigital/adac-export-k8s": "workspace:*",
+    "@mindfiredigital/adac-layout-core": "workspace:*",
+    "@mindfiredigital/adac-layout-elk": "workspace:*",
+    "@mindfiredigital/adac-parser": "workspace:*",
+    "@mindfiredigital/adac-validator": "workspace:*",
+    "@mindfiredigital/adac-icons-aws": "workspace:*",
+    "@mindfiredigital/adac-icons-azure": "workspace:*",
+    "@mindfiredigital/adac-icons-gcp": "workspace:*",
     "@mindfiredigital/adac-core": "workspace:*",
+    "@mindfiredigital/adac-cli": "workspace:*"
+  },
+  "devDependencies": {
     "@types/fs-extra": "^11.0.4",
     "@types/node": "^25.2.3",
     "tsup": "^8.3.5",

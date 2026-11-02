@@ -313,7 +313,7 @@ ${connections}
   });
 
   it('renders the same hierarchy with every engine', async () => {
-    for (const engine of ['elk', 'dagre', 'custom'] as const) {
+    for (const engine of ['elk', 'custom', 'orthogonal', 'tsm'] as const) {
       const { svg } = await generateDiagramSvg(
         yaml(
           '',

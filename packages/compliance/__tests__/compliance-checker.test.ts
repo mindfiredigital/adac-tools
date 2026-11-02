@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { ComplianceChecker } from '../src/compliance-checker';
 import compliantArchBase from './fixtures/compliantArch.json';
 import nonCompliantArchBase from './fixtures/nonCompliantArch.json';
-import { AdacConfig } from '@mindfiredigital/adac-schema';
+import type { AdacConfig } from '@mindfiredigital/adac-validator';
 
 const compliantArch = compliantArchBase as unknown as AdacConfig;
 const nonCompliantArch = nonCompliantArchBase as unknown as AdacConfig;

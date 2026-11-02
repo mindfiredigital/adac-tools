@@ -6,17 +6,17 @@ This package provides a programmatic way to access standard architectures like a
 
 ## Installation
 
-\`\`\`bash
-npm install @mindfiredigital/adac-templates
+> **Note:** This is an internal workspace package and is **not** distributed as a standalone npm module. It is intended to be used within the ADAC monorepo.
 
-# or
+To use it in another workspace package, add it to your `package.json`:
 
-pnpm add @mindfiredigital/adac-templates
-
-# or
-
-yarn add @mindfiredigital/adac-templates
-\`\`\`
+```json
+{
+  "dependencies": {
+    "@mindfiredigital/adac-templates": "workspace:*"
+  }
+}
+```
 
 ## Usage
 

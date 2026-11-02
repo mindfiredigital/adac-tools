@@ -4,8 +4,10 @@
     "outDir": "./dist",
     "rootDir": "./src",
     "declaration": true,
+    "composite": true,
+    "resolveJsonModule": true,
     "types": ["node", "jest"]
   },
-  "include": ["src/**/*", "__tests__/**/*"],
+  "include": ["src/**/*", "src/**/*.json", "__tests__/**/*"],
   "exclude": ["dist", "**/__tests__/*"]
 }

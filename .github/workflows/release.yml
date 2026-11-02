@@ -58,3 +58,21 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Pack Release Artifacts
+        if: steps.changesets.outputs.published == 'true'
+        run: pnpm release:pack
+
+      - name: Upload Release Artifacts to GitHub Releases
+        if: steps.changesets.outputs.published == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo '${{ steps.changesets.outputs.publishedPackages }}' > published.json
+          cat published.json | jq -c '.[]' | while read i; do
+            PKG_NAME=$(echo $i | jq -r '.name')
+            PKG_VERSION=$(echo $i | jq -r '.version')
+            TAG_NAME="$PKG_NAME@$PKG_VERSION"
+            echo "Uploading artifacts to release: $TAG_NAME"
+            gh release upload "$TAG_NAME" releases/* --clobber || echo "Failed to upload to $TAG_NAME"
+          done

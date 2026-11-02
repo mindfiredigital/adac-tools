@@ -12,9 +12,16 @@ Core types and interfaces for graph layout engines in ADAC. Provides the contrac
 
 ## Installation
 
-```bash
-npm install @mindfiredigital/adac-layout-core
-pnpm add @mindfiredigital/adac-layout-core
+> **Note:** This is an internal workspace package and is **not** distributed as a standalone npm module. It is intended to be used within the ADAC monorepo.
+
+To use it in another workspace package, add it to your `package.json`:
+
+```json
+{
+  "dependencies": {
+    "@mindfiredigital/adac-layout-core": "workspace:*"
+  }
+}
 ```
 
 ## Core Types
@@ -69,11 +76,25 @@ interface LayoutResult {
 }
 ```
 
+## Performance Tuning
+
+The default custom layout settings favor readable spacing and crossing
+reduction. For large or latency-sensitive graphs, lower the spacing and
+iteration options when constructing the layout engine:
+
+```typescript
+const engine = new CustomLayoutEngine({
+  nodesep: 80,
+  ranksep: 100,
+  maxIterations: 24,
+  edgeRoutingMaxAttempts: 10,
+});
+```
+
 ## See Also
 
 - [@mindfiredigital/adac-layout](../layout) - Layout orchestration
 - [@mindfiredigital/adac-layout-elk](../layout-elk) - ELK implementation
-- [@mindfiredigital/adac-layout-dagre](../layout-dagre) - Dagre implementation
 
 ## License
 

@@ -25,8 +25,8 @@
   },
   "dependencies": {
     "@mindfiredigital/adac-layout-core": "workspace:*",
-    "@mindfiredigital/adac-schema": "workspace:*",
-    "@mindfiredigital/adac-layout-elk": "workspace:*"
+    "@mindfiredigital/adac-layout-elk": "workspace:*",
+    "@mindfiredigital/adac-validator": "workspace:*"
   },
   "publishConfig": {
     "access": "public",

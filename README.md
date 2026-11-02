@@ -11,24 +11,34 @@ ADAC is a comprehensive ecosystem for generating high-quality multi-cloud archit
 
 The project is managed as a **pnpm monorepo**, ensuring modularity and clean separation of concerns.
 
-### 📦 Packages
+### 📦 Packages & Distribution Strategy
 
-| Package                                  | Description                     | Key Responsibilities                                                                |
-| :--------------------------------------- | :------------------------------ | :---------------------------------------------------------------------------------- |
-| **`@mindfiredigital/adac-core`**         | The brain of the system.        | Orchestrates parsing, validation, compliance, **optimization**, and rendering.      |
-| **`@mindfiredigital/adac-diagram`**      | Distribution package for users. | Provides the `adac` CLI and a public API for web applications.                      |
-| **`@mindfiredigital/adac-cli`**          | CLI Engine.                     | Handles command-line arguments and help text. Separated from the diagram logic.     |
-| **`@mindfiredigital/adac-parser`**       | YAML Logic.                     | Robust parsing of ADAC-formatted YAML files into structured data.                   |
-| **`@mindfiredigital/adac-schema`**       | Validation Layer.               | Formally defines the ADAC specification using JSON Schema.                          |
-| **`@mindfiredigital/adac-layout-elk`**   | Professional Layout.            | Advanced graph positioning using `elkjs` algorithms.                                |
-| **`@mindfiredigital/adac-layout-dagre`** | Simple Layout.                  | Lightweight alternative for hierarchical graph layouts.                             |
-| **`@mindfiredigital/adac-icons-aws`**    | AWS Assets.                     | Repository of over 1,600 AWS icons and tools to manage them.                        |
-| **`@mindfiredigital/adac-icons-gcp`**    | GCP Assets.                     | Repository of GCP icons mapping to Google Cloud services.                           |
-| **`@mindfiredigital/adac-compliance`**   | Validation & Security.          | Evaluates architecture against security frameworks (PCI-DSS, SOC2, HIPAA, etc).     |
-| **`@mindfiredigital/adac-cost`**         | Analysis Tool.                  | Evaluates cloud architecture to provide structural cost breakdowns.                 |
-| **`@mindfiredigital/adac-optimizer`**    | **Architecture Optimizer.**     | Automatic cost, security & reliability recommendations on every diagram run.        |
-| **`@mindfiredigital/adac-web`**          | Frontend.                       | React-based visual editor with drag-and-drop and real-time preview.                 |
-| **`@mindfiredigital/adac-web-server`**   | API.                            | Express server exposing diagram generation, optimization & compliance as a service. |
+While this monorepo contains many packages, **only the following are officially released and distributed to the public**:
+
+- `@mindfiredigital/adac-core` (Published as an npm module)
+- `@mindfiredigital/adac-diagram` (Published as an npm module)
+- `adac-vscode` (Published as a VS Code Extension)
+
+Other packages (like parsers, layouts, and web interfaces) are either bundled into the above releases or used internally for development and testing.
+
+**Full Monorepo Package Inventory:**
+
+| Package                                | Description                     | Key Responsibilities                                                            |
+| :------------------------------------- | :------------------------------ | :------------------------------------------------------------------------------ |
+| **`@mindfiredigital/adac-core`**       | The brain of the system.        | Orchestrates parsing, validation, compliance, **optimization**, and rendering.  |
+| **`@mindfiredigital/adac-diagram`**    | Distribution package for users. | Provides the `adac` CLI and a public API for web applications.                  |
+| **`@mindfiredigital/adac-cli`**        | CLI Engine.                     | Handles command-line arguments and help text. Separated from the diagram logic. |
+| **`@mindfiredigital/adac-parser`**     | YAML Logic.                     | Robust parsing of ADAC-formatted YAML files into structured data.               |
+| **`@mindfiredigital/adac-validator`**  | Validation Layer.               | Formally defines the ADAC specification using JSON Schema.                      |
+| **`@mindfiredigital/adac-layout-elk`** | Professional Layout.            | Advanced graph positioning using `elkjs` algorithms.                            |
+
+| **`@mindfiredigital/adac-icons-aws`** | AWS Assets. | Repository of over 1,600 AWS icons and tools to manage them. |
+| **`@mindfiredigital/adac-icons-gcp`** | GCP Assets. | Repository of GCP icons mapping to Google Cloud services. |
+| **`@mindfiredigital/adac-compliance`** | Validation & Security. | Evaluates architecture against security frameworks (PCI-DSS, SOC2, HIPAA, etc). |
+| **`@mindfiredigital/adac-cost`** | Analysis Tool. | Evaluates cloud architecture to provide structural cost breakdowns. |
+| **`@mindfiredigital/adac-web`** | Frontend. | React-based visual editor with drag-and-drop and real-time preview. |
+| **`@mindfiredigital/adac-web-server`** | API. | Express server exposing diagram generation, optimization & compliance as a service. |
+| **`adac-vscode`** | VS Code Extension. | IDE support for `.adac.yaml` files, syntax highlighting, IntelliSense & previews. |
 
 ---
 
@@ -131,7 +141,6 @@ ADAC diagrams are not just static images. The generated SVGs include interactive
 
 - **Cost Tooltips**: Hover over any service node to see its estimated monthly/yearly cost (e.g., `💰 30.37/monthly`).
 - **Compliance Badges**: Nodes are annotated with compliance status based on the `compliance` field in your YAML. Tooltips show specific violations (e.g., `⚠ Compliance Violations (hipaa): Backup retention not enabled`).
-- **Optimization Insights**: Recommendations from the `@mindfiredigital/adac-optimizer` are embedded directly into the node tooltips, providing context-aware advice for cost savings and reliability.
 
 ---
 
@@ -181,7 +190,7 @@ When cloning this repo, pay attention to:
 
 1.  **Core** is a bundleable npm package.
 2.  **Core** uses `schema` for validation and `parser` for parsing.
-3.  **Core** supports both `elk` and `dagre` layout strategies.
+3.  **Core** supports `elk`, `custom`, and opt-in `orthogonal`/`tsm` layout strategies.
 4.  **CLI** is decoupled into its own package for clean command management.
 5.  **Diagram** provides both a CLI entry point and an npm module API.
 6.  **Web Server** consumes the `diagram` package as a standard npm module.

@@ -1,4 +1,6 @@
-import type { AdacConfig, AdacCloud } from '@mindfiredigital/adac-schema';
+import type { AdacConfig } from '@mindfiredigital/adac-validator';
+
+type AdacCloud = AdacConfig['infrastructure']['clouds'][number];
 
 export type AdacModel = Partial<
   Pick<AdacConfig, 'infrastructure' | 'connections'>

@@ -32,6 +32,26 @@ services:
 
 If a service does not have a `compliance` attribute, it is dynamically skipped by the evaluator.
 
+## Run Standalone
+
+This package exposes the `adac-compliance` binary.
+
+After installing the package:
+
+```bash
+adac-compliance architecture.adac.yaml
+```
+
+From the monorepo root:
+
+```bash
+pnpm --filter @mindfiredigital/adac-compliance build
+node packages/compliance/dist/cli.js yamls/aws.adac.yaml
+```
+
+The command exits with `0` when all declared checks pass and `1` when it finds
+compliance violations.
+
 ## Programmatic Usage
 
 The `.checkCompliance(config)` method returns a structured breakdown of evaluations mapped by service ID:

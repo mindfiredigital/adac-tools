@@ -3,7 +3,7 @@ import Handlebars from 'handlebars';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import { parseAdac, parseAdacFromContent } from '@mindfiredigital/adac-parser';
-import type { AdacConfig } from '@mindfiredigital/adac-schema';
+import type { AdacConfig } from '@mindfiredigital/adac-validator';
 import { mapComputeServices } from './resources/compute-resources.js';
 import { mapDatabaseServices } from './resources/database-resources.js';
 import { mapNetworkingServices } from './resources/networking-resources.js';

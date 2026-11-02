@@ -11,9 +11,16 @@ GCP service icons and mappings for ADAC diagrams.
 
 ## Installation
 
-```bash
-npm install @mindfiredigital/adac-icons-gcp
-pnpm add @mindfiredigital/adac-icons-gcp
+> **Note:** This is an internal workspace package and is **not** distributed as a standalone npm module. It is intended to be used within the ADAC monorepo.
+
+To use it in another workspace package, add it to your `package.json`:
+
+```json
+{
+  "dependencies": {
+    "@mindfiredigital/adac-icons-gcp": "workspace:*"
+  }
+}
 ```
 
 ## Usage

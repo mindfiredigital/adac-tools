@@ -18,6 +18,13 @@ async function pack() {
   const packages = [
     { name: 'core', path: 'packages/core' },
     { name: 'diagram', path: 'packages/diagram' },
+    { name: 'cost', path: 'packages/cost' },
+    { name: 'compliance', path: 'packages/compliance' },
+    { name: 'layout-core', path: 'packages/layout-core' },
+    { name: 'layout-elk', path: 'packages/layout-elk' },
+    { name: 'export-cloudformation', path: 'packages/export-cloudformation' },
+    { name: 'export-k8s', path: 'packages/export-k8s' },
+    { name: 'export-terraform', path: 'packages/export-terraform' },
   ];
 
   for (const pkg of packages) {

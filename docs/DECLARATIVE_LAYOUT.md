@@ -54,7 +54,7 @@ and pixels.
 
 | Property           | Values                                                | Notes                                                                                                                       |
 | ------------------ | ----------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `engine`           | `elk`, `dagre`, `custom`                              | a CLI/API override still wins                                                                                               |
+| `engine`           | `elk`, `custom`, `orthogonal`, `tsm`                  | a CLI/API override still wins; ELK when neither this nor the top-level `layout` is set                                      |
 | `unitSize`         | number > 0                                            | pixels per logical unit                                                                                                     |
 | `direction`        | `LR` `RL` `TB` `BT`                                   | flow of the whole diagram, default for nested                                                                               |
 | `gap`              | number \| `{horizontal, vertical}`                    | space between siblings                                                                                                      |
@@ -162,8 +162,8 @@ honour:
   layering (otherwise ELK staggers the lines) and routed afterwards.
 
 Layout-only edges (ids starting `__adac_layout__`) and line groups are never
-drawn. The `dagre` and `custom` engines receive the plain hierarchy and ignore
-arrangement properties; background, `bidirectional` and `routing` still apply.
+drawn. The `custom`, `orthogonal` and `tsm` engines receive the plain hierarchy and
+ignore arrangement properties; background, `bidirectional` and `routing` still apply.
 
 ## Known limitations
 

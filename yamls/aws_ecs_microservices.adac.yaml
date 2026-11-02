@@ -1,0 +1,217 @@
+version: '1.0'
+
+metadata:
+  name: 'AWS Microservices Reference Architecture'
+  author: 'ADAC Test Suite'
+  description: 'AWS architecture with CloudFront, WAF, S3 static frontend, ELB, ECS Fargate API and worker clusters, SQS, Secrets Manager, RDS, S3 and Redis data layer, and CloudWatch monitoring'
+  created: '2026-08-10'
+  adac_version: '1.0'
+
+applications:
+  - id: users
+    name: Users
+    type: user
+    technology: Human
+
+  - id: api-service-1
+    name: API Service 1
+    type: api
+
+  - id: api-service-2
+    name: API Service 2
+    type: api
+
+  - id: api-service-3
+    name: API Service 3
+    type: api
+
+  - id: worker-1
+    name: Workers 1
+    type: worker
+
+  - id: worker-2
+    name: Workers 2
+    type: worker
+
+  - id: worker-3
+    name: Workers 3
+    type: worker
+
+infrastructure:
+  clouds:
+    - id: aws-primary
+      provider: aws
+      region: us-east-1
+      tier: 'primary'
+
+      services:
+        # ---------- Static Frontend ----------
+        - id: s3-static-frontend
+          name: S3 (Static Frontend)
+          type: storage
+          subtype: s3
+
+        # ---------- Edge Layer ----------
+        - id: cloudfront
+          name: AWS CloudFront
+          type: network
+          subtype: cloudfront
+
+        - id: waf
+          name: AWS WAF
+          type: security
+          subtype: waf
+
+        - id: edge-layer
+          type: container
+          subtype: edge
+          runs:
+            - cloudfront
+            - waf
+
+        # ---------- Load Balancer ----------
+        - id: alb
+          name: AWS Elastic Load Balancing
+          type: network
+          subtype: elb
+
+        # ---------- Secrets ----------
+        - id: secrets-manager
+          name: AWS Secrets Manager
+          type: security
+          subtype: secrets-manager
+
+        # ---------- Monitoring ----------
+        - id: cloudwatch
+          name: Cloudwatch logging and monitoring
+          type: monitoring
+          subtype: cloudwatch
+
+        # ---------- Data Layer ----------
+        - id: rds
+          name: Amazon RDS
+          type: database
+          subtype: rds
+
+        - id: s3-data
+          name: AWS S3 (data bucket)
+          type: storage
+          subtype: s3
+
+        - id: redis
+          name: Redis
+          type: storage
+          subtype: elasticache
+
+        - id: data-layer
+          type: data
+          name: Data Layer
+          subtype: data
+          runs:
+            - rds
+            - s3-data
+            - redis
+
+        # ---------- ECS Clusters ----------
+        - id: ecs-fargate
+          name: ECS Fargate Cluster
+          type: compute
+          subtype: ecs
+          runs:
+            - api-service-1
+            - api-service-2
+            - api-service-3
+
+        - id: sqs
+          name: AWS SQS
+          type: queue
+          subtype: sqs
+
+        - id: ecs-fargate-worker
+          name: ECS Fargate Workers Cluster
+          type: compute
+          subtype: ecs
+          runs:
+            - worker-1
+            - worker-2
+            - worker-3
+
+        # ---------- VPC ----------
+        - id: vpc-main
+          name: VPC
+          type: network
+          subtype: vpc
+          runs:
+            - ecs-fargate
+            - sqs
+            - ecs-fargate-worker
+            - data-layer
+
+        # ---------- AWS Boundary ----------
+        - id: aws-boundary
+          type: container
+          name: AWS
+          subtype: aws-cloud
+          runs:
+            - s3-static-frontend
+            - edge-layer
+            - alb
+            - secrets-manager
+            - cloudwatch
+            - vpc-main
+
+connections:
+  - id: users-to-edge
+    from: users
+    to: edge-layer
+    type: https
+
+  - id: cloudfront-to-s3-static
+    from: cloudfront
+    to: s3-static-frontend
+    type: static-content
+
+  - id: cloudfront-to-waf
+    from: cloudfront
+    to: waf
+    type: security
+
+  - id: vpc-to-cloudwatch
+    from: vpc-main
+    to: cloudwatch
+    type: monitoring
+
+  - id: edge-to-alb
+    from: edge-layer
+    to: alb
+    type: https
+
+  - id: alb-to-ecs
+    from: alb
+    to: ecs-fargate
+    type: https
+
+  - id: secrets-to-ecs
+    from: secrets-manager
+    to: ecs-fargate
+    type: secrets
+
+  - id: ecs-to-sqs
+    from: ecs-fargate
+    to: sqs
+    type: message
+
+  - id: sqs-to-worker
+    from: sqs
+    to: ecs-fargate-worker
+    type: message
+
+  - id: ecs-to-data-layer
+    from: ecs-fargate
+    to: data-layer
+    type: https
+
+  - id: ecs-worker-to-data-layer
+    from: ecs-fargate-worker
+    to: data-layer
+    type: https

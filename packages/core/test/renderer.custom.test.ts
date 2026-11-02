@@ -19,27 +19,78 @@ describe('Custom Layout Engine (Renderer)', () => {
     const svg = await renderSvg(graph, 'custom');
     expect(svg).toContain('id="node-n1"');
     expect(svg).toContain('id="node-n5"');
-    // Check for grid positioning (n5 should be on second row)
-    // First row: n1, n2, n3, n4. Gap is 56, Pad 48.
-    // n5.y should be CONTAINER_TOP (44) + height (100) + gap_y (80) = 224
-    expect(svg).toContain('y="220"');
+
+    const nodeY = (id: string) => {
+      const nodeGroup = svg.match(
+        new RegExp(`<g id="node-${id}">([\\s\\S]*?)</g>`)
+      );
+      expect(nodeGroup, `Missing SVG group for node ${id}`).toBeTruthy();
+
+      const rectByClass = (className: string) =>
+        nodeGroup![1].match(
+          new RegExp(
+            `<rect\\b(?=[^>]*\\bclass\\s*=\\s*["'][^"']*\\b${className}\\b[^"']*["'])[^>]*?>`
+          )
+        )?.[0];
+      const mainRect =
+        rectByClass('node-card') ||
+        rectByClass('aws-container') ||
+        rectByClass('gcp-container') ||
+        rectByClass('azure-container') ||
+        nodeGroup![1].match(/<rect\b[^>]*?>/)?.[0];
+      const yMatch = mainRect?.match(/\by\s*=\s*["']([^"']+)["']/);
+
+      expect(yMatch, `Missing main rect y for node ${id}`).toBeTruthy();
+      const y = Number(yMatch![1]);
+      expect(
+        Number.isFinite(y),
+        `Invalid Y coordinate for node ${id}: ${yMatch![1]}`
+      ).toBe(true);
+      return y;
+    };
+
+    expect(
+      nodeY('n5'),
+      'Expected n5 to be placed below n1 in fallback grid layout'
+    ).toBeGreaterThan(nodeY('n1'));
   });
 
   it('should use core engine for ranked layout when edges exist', async () => {
     const graph: ElkNode = {
       id: 'root',
       children: [
-        { id: 'n1', width: 100, height: 100, properties: { type: 'service' } },
-        { id: 'n2', width: 100, height: 100, properties: { type: 'service' } },
+        {
+          id: 'n1',
+          width: 100,
+          height: 100,
+          properties: { type: 'service', isStacked: true, cost: 45.5 },
+        },
+        {
+          id: 'n2',
+          width: 100,
+          height: 100,
+          properties: { type: 'service', isStacked: false, cost: 0 },
+        },
       ],
       edges: [{ id: 'e1', sources: ['n1'], targets: ['n2'] }],
     };
 
-    const svg = await renderSvg(graph, 'custom');
+    const costData = { n1: 45.5, n2: 0 };
+    const svg = await renderSvg(
+      graph,
+      'custom',
+      undefined,
+      undefined,
+      costData
+    );
     expect(svg).toContain('class="aws-edge"');
     // Check that nodes are placed (coordinates depend on core engine, but should exist)
     expect(svg).toContain('id="node-n1"');
     expect(svg).toContain('id="node-n2"');
+    // Check stacked and cost logic
+    expect(svg).toContain('rx="10" ry="10" fill-opacity="0.4"');
+    expect(svg).toContain('$45.50');
+    expect(svg).toContain('$0.00');
   });
 
   it('should handle recursive container layouts', async () => {

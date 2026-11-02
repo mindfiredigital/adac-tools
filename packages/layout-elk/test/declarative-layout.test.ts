@@ -6,7 +6,7 @@ import type {
   AdacElementLayout,
   AdacLayoutOptions,
   AdacService,
-} from '@mindfiredigital/adac-schema';
+} from '@mindfiredigital/adac-validator';
 import { buildElkGraph } from '../src/elk-builder.js';
 import { applyLayoutPostProcessing } from '../src/post-layout.js';
 import { isLayoutOnlyEdge } from '../src/declarative-layout.js';
@@ -81,7 +81,9 @@ function config(
 
 async function run(cfg: AdacConfig) {
   const warnings: string[] = [];
-  const graph = buildElkGraph(cfg, { onWarning: (m) => warnings.push(m) });
+  const graph = await buildElkGraph(cfg, {
+    onWarning: (m) => warnings.push(m),
+  });
   const out = (await elk.layout(graph as never)) as unknown as ElkNode;
   const layoutWarnings = applyLayoutPostProcessing(out);
 
@@ -164,8 +166,8 @@ describe('declarative layout', () => {
       expect(overlaps(r.box('vpc'), r.box('outside'))).toBe(false);
     });
 
-    it('leaves graphs without layout declarations untouched', () => {
-      const g = buildElkGraph(
+    it('leaves graphs without layout declarations untouched', async () => {
+      const g = await buildElkGraph(
         config([{ id: 'vpc', service: 'vpc' }, ...items(2)])
       );
       const vpc = g.children!.find((c) => c.id === 'vpc')!;
@@ -802,14 +804,14 @@ describe('declarative layout', () => {
       expect(end.x).toBeCloseTo(b.x, 0);
     });
 
-    it('creates no ports for auto sides', () => {
-      const g = buildElkGraph(pair({ fromSide: 'auto', toSide: 'auto' }));
+    it('creates no ports for auto sides', async () => {
+      const g = await buildElkGraph(pair({ fromSide: 'auto', toSide: 'auto' }));
       expect(g.children!.every((c) => !c.ports?.length)).toBe(true);
       expect(g.edges![0].sources).toEqual(['a']);
     });
 
-    it('passes bidirectional and per-connection routing to the renderer', () => {
-      const g = buildElkGraph(
+    it('passes bidirectional and per-connection routing to the renderer', async () => {
+      const g = await buildElkGraph(
         config([{ id: 'a' }, { id: 'b' }], {
           connections: [
             {
@@ -827,8 +829,8 @@ describe('declarative layout', () => {
       });
     });
 
-    it('applies edgeRouting and edgeSpacing inside nested containers too', () => {
-      const g = buildElkGraph(
+    it('applies edgeRouting and edgeSpacing inside nested containers too', async () => {
+      const g = await buildElkGraph(
         config(
           [
             { id: 'vpc', service: 'vpc' },
@@ -850,8 +852,8 @@ describe('declarative layout', () => {
       ).toBe('30');
     });
 
-    it('maps edgeRouting and edgeSpacing to engine constraints', () => {
-      const g = buildElkGraph(
+    it('maps edgeRouting and edgeSpacing to engine constraints', async () => {
+      const g = await buildElkGraph(
         config([{ id: 'a' }], {
           layoutOptions: { edgeRouting: 'splines', edgeSpacing: 0.5 },
         })
@@ -1034,36 +1036,36 @@ describe('declarative layout', () => {
   });
 
   describe('styling', () => {
-    it('background defaults to false and can be set globally or per element', () => {
+    it('background defaults to false and can be set globally or per element', async () => {
       const find = (n: ElkNode, id: string): ElkNode | undefined =>
         n.id === id ? n : n.children?.map((c) => find(c, id)).find((x) => x);
-      const bg = (cfg: AdacConfig) => {
-        const g = buildElkGraph(cfg);
+      const bg = async (cfg: AdacConfig) => {
+        const g = await buildElkGraph(cfg);
         return {
           a: find(g, 'a')!.properties?.background,
           b: find(g, 'b')!.properties?.background,
         };
       };
-      expect(bg(config([{ id: 'a' }, { id: 'b' }]))).toEqual({
+      expect(await bg(config([{ id: 'a' }, { id: 'b' }]))).toEqual({
         a: false,
         b: false,
       });
       expect(
-        bg(
+        await bg(
           config([{ id: 'a' }, { id: 'b' }], {
             layoutOptions: { background: true },
           })
         )
       ).toEqual({ a: true, b: true });
       expect(
-        bg(
+        await bg(
           config([{ id: 'a', background: true }, { id: 'b' }], {
             layoutOptions: { background: false },
           })
         )
       ).toEqual({ a: true, b: false });
       expect(
-        bg(
+        await bg(
           config([{ id: 'a', background: false }, { id: 'b' }], {
             layoutOptions: { background: true },
           })
@@ -1071,15 +1073,15 @@ describe('declarative layout', () => {
       ).toEqual({ a: false, b: true });
     });
 
-    it('edgeLabels draws each connection type on its edge unless disabled', () => {
-      const labels = (layoutOptions?: AdacLayoutOptions) => {
+    it('edgeLabels draws each connection type on its edge unless disabled', async () => {
+      const labels = async (layoutOptions?: AdacLayoutOptions) => {
         const out: (string | undefined)[] = [];
         const visit = (n: ElkNode) => {
           n.edges?.forEach((e) => out.push(e.labels?.[0]?.text));
           n.children?.forEach(visit);
         };
         visit(
-          buildElkGraph(
+          await buildElkGraph(
             config([{ id: 'a' }, { id: 'b' }], {
               layoutOptions,
               connections: [{ from: 'a', to: 'b', type: 'https' }],
@@ -1088,34 +1090,34 @@ describe('declarative layout', () => {
         );
         return out;
       };
-      expect(labels()).toEqual(['https']);
-      expect(labels({ edgeLabels: true })).toEqual(['https']);
-      expect(labels({ edgeLabels: false })).toEqual([undefined]);
+      expect(await labels()).toEqual(['https']);
+      expect(await labels({ edgeLabels: true })).toEqual(['https']);
+      expect(await labels({ edgeLabels: false })).toEqual([undefined]);
     });
 
-    it('label line length is unset by default and can be set globally or per element', () => {
+    it('label line length is unset by default and can be set globally or per element', async () => {
       const find = (n: ElkNode, id: string): ElkNode | undefined =>
         n.id === id ? n : n.children?.map((c) => find(c, id)).find((x) => x);
-      const chars = (cfg: AdacConfig) => {
-        const g = buildElkGraph(cfg);
+      const chars = async (cfg: AdacConfig) => {
+        const g = await buildElkGraph(cfg);
         return {
           a: find(g, 'a')!.properties?.labelMaxChars,
           b: find(g, 'b')!.properties?.labelMaxChars,
         };
       };
-      expect(chars(config([{ id: 'a' }, { id: 'b' }]))).toEqual({
+      expect(await chars(config([{ id: 'a' }, { id: 'b' }]))).toEqual({
         a: undefined,
         b: undefined,
       });
       expect(
-        chars(
+        await chars(
           config([{ id: 'a' }, { id: 'b' }], {
             layoutOptions: { labelMaxChars: 20 },
           })
         )
       ).toEqual({ a: 20, b: 20 });
       expect(
-        chars(
+        await chars(
           config([{ id: 'a', labelMaxChars: 30 }, { id: 'b' }], {
             layoutOptions: { labelMaxChars: 20 },
           })
@@ -1125,9 +1127,9 @@ describe('declarative layout', () => {
   });
 
   describe('deprecated aliases', () => {
-    it('maps unit → unitSize and routing → edgeRouting with warnings', () => {
+    it('maps unit → unitSize and routing → edgeRouting with warnings', async () => {
       const warn = vi.fn();
-      const g = buildElkGraph(
+      const g = await buildElkGraph(
         config(
           [
             { id: 'vpc', service: 'vpc', layout: { padding: 1 } },

@@ -32,8 +32,11 @@ import {
   type CostItem,
   type ComplianceCheckResponse,
 } from './cost-compliance-panel';
+import { generateDiagramBrowser } from '../helper/diagram-generator';
+import type { GenerationResult } from '@mindfiredigital/adac-core';
 import type { Provider } from '../app';
 
+const USE_BACKEND = import.meta.env.VITE_USE_BACKEND === 'true';
 const nodeTypes = {
   customNode: CustomNode,
 };
@@ -180,8 +183,7 @@ export const generateYaml = (
 
     // Add cost data if configured
     const costConfig = node.data.costConfig as
-      | { tier: string; monthlyCost: number }
-      | undefined;
+      { tier: string; monthlyCost: number } | undefined;
     if (costConfig?.tier) {
       service.cost = {
         tier: costConfig.tier,
@@ -193,8 +195,7 @@ export const generateYaml = (
 
     // Add compliance frameworks if configured
     const complianceFrameworks = node.data.complianceFrameworks as
-      | string[]
-      | undefined;
+      string[] | undefined;
     if (complianceFrameworks && complianceFrameworks.length > 0) {
       service.compliance = complianceFrameworks;
     }
@@ -260,8 +261,7 @@ const Flow = ({ onBack, provider }: EditorProps) => {
     return nodes
       .filter((n) => {
         const cfg = n.data.costConfig as
-          | { tier: string; monthlyCost: number }
-          | undefined;
+          { tier: string; monthlyCost: number } | undefined;
         return cfg?.tier;
       })
       .map((n) => {
@@ -421,19 +421,24 @@ const Flow = ({ onBack, provider }: EditorProps) => {
 
   const handleGenerateDiagram = async () => {
     setGenerating(true);
+    let result: GenerationResult;
     try {
       const yamlStr = generateYaml(nodes, edges, provider);
-      const response = await fetch('/api/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          content: yamlStr,
-          layout: 'elk',
-        }),
-      });
+      if (USE_BACKEND) {
+        const response = await fetch('/api/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            content: yamlStr,
+            layout: 'elk',
+          }),
+        });
 
-      if (!response.ok) throw new Error('Generation failed');
-      const result = await response.json();
+        if (!response.ok) throw new Error('Generation failed');
+        result = await response.json();
+      } else {
+        result = await generateDiagramBrowser(yamlStr, 'elk');
+      }
 
       const blob = new Blob([result.svg], { type: 'image/svg+xml' });
       const url = URL.createObjectURL(blob);

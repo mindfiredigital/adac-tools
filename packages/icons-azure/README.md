@@ -11,9 +11,16 @@ Azure service icons and mappings for ADAC diagrams. Contains comprehensive Azure
 
 ## Installation
 
-```bash
-npm install @mindfiredigital/adac-icons-azure
-pnpm add @mindfiredigital/adac-icons-azure
+> **Note:** This is an internal workspace package and is **not** distributed as a standalone npm module. It is intended to be used within the ADAC monorepo.
+
+To use it in another workspace package, add it to your `package.json`:
+
+```json
+{
+  "dependencies": {
+    "@mindfiredigital/adac-icons-azure": "workspace:*"
+  }
+}
 ```
 
 ## Usage

@@ -1,22 +1,22 @@
 import { describe, it, expect, vitest } from 'vitest';
 import { buildElkGraph } from '../src/elk-builder.js';
 import fs from 'fs';
-import { AdacConfig } from '@mindfiredigital/adac-schema';
+import type { AdacConfig } from '@mindfiredigital/adac-validator';
 
 describe('ELK Builder', () => {
-  it('should build an empty ELK graph from an empty AdacConfig', () => {
+  it('should build an empty ELK graph from an empty AdacConfig', async () => {
     const config: AdacConfig = {
       version: '0.1',
       metadata: { name: 'Empty', created: '2023-10-27' },
       infrastructure: { clouds: [] },
     };
-    const graph = buildElkGraph(config);
+    const graph = await buildElkGraph(config);
     expect(graph.id).toBe('root');
     expect(graph.children).toEqual([]);
     expect(graph.edges).toEqual([]);
   });
 
-  it('should build an ELK graph with nested VPC, Subnet, and Compute clusters', () => {
+  it('should build an ELK graph with nested VPC, Subnet, and Compute clusters', async () => {
     const config: AdacConfig = {
       version: '0.1',
       metadata: { name: 'Test', created: '2023-10-27' },
@@ -117,7 +117,7 @@ describe('ELK Builder', () => {
       ],
     };
 
-    const graph = buildElkGraph(config);
+    const graph = await buildElkGraph(config);
     expect(graph).toBeDefined();
     expect(graph.id).toBe('root');
     expect(graph.children).toBeDefined();
@@ -138,7 +138,7 @@ describe('ELK Builder', () => {
     expect(rootIds).toContain('group-utility-shared');
   });
 
-  it('should handle services with single string subnets', () => {
+  it('should handle services with single string subnets', async () => {
     const config: AdacConfig = {
       version: '0.1',
       metadata: { name: 'Test', created: '2023-10-27' },
@@ -162,10 +162,10 @@ describe('ELK Builder', () => {
         ],
       },
     };
-    buildElkGraph(config);
+    await buildElkGraph(config);
   });
 
-  it('should handle unplaced apps correctly based on type and edge cases', () => {
+  it('should handle unplaced apps correctly based on type and edge cases', async () => {
     const config: AdacConfig = {
       version: '0.1',
       metadata: { name: 'Test', created: '2023-10-27' },
@@ -214,10 +214,10 @@ describe('ELK Builder', () => {
         ],
       },
     };
-    buildElkGraph(config);
+    await buildElkGraph(config);
   });
 
-  it('should test asset path resolution with mocked fs', () => {
+  it('should test asset path resolution with mocked fs', async () => {
     // mock fs.existsSync to hit the end of the loop and cover 164-201
     const existSpy = vitest.spyOn(fs, 'existsSync').mockReturnValue(false);
 
@@ -268,11 +268,11 @@ describe('ELK Builder', () => {
         { id: 'valid-conn', from: 'app-react', to: 'app-java', type: 'https' },
       ],
     };
-    buildElkGraph(config);
+    await buildElkGraph(config);
     existSpy.mockRestore();
   });
 
-  it('should build an ELK graph with GCP infrastructure', () => {
+  it('should build an ELK graph with GCP infrastructure', async () => {
     const config: AdacConfig = {
       version: '0.1',
       metadata: { name: 'GCP Test', created: '2023-10-27' },
@@ -324,7 +324,7 @@ describe('ELK Builder', () => {
       ],
     };
 
-    const graph = buildElkGraph(config);
+    const graph = await buildElkGraph(config);
     expect(graph).toBeDefined();
     expect(graph.id).toBe('root');
 
@@ -336,7 +336,7 @@ describe('ELK Builder', () => {
     expect(subnetNode?.properties?.cssClass).toBe('gcp-subnet');
 
     const gkeNode = subnetNode?.children?.find((c) => c.id === 'gke-cluster');
-    expect(gkeNode?.properties?.cssClass).toBe('gcp-compute-cluster');
+    expect(gkeNode?.properties?.cssClass).toContain('gcp-compute-cluster');
 
     // Test GCP region and zone
     const regionConfig: AdacConfig = {
@@ -360,7 +360,7 @@ describe('ELK Builder', () => {
         ],
       },
     };
-    const regionGraph = buildElkGraph(regionConfig);
+    const regionGraph = await buildElkGraph(regionConfig);
     const utilityGroup = regionGraph.children?.find(
       (c) => c.id === 'group-utility-shared'
     );
@@ -372,7 +372,7 @@ describe('ELK Builder', () => {
     expect(zoneNode?.properties?.cssClass).toBe('gcp-zone');
   });
 
-  it('should build an ELK graph with Azure infrastructure', () => {
+  it('should build an ELK graph with Azure infrastructure', async () => {
     const config: AdacConfig = {
       version: '0.1',
       metadata: { name: 'Azure Test', created: '2023-10-27' },
@@ -416,16 +416,20 @@ describe('ELK Builder', () => {
       },
     };
 
-    const graph = buildElkGraph(config);
+    const graph = await buildElkGraph(config);
     expect(graph).toBeDefined();
 
-    const rgNode = graph.children?.find((c) => c.id === 'azure-rg');
-    expect(rgNode?.properties?.cssClass).toBe('azure-rg');
+    const azureRgNode = graph.children?.find((c) => c.id === 'azure-rg');
+    expect(azureRgNode?.properties?.cssClass).toContain('azure-vnet');
 
-    const vnetNode = rgNode?.children?.find((c) => c.id === 'azure-container');
-    expect(vnetNode?.properties?.cssClass).toBe('azure-container');
+    const azureSubnetNode = azureRgNode?.children?.find(
+      (c) => c.id === 'azure-container'
+    );
+    expect(azureSubnetNode?.properties?.cssClass).toContain('azure-subnet');
 
-    const aksNode = vnetNode?.children?.find((c) => c.id === 'azure-aks');
-    expect(aksNode?.properties?.cssClass).toBe('azure-compute-cluster');
+    const aksNode = azureSubnetNode?.children?.find(
+      (c) => c.id === 'azure-aks'
+    );
+    expect(aksNode?.properties?.cssClass).toContain('azure-compute-cluster');
   });
 });

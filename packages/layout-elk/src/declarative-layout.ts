@@ -5,7 +5,7 @@ import type {
   AdacConnection,
   AdacElementLayout,
   AdacVisual,
-} from '@mindfiredigital/adac-schema';
+} from '@mindfiredigital/adac-validator';
 import type { ElkEdge, ElkNode } from './types.js';
 import {
   Box,

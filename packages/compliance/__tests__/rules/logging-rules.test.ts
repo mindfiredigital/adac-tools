@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { requireLoggingRule } from '../../src/rules/logging-rules';
-import { AdacConfig } from '@mindfiredigital/adac-schema';
+import type { AdacConfig } from '@mindfiredigital/adac-validator';
 
 type AdacService = AdacConfig['infrastructure']['clouds'][0]['services'][0];
 

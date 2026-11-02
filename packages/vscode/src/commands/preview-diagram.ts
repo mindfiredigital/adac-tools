@@ -2,10 +2,12 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 
+type OptimizationResult =
+  import('@mindfiredigital/adac-core').GenerationResult['optimizationResult'];
+
 // Use the same generation pipeline as the CLI
 let generateDiagramSvg:
-  | typeof import('@mindfiredigital/adac-core').generateDiagramSvg
-  | undefined;
+  typeof import('@mindfiredigital/adac-core').generateDiagramSvg | undefined;
 
 /**
  * Find the adac-tools monorepo root by checking workspace folders
@@ -221,9 +223,9 @@ async function updatePreview(
   try {
     // Read layout engine preference from VS Code settings
     const config = vscode.workspace.getConfiguration('adac');
-    const layoutEngine = config.get<'elk' | 'dagre'>(
+    const layoutEngine = config.get<'elk' | 'custom' | 'orthogonal' | 'tsm'>(
       'diagram.layoutEngine',
-      'elk'
+      'custom'
     );
     const skipOptimizer = !config.get<boolean>('diagram.optimize', true);
 
@@ -261,7 +263,7 @@ export function wrapSvgInHtml(
   svg: string,
   logs: string[],
   durationMs: number,
-  optimizationResult?: import('@mindfiredigital/adac-optimizer').OptimizationResult
+  optimizationResult?: OptimizationResult
 ): string {
   const logsHtml = logs
     .map((l) => `<div class="log-line">${escapeHtml(l)}</div>`)

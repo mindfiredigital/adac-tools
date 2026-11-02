@@ -11,12 +11,33 @@ Professional graph layout engine using ELK (Eclipse Layout Kernel) for ADAC diag
 
 ## Installation
 
-```bash
-npm install @mindfiredigital/adac-layout-elk
-pnpm add @mindfiredigital/adac-layout-elk
+> **Note:** This is an internal workspace package and is **not** distributed as a standalone npm module. It is intended to be used within the ADAC monorepo.
+
+To use it in another workspace package, add it to your `package.json`:
+
+```json
+{
+  "dependencies": {
+    "@mindfiredigital/adac-layout-elk": "workspace:*"
+  }
+}
 ```
 
-## Usage
+## Run Standalone
+
+This package exposes the `adac-layout-elk` binary inside the workspace. It
+parses an ADAC YAML file and writes the generated ELK graph JSON.
+
+From the monorepo root:
+
+```bash
+pnpm --filter @mindfiredigital/adac-layout-elk build
+node packages/layout-elk/dist/cli.js yamls/aws.adac.yaml --output ./elk-graph.json
+```
+
+If `--output` is omitted, the ELK graph JSON is printed to stdout.
+
+## Programmatic Usage
 
 ```typescript
 import { layoutWithELK } from '@mindfiredigital/adac-layout-elk';
@@ -50,7 +71,6 @@ const layout = await layoutWithELK(graph, options);
 
 ## See Also
 
-- [@mindfiredigital/adac-layout-dagre](../layout-dagre) - Lightweight alternative
 - [@mindfiredigital/adac-layout-core](../layout-core) - Layout interfaces
 - [@mindfiredigital/adac-core](../core) - Core integration
 

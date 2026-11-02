@@ -5,6 +5,7 @@
 // ============================================
 
 export { CustomLayoutEngine } from './layout-engine';
+export { OrthogonalLayoutEngine } from './orthogonal-layout-engine';
 
 // ============================================
 // GRAPH STRUCTURES
@@ -40,3 +41,8 @@ export type {
   RankMap,
   OrderingMap,
 } from './types';
+
+// ============================================
+// OPTIMIZER
+// ============================================
+export * from './optimizer';

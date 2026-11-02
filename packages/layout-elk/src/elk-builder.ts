@@ -1,9 +1,4 @@
-import {
-  AdacConfig,
-  AdacService,
-  AdacApplication,
-  AdacCloud,
-} from '@mindfiredigital/adac-schema';
+import type { AdacConfig } from '@mindfiredigital/adac-validator';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { ElkNode, ElkEdge } from './types.js';
 import {
@@ -13,8 +8,20 @@ import {
   rootElkOptions,
 } from './declarative-layout.js';
 import { normalizeLayoutOptions, type Warn } from './layout-properties.js';
-import path from 'path';
-import fs from 'fs';
+
+let fsPromise: Promise<typeof import('fs')> | undefined;
+let pathPromise: Promise<typeof import('path')> | undefined;
+
+const getFs = () => (fsPromise ??= import('fs'));
+const getPath = () => (pathPromise ??= import('path'));
+
+const isBrowser =
+  typeof window !== 'undefined' && typeof document !== 'undefined';
+
+type AdacService =
+  AdacConfig['infrastructure']['clouds'][number]['services'][number];
+type AdacApplication = NonNullable<AdacConfig['applications']>[number];
+type AdacCloud = AdacConfig['infrastructure']['clouds'][number];
 
 /** An icon node's box is as wide as its icon pill (42px icon + 5px padding each side). */
 const LEAF_WIDTH = 52;
@@ -27,8 +34,9 @@ const PROVIDER_FOLDERS: Record<IconProvider, string> = {
   azure: 'icons-azure',
 };
 
-function iconMapCandidates(provider: IconProvider): string[] {
+async function iconMapCandidates(provider: IconProvider): Promise<string[]> {
   const folder = PROVIDER_FOLDERS[provider];
+  const path = await getPath();
   return [
     path.resolve(__dirname, '..', '..', folder, 'mappings', 'icon-map.json'),
     path.resolve(
@@ -52,9 +60,20 @@ function iconMapCandidates(provider: IconProvider): string[] {
   ];
 }
 
-function loadIconMap(provider: IconProvider): Record<string, string> {
+async function loadIconMap(
+  provider: IconProvider
+): Promise<Record<string, string>> {
   try {
-    for (const p of iconMapCandidates(provider)) {
+    if (isBrowser) {
+      const resp = await fetch(`/mappings/${provider}-icons.json`);
+      if (!resp.ok) return {};
+      // a dev server answers a missing file with index.html (status 200);
+      // await the parse so that is handled below instead of rejecting later
+      return (await resp.json()) as Record<string, string>;
+    }
+
+    const fs = await getFs();
+    for (const p of await iconMapCandidates(provider)) {
       if (fs.existsSync(p)) {
         return JSON.parse(fs.readFileSync(p, 'utf8'));
       }
@@ -69,10 +88,11 @@ function loadIconMap(provider: IconProvider): Record<string, string> {
   return {};
 }
 
-function assetCandidates(
+async function assetCandidates(
   provider: IconProvider,
   relativePath: string
-): string[] {
+): Promise<string[]> {
+  const path = await getPath();
   const folder = PROVIDER_FOLDERS[provider];
   return [
     // dist/assets — only AWS historically shipped icons inside the package
@@ -94,12 +114,15 @@ function assetCandidates(
   ];
 }
 
-function resolveProviderAssetPath(
+async function resolveProviderAssetPath(
   provider: IconProvider,
   relativePath?: string
-): string | undefined {
+): Promise<string | undefined> {
   if (!relativePath) return undefined;
-  for (const p of assetCandidates(provider, relativePath)) {
+  if (isBrowser) return relativePath;
+
+  const fs = await getFs();
+  for (const p of await assetCandidates(provider, relativePath)) {
     if (fs.existsSync(p)) return p;
   }
   console.warn(
@@ -109,9 +132,11 @@ function resolveProviderAssetPath(
   return undefined;
 }
 
-const ICON_MAP: Record<string, string> = loadIconMap('aws');
-const GCP_ICON_MAP: Record<string, string> = loadIconMap('gcp');
-const AZURE_ICON_MAP: Record<string, string> = loadIconMap('azure');
+const ICON_MAP_PROMISE: Promise<Record<string, string>> = loadIconMap('aws');
+const GCP_ICON_MAP_PROMISE: Promise<Record<string, string>> =
+  loadIconMap('gcp');
+const AZURE_ICON_MAP_PROMISE: Promise<Record<string, string>> =
+  loadIconMap('azure');
 
 // ── Shared ELK layout option presets ────────────────────────────────────────
 // Increased and symmetric so labels at the top of containers have breathing
@@ -130,8 +155,28 @@ const CONTAINER_LAYOUT_OPTIONS: Record<string, string> = {
 // node when its label is wider than the icon, instead of clipping the text.
 const LEAF_NODE_LAYOUT_OPTIONS: Record<string, string> = {
   'elk.nodeSize.constraints': 'NODE_LABELS MINIMUM_SIZE',
-  'elk.portAlignment.default': 'CENTER',
 };
+
+export type ElkEdgeRoutingMode = 'ORTHOGONAL' | 'POLYLINE' | 'SPLINES';
+
+export interface BuildElkGraphOptions {
+  edgeRoutingMode?: ElkEdgeRoutingMode;
+  /** Receives deprecation and other non-fatal layout warnings. */
+  onWarning?: Warn;
+  /**
+   * The declarative ELK look (the default): icon-sized nodes, and containers
+   * without a parent kept as top-level boundaries. Other engines pass `false`
+   * to keep label-wide cards and the shared-infrastructure group.
+   */
+  declarativeStyle?: boolean;
+}
+
+const DEFAULT_EDGE_ROUTING_MODE: ElkEdgeRoutingMode = 'ORTHOGONAL';
+
+// Approximate SVG label metrics for the current node font. Wider fonts or
+// localized labels may need larger values, or configurable metrics per theme.
+const NODE_LABEL_CHAR_WIDTH = 6.5;
+const NODE_LABEL_HORIZONTAL_PADDING = 40;
 
 // Service/app types that should be pinned to the FIRST layer so the diagram
 // reads "user → cloud" left-to-right (or top-to-bottom).
@@ -177,6 +222,21 @@ const STORAGE_SERVICE_TYPES = new Set([
   'db',
   'storage',
 ]);
+
+function selectDefaultVpcId(
+  subnetToVpcMap: Map<string, string>
+): string | undefined {
+  if (subnetToVpcMap.size === 0) return undefined;
+
+  const subnetCounts = new Map<string, number>();
+  for (const vpcId of subnetToVpcMap.values()) {
+    subnetCounts.set(vpcId, (subnetCounts.get(vpcId) || 0) + 1);
+  }
+
+  return Array.from(subnetCounts.entries()).sort(
+    ([aId, aCount], [bId, bCount]) => bCount - aCount || aId.localeCompare(bId)
+  )[0]?.[0];
+}
 
 // AWS Colors matching AWS Diagrams
 const STYLES = {
@@ -224,19 +284,23 @@ const GCP_STYLES = {
 
 // Azure Container Styles — uses Microsoft Azure color palette (blue)
 const AZURE_STYLES = {
-  // Azure Resource Group (blue border)
-  vpc: { type: 'container', style: 'azure-rg', cssClass: 'azure-rg' },
-  // Azure Subscription (lighter blue)
+  // Azure VNet / Resource Group
+  vpc: {
+    type: 'container',
+    style: 'azure-vnet',
+    cssClass: 'azure-vnet azure-vpc',
+  },
+  // Azure Subscription
   region: {
     type: 'container',
     style: 'azure-subscription',
-    cssClass: 'azure-subscription',
+    cssClass: 'azure-subscription azure-rg',
   },
-  // Azure container
+  // Azure Subnet
   subnet: {
     type: 'container',
-    style: 'azure-container',
-    cssClass: 'azure-container',
+    style: 'azure-subnet',
+    cssClass: 'azure-subnet azure-container',
   },
   // Azure compute cluster/group
   compute: {
@@ -251,18 +315,6 @@ const AZURE_STYLES = {
 function normalizeKey(key: string): string {
   return key.toLowerCase().replace(/[^a-z0-9]/g, '');
 }
-
-// Pre-compute normalized map for fuzzy lookup (AWS)
-const NORMALIZED_MAP = new Map<string, string>();
-Object.keys(ICON_MAP).forEach((k) => {
-  NORMALIZED_MAP.set(normalizeKey(k), k);
-});
-
-// Pre-compute normalized map for fuzzy lookup (GCP)
-const GCP_NORMALIZED_MAP = new Map<string, string>();
-Object.keys(GCP_ICON_MAP).forEach((k) => {
-  GCP_NORMALIZED_MAP.set(normalizeKey(k), k);
-});
 
 // Manual aliases for common short codes to full AWS names (if not auto-resolved)
 const ALIASES: Record<string, string> = {
@@ -382,17 +434,58 @@ const GCP_ALIASES: Record<string, string> = {
   storage: 'Cloud Storage',
 };
 
-export interface BuildElkGraphOptions {
-  /** Receives deprecation and other non-fatal layout warnings. */
-  onWarning?: Warn;
+// Pre-compute normalized map for fuzzy lookup (AWS)
+const NORMALIZED_MAP = new Map<string, string>();
+
+// Pre-compute normalized map for fuzzy lookup (GCP)
+const GCP_NORMALIZED_MAP = new Map<string, string>();
+
+let initializePromise:
+  | Promise<{
+      aws: Record<string, string>;
+      gcp: Record<string, string>;
+      azure: Record<string, string>;
+    }>
+  | undefined;
+
+function initializeIconMaps() {
+  if (!initializePromise) {
+    initializePromise = (async () => {
+      const [aws, gcp, azure] = await Promise.all([
+        ICON_MAP_PROMISE,
+        GCP_ICON_MAP_PROMISE,
+        AZURE_ICON_MAP_PROMISE,
+      ]);
+
+      for (const key of Object.keys(aws)) {
+        NORMALIZED_MAP.set(normalizeKey(key), key);
+      }
+
+      for (const key of Object.keys(gcp)) {
+        GCP_NORMALIZED_MAP.set(normalizeKey(key), key);
+      }
+
+      return { aws, gcp, azure };
+    })();
+  }
+
+  return initializePromise;
 }
 
-export function buildElkGraph(
+export async function buildElkGraph(
   adac: AdacConfig,
-  buildOptions: BuildElkGraphOptions = {}
-): ElkNode {
-  const warn: Warn = buildOptions.onWarning ?? ((m) => console.warn(m));
+  options: BuildElkGraphOptions = {}
+): Promise<ElkNode> {
+  const {
+    aws: ICON_MAP,
+    gcp: GCP_ICON_MAP,
+    azure: AZURE_ICON_MAP,
+  } = await initializeIconMaps();
+  const warn: Warn = options.onWarning ?? ((m) => console.warn(m));
   const globalLayout = normalizeLayoutOptions(adac.layoutOptions, warn);
+  // icon nodes are as wide as their icon; other engines keep label-wide cards
+  const declarativeStyle = options.declarativeStyle ?? true;
+
   const nodesMap = new Map<string, ElkNode>();
   const edges: ElkEdge[] = [];
 
@@ -416,19 +509,19 @@ export function buildElkGraph(
     );
   const estimatedEdgeCount = (adac.connections || []).length;
   const isDenseGraph = estimatedNodeCount > 40 || estimatedEdgeCount > 80;
-  const edgeRoutingMode = isDenseGraph ? 'SPLINES' : 'ORTHOGONAL';
+  const edgeRoutingMode = options.edgeRoutingMode ?? DEFAULT_EDGE_ROUTING_MODE;
   const edgeSpacing = isDenseGraph
     ? {
-        nodeNodeBetweenLayers: '140',
-        edgeNodeBetweenLayers: '80',
+        nodeNodeBetweenLayers: '180',
+        edgeNodeBetweenLayers: '100',
         edgeEdgeBetweenLayers: '60',
       }
     : {
-        nodeNodeBetweenLayers: '100',
-        edgeNodeBetweenLayers: '40',
-        edgeEdgeBetweenLayers: '20',
+        nodeNodeBetweenLayers: '140',
+        edgeNodeBetweenLayers: '60',
+        edgeEdgeBetweenLayers: '30',
       };
-  const getIconPath = (
+  const getIconPath = async (
     key: string,
     forceProvider?: 'aws' | 'gcp' | 'azure'
   ) => {
@@ -437,68 +530,68 @@ export function buildElkGraph(
       forceProvider || (isAzure ? 'azure' : isGcp ? 'gcp' : 'aws');
 
     if (provider === 'gcp') {
-      return getGcpIconPath(key);
+      return await getGcpIconPath(key);
     }
     if (provider === 'azure') {
-      return getAzureIconPath(key);
+      return await getAzureIconPath(key);
     }
-    return getAwsIconPath(key);
+    return await getAwsIconPath(key);
   };
 
   // --- AWS Icon resolution ---
-  const getAwsIconPath = (key: string) => {
+  const getAwsIconPath = async (key: string) => {
     if (!key) return undefined;
 
     // 1. Direct Lookup
-    if (ICON_MAP[key]) return resolveAwsAssetPath(ICON_MAP[key]);
+    if (ICON_MAP[key]) return await resolveAwsAssetPath(ICON_MAP[key]);
 
     const lowerKey = normalizeKey(key);
 
     // 2. Alias Lookup
     if (ALIASES[lowerKey] && ICON_MAP[ALIASES[lowerKey]]) {
-      return resolveAwsAssetPath(ICON_MAP[ALIASES[lowerKey]]);
+      return await resolveAwsAssetPath(ICON_MAP[ALIASES[lowerKey]]);
     }
 
     // 3. Normalized Lookup
     if (NORMALIZED_MAP.has(lowerKey)) {
-      return resolveAwsAssetPath(ICON_MAP[NORMALIZED_MAP.get(lowerKey)!]);
+      return await resolveAwsAssetPath(ICON_MAP[NORMALIZED_MAP.get(lowerKey)!]);
     }
 
     // 4. Fuzzy / Substring Lookup
     for (const [nKey, originalKey] of NORMALIZED_MAP.entries()) {
       if (nKey.includes(lowerKey) || lowerKey.includes(nKey)) {
-        return resolveAwsAssetPath(ICON_MAP[originalKey]);
+        return await resolveAwsAssetPath(ICON_MAP[originalKey]);
       }
     }
 
     // 5. Fallback for generics
     if (lowerKey.includes('database') || lowerKey.includes('db'))
-      return resolveAwsAssetPath(ICON_MAP['AWS::RDS']);
+      return await resolveAwsAssetPath(ICON_MAP['AWS::RDS']);
     if (lowerKey.includes('user'))
-      return resolveAwsAssetPath(ICON_MAP['AWS::IAM::User']);
+      return await resolveAwsAssetPath(ICON_MAP['AWS::IAM::User']);
     if (lowerKey.includes('client'))
-      return resolveAwsAssetPath(ICON_MAP['AWS::IAM::User']);
+      return await resolveAwsAssetPath(ICON_MAP['AWS::IAM::User']);
 
     return undefined;
   };
 
   // --- GCP Icon resolution ---
-  const getGcpIconPath = (key: string) => {
+  const getGcpIconPath = async (key: string) => {
     if (!key) return undefined;
 
     // 1. Direct lookup in GCP map
-    if (GCP_ICON_MAP[key]) return resolveGcpAssetPath(GCP_ICON_MAP[key]);
+    if (GCP_ICON_MAP[key]) return await resolveGcpAssetPath(GCP_ICON_MAP[key]);
 
     const lowerKey = normalizeKey(key);
 
     // 2. GCP Alias lookup
     if (GCP_ALIASES[lowerKey] && GCP_ICON_MAP[GCP_ALIASES[lowerKey]]) {
-      return resolveGcpAssetPath(GCP_ICON_MAP[GCP_ALIASES[lowerKey]]);
+      return await resolveGcpAssetPath(GCP_ICON_MAP[GCP_ALIASES[lowerKey]]);
     }
 
     // 3. Normalized lookup
     if (GCP_NORMALIZED_MAP.has(lowerKey)) {
-      return resolveGcpAssetPath(
+      return await resolveGcpAssetPath(
         GCP_ICON_MAP[GCP_NORMALIZED_MAP.get(lowerKey)!]
       );
     }
@@ -506,7 +599,7 @@ export function buildElkGraph(
     // 4. Fuzzy / partial match
     for (const [nKey, originalKey] of GCP_NORMALIZED_MAP.entries()) {
       if (nKey.includes(lowerKey) || lowerKey.includes(nKey)) {
-        return resolveGcpAssetPath(GCP_ICON_MAP[originalKey]);
+        return await resolveGcpAssetPath(GCP_ICON_MAP[originalKey]);
       }
     }
 
@@ -514,36 +607,37 @@ export function buildElkGraph(
   };
 
   // --- Azure Icon resolution ---
-  const getAzureIconPath = (key: string) => {
+  const getAzureIconPath = async (key: string) => {
     if (!key) return undefined;
 
     // 1. Direct lookup in Azure map
-    if (AZURE_ICON_MAP[key]) return resolveAzureAssetPath(AZURE_ICON_MAP[key]);
+    if (AZURE_ICON_MAP[key])
+      return await resolveAzureAssetPath(AZURE_ICON_MAP[key]);
 
     const lowerKey = normalizeKey(key);
 
     // 2. Normalized lookup
     if (AZURE_ICON_MAP[lowerKey]) {
-      return resolveAzureAssetPath(AZURE_ICON_MAP[lowerKey]);
+      return await resolveAzureAssetPath(AZURE_ICON_MAP[lowerKey]);
     }
 
     // 3. Fuzzy / partial match
     for (const [originalKey, iconPath] of Object.entries(AZURE_ICON_MAP)) {
       const normalized = normalizeKey(originalKey);
       if (normalized.includes(lowerKey) || lowerKey.includes(normalized)) {
-        return resolveAzureAssetPath(iconPath);
+        return await resolveAzureAssetPath(iconPath);
       }
     }
 
     return undefined;
   };
 
-  const resolveAwsAssetPath = (relativePath?: string) =>
-    resolveProviderAssetPath('aws', relativePath);
-  const resolveGcpAssetPath = (relativePath?: string) =>
-    resolveProviderAssetPath('gcp', relativePath);
-  const resolveAzureAssetPath = (relativePath?: string) =>
-    resolveProviderAssetPath('azure', relativePath);
+  const resolveAwsAssetPath = async (relativePath?: string) =>
+    await resolveProviderAssetPath('aws', relativePath);
+  const resolveGcpAssetPath = async (relativePath?: string) =>
+    await resolveProviderAssetPath('gcp', relativePath);
+  const resolveAzureAssetPath = async (relativePath?: string) =>
+    await resolveProviderAssetPath('azure', relativePath);
 
   const getServiceType = (service: AdacService): string => {
     return service.service || service.subtype || service.type || 'unknown';
@@ -557,6 +651,25 @@ export function buildElkGraph(
   const isAzureCloud = (cloud: AdacCloud) =>
     (cloud.provider || '').toLowerCase() === 'azure';
 
+  const getProviderIconPath = async (
+    key: string,
+    isAzureProvider: boolean,
+    isGcpProvider: boolean
+  ) => {
+    if (isAzureProvider) return await getAzureIconPath(key);
+    if (isGcpProvider) return await getGcpIconPath(key);
+    return await getAwsIconPath(key);
+  };
+
+  const isSubnetNode = (node: ElkNode) => {
+    const role = node.properties?.nodeRole;
+    if (role === 'subnet') return true;
+    if (role !== undefined) return false;
+
+    const cssClass = node.properties?.cssClass;
+    return typeof cssClass === 'string' && cssClass.includes('subnet');
+  };
+
   // Select STYLES based on cloud provider
   const getStylesForCloud = (cloud: AdacCloud) => {
     if (isAzureCloud(cloud)) return AZURE_STYLES;
@@ -564,10 +677,10 @@ export function buildElkGraph(
     return STYLES;
   };
 
-  const detectIconForApp = (app: AdacApplication) => {
+  const detectIconForApp = async (app: AdacApplication) => {
     // 1. Prefer AI Inference
     if (app.insight_tags?.icon) {
-      const p = getIconPath(app.insight_tags.icon);
+      const p = await getIconPath(app.insight_tags.icon);
       if (p) return p;
     }
 
@@ -578,16 +691,51 @@ export function buildElkGraph(
       tech.includes('vue') ||
       tech.includes('angular')
     )
-      return getIconPath('Front-End Web & Mobile');
+      return await getIconPath('Front-End Web & Mobile');
     if (
       tech.includes('node') ||
       tech.includes('java') ||
       tech.includes('python')
     )
-      return getIconPath('Compute');
+      return await getIconPath('Compute');
+
+    // Generic type fallback mapping
+    const type = (app.type || '').toLowerCase();
+    if (type === 'frontend' || type === 'web' || type === 'ui') {
+      return (
+        (await getIconPath('Front-End Web & Mobile')) ||
+        (await getIconPath('Application'))
+      );
+    }
+    if (type === 'backend' || type === 'api' || type === 'service') {
+      if (isGcp) return await getGcpIconPath('cloud-run');
+      if (isAzure)
+        return (
+          (await getAzureIconPath('app-service')) ||
+          (await getIconPath('Compute'))
+        );
+      return await getIconPath('Compute');
+    }
+    if (type === 'worker' || type === 'job' || type === 'task') {
+      if (isGcp) return await getGcpIconPath('cloud-functions');
+      if (isAzure)
+        return (
+          (await getAzureIconPath('azure-functions')) ||
+          (await getIconPath('Compute'))
+        );
+      return await getIconPath('Compute');
+    }
+    if (type === 'database' || type === 'db') {
+      return await getIconPath('database');
+    }
 
     // Fallbacks
-    return getIconPath(app.type) || getIconPath('Application');
+    return (
+      (await getIconPath(app.type)) ||
+      (isGcp
+        ? await getGcpIconPath('compute-engine')
+        : await getIconPath('Application'))
+    );
   };
 
   // Choose a per-node layer constraint so the diagram reads in flow order:
@@ -615,22 +763,54 @@ export function buildElkGraph(
     return opts;
   };
 
+  const calcNodeWidth = (label: string, contents: string[] = []): number => {
+    const longestText = [label, ...contents].reduce(
+      (longest, text) => (text.length > longest.length ? text : longest),
+      label
+    );
+    return Math.max(
+      80,
+      longestText.length * NODE_LABEL_CHAR_WIDTH + NODE_LABEL_HORIZONTAL_PADDING
+    );
+  };
+
+  const leafWidth = (label: string): number =>
+    declarativeStyle ? LEAF_WIDTH : calcNodeWidth(label);
+
   // 1. Create Nodes for Applications
-  (adac.applications || []).forEach((app: AdacApplication) => {
+  for (const app of adac.applications || []) {
+    const iconPath = await detectIconForApp(app);
+    const labelText = app.name || app.id;
+    let dynamicW = calcNodeWidth(labelText, app.contents ?? []);
+
+    let dynamicH = 100;
+    if (app.contents?.length) {
+      dynamicH += app.contents.length * 35 + 25;
+      dynamicW += 20;
+    }
+
+    // an app that lists contents needs its full card
+    const iconBox = declarativeStyle && !app.contents?.length;
+    const nodeW = iconBox ? LEAF_WIDTH : dynamicW;
+    const nodeH = iconBox ? 90 : dynamicH;
+
     const node: ElkNode = {
       id: app.id,
-      width: LEAF_WIDTH,
-      height: 90,
-      labels: [{ text: app.name }],
+      width: iconBox ? LEAF_WIDTH : dynamicW,
+      height: iconBox ? 90 : dynamicH,
+      labels: [{ text: labelText }],
       properties: {
         type: 'app',
-        iconPath: detectIconForApp(app),
+        iconPath,
         title: app.type,
+        direction: app.direction,
+        contents: app.contents,
+        isStacked: app.type === 'cluster',
       },
-      layoutOptions: buildLeafLayoutOptions(app.type || '', LEAF_WIDTH, 90),
+      layoutOptions: buildLeafLayoutOptions(app.type || '', nodeW, nodeH),
     };
     nodesMap.set(app.id, node);
-  });
+  }
 
   // 1.5 Create Nodes for Logical Groups
   const logicalGroups = new Set<string>();
@@ -667,14 +847,14 @@ export function buildElkGraph(
   });
 
   // 2. Create Nodes for Infrastructure Services (Pass 1)
-  (adac.infrastructure?.clouds || []).forEach((cloud: AdacCloud) => {
+  for (const cloud of adac.infrastructure?.clouds || []) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const cloudStyles = getStylesForCloud(cloud) as any;
     const gcpCloud = isGcpCloud(cloud);
 
-    (cloud.services || []).forEach((service: AdacService) => {
-      let width = LEAF_WIDTH;
-      let height = 90;
+    for (const service of cloud.services || []) {
+      let width = 80;
+      let height = 100;
       let style: { type: string; style: string; cssClass?: string } =
         cloudStyles.service;
 
@@ -719,11 +899,16 @@ export function buildElkGraph(
         }
       } else if (isAzureCloud(cloud)) {
         // Azure container detection
-        if (typeKey === 'vpc' || typeKey === 'resource-group') {
+        if (
+          typeKey === 'vpc' ||
+          typeKey === 'resource-group' ||
+          typeKey === 'virtual-network' ||
+          typeKey === 'vnet'
+        ) {
           width = 400;
           height = 400;
           style = cloudStyles.vpc;
-        } else if (typeKey === 'subnet' || typeKey === 'vnet') {
+        } else if (typeKey === 'subnet') {
           width = 250;
           height = 250;
           style = cloudStyles.subnet;
@@ -762,48 +947,86 @@ export function buildElkGraph(
         }
       }
 
-      // Icon Resolution strategy — use GCP map for GCP clouds, AWS map otherwise
-      let iconPath = gcpCloud
-        ? getGcpIconPath(typeKey)
-        : getAwsIconPath(typeKey);
+      // Icon Resolution strategy
+      const isAzureProvider = isAzureCloud(cloud);
+      let iconPath = await getProviderIconPath(
+        typeKey,
+        isAzureProvider,
+        gcpCloud
+      );
+
       if (service.insight_tags?.icon) {
-        const aiIcon = gcpCloud
-          ? getGcpIconPath(service.insight_tags.icon)
-          : getAwsIconPath(service.insight_tags.icon);
+        const aiIcon = await getProviderIconPath(
+          service.insight_tags.icon,
+          isAzureProvider,
+          gcpCloud
+        );
         if (aiIcon) iconPath = aiIcon;
       }
       // Fallback: try generic icon
       if (!iconPath) {
-        iconPath = gcpCloud
-          ? getGcpIconPath('compute-engine')
-          : getAwsIconPath('General resource icon');
+        const fallbackIconKey = isAzureProvider
+          ? 'compute'
+          : gcpCloud
+            ? 'compute-engine'
+            : 'General resource icon';
+        iconPath = await getProviderIconPath(
+          fallbackIconKey,
+          isAzureProvider,
+          gcpCloud
+        );
       }
 
       const isContainer = style.type === 'container';
-      const layoutOptions: Record<string, string> = isContainer
-        ? {
-            ...CONTAINER_LAYOUT_OPTIONS,
-            'elk.nodeSize.minimum': `(${width}, ${height})`,
-          }
-        : buildLeafLayoutOptions(typeKey, width, height);
+      const isStackedSvc =
+        (service.runs && service.runs.length > 1) ||
+        (cfg && cfg.instances > 1) ||
+        [
+          'eks',
+          'ecs',
+          'aks',
+          'azure-kubernetes-service',
+          'rds',
+          'aurora',
+          'dynamodb',
+          'msk',
+          'kafka',
+          'elasticache',
+          'redis',
+        ].includes(typeKey);
+
+      const svcLabel = service.name || service.id;
+      const dynamicW = isContainer ? width : leafWidth(svcLabel);
+      const dynamicH = isContainer ? height : declarativeStyle ? 90 : 100;
 
       const node: ElkNode = {
         id: service.id,
-        width,
-        height,
-        labels: [{ text: service.name || service.id }],
+        width: dynamicW,
+        height: dynamicH,
+        labels: [{ text: svcLabel }],
         children: [],
         properties: {
           type: style.type,
           cssClass: style.cssClass,
+          nodeRole:
+            typeKey === 'subnet' || typeKey === 'subnetwork'
+              ? 'subnet'
+              : undefined,
           iconPath: iconPath,
+          direction: service.direction,
           description: service.description || typeKey,
+          isStacked: Boolean(isStackedSvc),
         },
-        layoutOptions,
+        layoutOptions: isContainer
+          ? {
+              ...CONTAINER_LAYOUT_OPTIONS,
+              'elk.nodeSize.minimum': `(${width}, ${height})`,
+            }
+          : buildLeafLayoutOptions(typeKey, dynamicW, dynamicH),
       };
       nodesMap.set(service.id, node);
-    });
-  });
+    }
+  }
 
   // 3. Build Hierarchy (Pass 2)
   const placedNodeIds = new Set<string>();
@@ -831,6 +1054,23 @@ export function buildElkGraph(
   // pass here, so a service's `runs:` claim always wins over `insight_tags.group`.
 
   // Process Services to assign Logic Parents
+  const subnetToVpcMap = new Map<string, string>();
+
+  // First pass: Build subnet to VPC mapping
+  (adac.infrastructure?.clouds || []).forEach((cloud: AdacCloud) => {
+    (cloud.services || []).forEach((service: AdacService) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const cfg = (service.config || service.configuration || {}) as any;
+      const svcType = getServiceType(service);
+      if (
+        (svcType === 'subnet' || svcType === 'subnetwork') &&
+        (cfg.vpc || cfg.vnet)
+      ) {
+        subnetToVpcMap.set(service.id, cfg.vpc || cfg.vnet);
+      }
+    });
+  });
+
   (adac.infrastructure?.clouds || []).forEach((cloud: AdacCloud) => {
     (cloud.services || []).forEach((service: AdacService) => {
       const node = nodesMap.get(service.id)!;
@@ -876,17 +1116,41 @@ export function buildElkGraph(
         } else if (cfg.vpc) {
           parentId = cfg.vpc;
         }
+      }
 
-        if (cfg.subnets && cfg.subnets.length > 0) {
-          if (cfg.subnets.length === 1) parentId = cfg.subnets[0];
+      // Unified subnets resolution
+      const subnets =
+        service.subnets || cfg?.subnets || (cfg?.subnet ? [cfg.subnet] : []);
+      if (subnets.length > 0) {
+        if (subnets.length === 1) {
+          parentId = subnets[0];
+        } else {
+          const subnetVpcIds = new Map<string, string>();
+          subnets.forEach((subnetId: string) => {
+            const vpcId = subnetToVpcMap.get(subnetId);
+            if (vpcId) subnetVpcIds.set(subnetId, vpcId);
+          });
+
+          const uniqueVpcIds = new Set(subnetVpcIds.values());
+          if (uniqueVpcIds.size === 1) {
+            parentId = Array.from(uniqueVpcIds)[0];
+          } else if (uniqueVpcIds.size > 1) {
+            console.warn(
+              `Service ${service.id} references subnets across multiple VPCs: ${Array.from(
+                subnetVpcIds.entries()
+              )
+                .map(([subnetId, vpcId]) => `${subnetId}->${vpcId}`)
+                .join(', ')}`
+            );
+          }
         }
       }
 
       // Fallback parent logic
       if (!parentId) {
-        if (service.subnets && service.subnets.length === 1)
-          parentId = service.subnets[0];
-        else if (cfg?.vpc) parentId = cfg.vpc;
+        if (cfg?.vpc || cfg?.vnet) {
+          parentId = cfg.vpc || cfg.vnet;
+        }
       }
 
       // Prevent Self-Cycle
@@ -971,12 +1235,85 @@ export function buildElkGraph(
         )
           return;
 
+        const type = getServiceType(service);
+
+        // Assign compute/DB orphans to the VPC with most subnets.
+        const defaultVpcId = selectDefaultVpcId(subnetToVpcMap);
+
+        const isVpcBound = [
+          'eks',
+          'ecs',
+          'ec2',
+          'rds',
+          'aurora',
+          'dynamodb',
+          'msk',
+          'kafka',
+          'elasticache',
+          'redis',
+          'memcached',
+          'nlb',
+          'alb',
+          'docdb',
+          'redshift',
+          'emr',
+          'sagemaker',
+          'opensearch',
+          'aks',
+          'virtual-machine',
+          'azure-kubernetes-service',
+          'app-service',
+          'azure-functions',
+          'azure-sql-database',
+          'cosmos-db',
+          'azure-cache-for-redis',
+          'azure-database-for-postgresql',
+          'azure-api-management',
+          'azure-service-bus',
+          'azure-event-hubs',
+        ].includes(type);
+
+        if (isVpcBound && defaultVpcId) {
+          const vpcNode = nodesMap.get(defaultVpcId);
+          if (vpcNode) {
+            // Find all subnets inside this VPC
+            const subnets: ElkNode[] = [];
+            const findSubnets = (node: ElkNode) => {
+              if (isSubnetNode(node)) {
+                subnets.push(node);
+              }
+              node.children?.forEach(findSubnets);
+            };
+            findSubnets(vpcNode);
+
+            if (subnets.length > 0) {
+              // Balance across subnets by picking the one with the fewest children
+              subnets.sort(
+                (a, b) => (a.children?.length || 0) - (b.children?.length || 0)
+              );
+              const targetSubnet = subnets[0];
+              if (!targetSubnet.children) targetSubnet.children = [];
+              targetSubnet.children.push(nodesMap.get(service.id)!);
+            } else {
+              // Fallback to VPC root if no subnets exist
+              if (!vpcNode.children) vpcNode.children = [];
+              vpcNode.children.push(nodesMap.get(service.id)!);
+            }
+            placedNodeIds.add(service.id);
+            return;
+          }
+        }
+
         // Else, place in Utility Group if it looks like a backend service
         // If it's a major container like VPC, it goes to root (already handled?)
         // VPCs are containers, usually not placed inside others.
-        const type = getServiceType(service);
-        if (type === 'vpc') {
-          // VPCs go to root
+        if (
+          type === 'vpc' ||
+          type === 'virtual-network' ||
+          type === 'resource-group' ||
+          type === 'vnet'
+        ) {
+          // VPCs, VNets, and Resource Groups go to root
           const vpcNode = nodesMap.get(service.id)!;
           if (!rootChildren.includes(vpcNode)) rootChildren.push(vpcNode);
           placedNodeIds.add(service.id);
@@ -986,6 +1323,7 @@ export function buildElkGraph(
         // A container that holds other items is a top-level boundary itself
         const orphan = nodesMap.get(service.id)!;
         if (
+          declarativeStyle &&
           orphan.properties?.type === 'container' &&
           orphan.children?.length
         ) {
@@ -1023,14 +1361,17 @@ export function buildElkGraph(
   });
 
   // 5. Edges and Implicit Nodes
-  (adac.connections || []).forEach((conn) => {
+  // (adac.connections || []).forEach((conn) => {
+  for (const conn of adac.connections || []) {
+    //
     const from = conn.from || conn.source;
     const to = conn.to || conn.target;
 
-    if (!from || !to) return; // Skip invalid connections
+    if (!from || !to) continue; // Skip invalid connections
 
     // Check if Endpoints exist, if not create implicit "External" nodes
-    [from, to].forEach((endpointId) => {
+    // [from, to].forEach(async (endpointId) => {
+    for (const endpointId of [from, to]) {
       if (!nodesMap.has(endpointId)) {
         // Smart Implicit Node Detection
         // Use appropriate icon set based on provider
@@ -1040,18 +1381,20 @@ export function buildElkGraph(
         if (isGcp) {
           // GCP implicit node icons
           if (lowerId.includes('user') || lowerId.includes('internet'))
-            icon = getGcpIconPath('project');
-          else if (lowerId.includes('client')) icon = getGcpIconPath('project');
-          else icon = getGcpIconPath('cloud-load-balancing');
+            icon = await getGcpIconPath('project');
+          else if (lowerId.includes('client'))
+            icon = await getGcpIconPath('project');
+          else icon = await getGcpIconPath('cloud-load-balancing');
         } else {
           // AWS implicit node icons
-          icon = getAwsIconPath('Internet');
-          if (lowerId.includes('user')) icon = getAwsIconPath('User');
-          else if (lowerId.includes('client')) icon = getAwsIconPath('Client');
+          icon = await getAwsIconPath('Internet');
+          if (lowerId.includes('user')) icon = await getAwsIconPath('User');
+          else if (lowerId.includes('client'))
+            icon = await getAwsIconPath('Client');
           else if (lowerId.includes('frontend'))
-            icon = getAwsIconPath('Application');
+            icon = await getAwsIconPath('Application');
           else if (lowerId.includes('backend'))
-            icon = getAwsIconPath('Compute');
+            icon = await getAwsIconPath('Compute');
         }
 
         // External user/client/internet/frontend nodes are entry points;
@@ -1066,7 +1409,7 @@ export function buildElkGraph(
 
         const implicitLayoutOptions: Record<string, string> = {
           ...LEAF_NODE_LAYOUT_OPTIONS,
-          'elk.nodeSize.minimum': `(${LEAF_WIDTH}, 80)`,
+          'elk.nodeSize.minimum': `(${leafWidth(endpointId)}, 80)`,
         };
         if (isEntry) {
           implicitLayoutOptions['elk.layered.layering.layerConstraint'] =
@@ -1075,7 +1418,7 @@ export function buildElkGraph(
 
         const implicitNode: ElkNode = {
           id: endpointId,
-          width: LEAF_WIDTH,
+          width: leafWidth(endpointId),
           height: 80,
           labels: [{ text: endpointId }],
           properties: {
@@ -1088,7 +1431,7 @@ export function buildElkGraph(
         nodesMap.set(endpointId, implicitNode);
         rootChildren.push(implicitNode); // Implicit nodes are always top-level
       }
-    });
+    }
 
     const edgeId = conn.id || `${from}->${to}`;
     const routed = layoutConnection(
@@ -1105,7 +1448,7 @@ export function buildElkGraph(
       ...(globalLayout.edgeLabels ? { labels: [{ text: conn.type }] } : {}),
       ...(routed.properties ? { properties: routed.properties } : {}),
     });
-  });
+  }
 
   // Final Sweep: Add any top-level nodes (Logical Groups) to root if not present
   nodesMap.forEach((node, id) => {
@@ -1132,6 +1475,8 @@ export function buildElkGraph(
       'elk.layered.spacing.nodeNodeBetweenLayers':
         edgeSpacing.nodeNodeBetweenLayers,
       'elk.spacing.nodeNode': '80',
+      'elk.spacing.edgeNode': '30',
+      'elk.spacing.edgeEdge': '15',
       'elk.layered.spacing.edgeNodeBetweenLayers':
         edgeSpacing.edgeNodeBetweenLayers,
       'elk.layered.spacing.edgeEdgeBetweenLayers':
@@ -1143,6 +1488,7 @@ export function buildElkGraph(
       'elk.layered.crossingMinimization.strategy': 'LAYER_SWEEP',
       'elk.layered.layering.strategy': 'NETWORK_SIMPLEX',
       'elk.layered.thoroughness': isDenseGraph ? '7' : '10',
+      'elk.layered.compaction.postCompaction.strategy': 'EDGE_LENGTH',
 
       'elk.layered.mergeEdges': isDenseGraph ? 'false' : 'true',
       'elk.layered.unnecessaryBendpoints': 'true',

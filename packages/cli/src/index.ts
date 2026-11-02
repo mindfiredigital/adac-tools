@@ -1,50 +1,101 @@
 import { Command } from 'commander';
+import chalk from 'chalk';
 import path from 'path';
 import { exec } from 'child_process';
 
+/**
+ * Time period used to present estimated infrastructure cost.
+ */
 export type CostPeriod = 'hourly' | 'daily' | 'monthly' | 'yearly';
+
+/**
+ * Pricing strategy used when estimating infrastructure cost.
+ */
 export type PricingModel = 'on_demand' | 'reserved';
 
+/**
+ * Layout engine supported by the diagram generation command.
+ */
+export type DiagramLayoutEngine = 'elk' | 'custom' | 'orthogonal' | 'tsm';
+
+/**
+ * Aggregated infrastructure cost grouped by service category.
+ */
 export type CostBreakdown = {
+  /** Cost attributed to compute services. */
   compute: number;
+  /** Cost attributed to database services. */
   database: number;
+  /** Cost attributed to storage services. */
   storage: number;
+  /** Cost attributed to networking services. */
   networking: number;
+  /** Total cost across all service categories. */
   total: number;
+  /** Period represented by the cost values. */
   period: CostPeriod;
 };
 
+/**
+ * Runtime dependencies injected into the CLI command layer.
+ */
 export type CLIOptions = {
+  /**
+   * Generates a diagram from an ADAC file.
+   */
   generateDiagram: (
     input: string,
     output: string,
-    layoutOverride?: 'elk' | 'dagre' | 'custom',
+    layoutOverride?: DiagramLayoutEngine,
     validate?: boolean,
     costData?: Record<string, number>,
     period?: CostPeriod,
     pricingModel?: PricingModel,
     skipOptimizer?: boolean
   ) => Promise<void>;
+  /**
+   * Calculates a categorized cost estimate from an ADAC file.
+   */
   calculateCostFromYaml?: (
     input: string,
     period?: CostPeriod,
     pricingModel?: PricingModel
   ) => CostBreakdown;
+  /**
+   * Generates Terraform files from an ADAC file.
+   */
   generateTerraformFromYaml?: (
     input: string,
     outputDir?: string,
     validate?: boolean
   ) => Promise<void>;
+  /**
+   * Parses an ADAC file or content string into a configuration object.
+   */
   parseAdac: (input: string, options?: Record<string, unknown>) => unknown;
-  validateAdacConfig: (config: unknown) => {
+  /**
+   * Validates parsed ADAC configuration for cost-related schema support.
+   */
+  validateAdacCostConfig: (config: unknown) => {
     valid: boolean;
     errors?: string[];
   };
+  /** CLI version string displayed by Commander. */
   version: string;
 };
 
+/**
+ * Prints a formatted cost summary with category percentages.
+ * @param cost - Categorized cost estimate to display
+ */
 function printCostBreakdown(cost: CostBreakdown) {
+  /**
+   * Formats a numeric cost value as USD.
+   */
   const formatCurrency = (value: number) => `$${value.toFixed(2)}`;
+  /**
+   * Calculates the whole-number share of the total cost for a category.
+   */
   const pct = (value: number) =>
     cost.total > 0 ? Math.round((value / cost.total) * 100) : 0;
 
@@ -82,7 +133,7 @@ export function runCLI(options: CLIOptions) {
     .description('Generate diagram from ADAC YAML file')
     .option(
       '-l, --layout <type>',
-      'Layout engine (elk, dagre or custom); defaults to layoutOptions.engine, then elk'
+      'Layout engine (elk, custom, orthogonal, or tsm); defaults to layoutOptions.engine, then elk'
     )
     .option('-o, --output <path>', 'Output SVG file path')
     .option('--validate', 'Validate schema before generating')
@@ -123,7 +174,7 @@ export function runCLI(options: CLIOptions) {
           }
         }
 
-        const layout = opts.layout as 'elk' | 'dagre' | 'custom' | undefined;
+        const layout = normalizeLayoutEngine(opts.layout);
         // Commander turns --no-optimize into opts.optimize = false
         const skipOptimizer = opts.optimize === false;
         const skipOpen = opts.open === false;
@@ -218,7 +269,7 @@ export function runCLI(options: CLIOptions) {
         console.log(`Validating ${inputPath}...`);
 
         const config = options.parseAdac(inputPath, { validate: false });
-        const result = options.validateAdacConfig(config);
+        const result = options.validateAdacCostConfig(config);
 
         if (result.valid) {
           console.log('✅ Validation passed.');
@@ -270,4 +321,29 @@ export function runCLI(options: CLIOptions) {
     });
 
   program.parse(process.argv);
+}
+
+/**
+ * Validates and narrows a layout option value to a supported layout engine.
+ * @param value - Raw layout value provided by Commander
+ * @returns A supported layout engine, or undefined when no override was provided
+ */
+function normalizeLayoutEngine(
+  value?: string
+): DiagramLayoutEngine | undefined {
+  if (value === undefined) return undefined;
+  if (
+    value === 'elk' ||
+    value === 'custom' ||
+    value === 'orthogonal' ||
+    value === 'tsm'
+  ) {
+    return value;
+  }
+
+  throw new Error(
+    chalk.red(
+      `Unsupported layout engine "${value}". Expected elk, custom, orthogonal, or tsm.`
+    )
+  );
 }

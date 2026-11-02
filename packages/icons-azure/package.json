@@ -27,7 +27,7 @@
   },
   "devDependencies": {
     "axios": "^1.6.2",
-    "adm-zip": "^0.5.10",
+    "adm-zip": "^0.6.0",
     "js-yaml": "^4.1.0",
     "fs-extra": "^11.2.0",
     "@types/adm-zip": "^0.5.5",

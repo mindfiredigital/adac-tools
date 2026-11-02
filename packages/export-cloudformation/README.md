@@ -42,12 +42,22 @@ const result = generateCloudFormationFromAdacFile('./yamls/aws.adac.yaml');
 console.log(result.templateYaml);
 ```
 
-## Example (CLI)
+## Run Standalone
 
-You can also generate a CloudFormation YAML file using the CLI:
+This package exposes the `adac-export-cloudformation` binary.
+
+After installing the package:
 
 ```sh
-pnpm cli cloudformation ./yamls/aws.adac.yaml -o ./yamls/aws.adac.cfn.yaml --validate
+adac-export-cloudformation architecture.adac.yaml --output ./cloudformation-out
 ```
 
-This will generate a CloudFormation YAML file from your ADAC YAML definition, with optional validation.
+From the monorepo root:
+
+```sh
+pnpm --filter @mindfiredigital/adac-export-cloudformation build
+node packages/export-cloudformation/dist/cli.js yamls/aws.adac.yaml --output ./cloudformation-out
+```
+
+This generates `<input-name>.cfn.yaml` in the output directory. If `--output`
+is omitted, the generated template is printed to stdout.

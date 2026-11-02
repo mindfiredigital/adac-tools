@@ -14,15 +14,23 @@ Express API server for ADAC diagram generation, compliance checking, cost analys
 
 ## Installation & Start
 
+## Run Standalone
+
+This package is the standalone Express API server.
+
 ```bash
 # From monorepo root
-cd packages/web-server
 pnpm install
-pnpm build
-pnpm start       # http://localhost:3000
+pnpm --filter @mindfiredigital/adac-web-server build
+pnpm --filter @mindfiredigital/adac-web-server start
+```
 
-# Development
-pnpm dev
+The server listens on `http://localhost:3000` by default.
+
+For development:
+
+```bash
+pnpm --filter @mindfiredigital/adac-web-server dev
 ```
 
 ## Environment Variables
@@ -51,10 +59,10 @@ Generate a diagram SVG from an ADAC YAML string.
 }
 ```
 
-| Field     | Type               | Required | Description                    |
-| --------- | ------------------ | -------- | ------------------------------ |
-| `content` | `string`           | ✅       | ADAC YAML content              |
-| `layout`  | `'elk' \| 'dagre'` | —        | Layout engine (default: `elk`) |
+| Field     | Type                | Required | Description                    |
+| --------- | ------------------- | -------- | ------------------------------ |
+| `content` | `string`            | ✅       | ADAC YAML content              |
+| `layout`  | `'elk' \| 'custom'` | —        | Layout engine (default: `elk`) |
 
 **Response `200`**
 
@@ -178,7 +186,6 @@ All endpoints compress their responses using standard HTTP content-encoding nego
 
 ## See Also
 
-- [@mindfiredigital/adac-optimizer](../optimizer) — Optimizer package
 - [@mindfiredigital/adac-core](../core) — Core engine
 - [@mindfiredigital/adac-diagram](../diagram) — CLI tool
 - [@mindfiredigital/adac-web](../web) — Web UI

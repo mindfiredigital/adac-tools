@@ -21,10 +21,15 @@
   "files": [
     "dist"
   ],
+  "bin": {
+    "adac-layout-elk": "dist/cli.js"
+  },
   "dependencies": {
     "elkjs": "^0.11.1",
+    "@mindfiredigital/adac-parser": "workspace:*",
+    "commander": "^12.0.0",
     "@mindfiredigital/adac-layout-core": "workspace:*",
-    "@mindfiredigital/adac-schema": "workspace:*",
+    "@mindfiredigital/adac-validator": "workspace:*",
     "@mindfiredigital/adac-icons-aws": "workspace:*",
     "@mindfiredigital/adac-icons-gcp": "workspace:*",
     "@mindfiredigital/adac-icons-azure": "workspace:*"

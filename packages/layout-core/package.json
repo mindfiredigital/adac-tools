@@ -28,6 +28,9 @@
     "ts-jest": "^29.0.0",
     "typescript": "^5.3.0"
   },
+  "dependencies": {
+    "@mindfiredigital/adac-validator": "workspace:*"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/mindfiredigital/adac-tools.git",

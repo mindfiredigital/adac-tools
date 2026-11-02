@@ -1,15 +1,16 @@
 import type { LayoutEngine, LayoutOptions } from './interface';
 import { analyzeComplexity, AdacModel } from './auto-selector';
 import { CustomLayoutEngineAdapter } from './custom-layout-engine-adapter';
+import { OrthogonalLayoutEngine } from './orthogonal-layout-engine';
 
-export type EngineType = 'auto' | 'custom' | 'elk';
+export type EngineType = 'auto' | 'custom' | 'elk' | 'orthogonal' | 'tsm';
 
 /**
  * Creates and returns the appropriate LayoutEngine based on the provided type and options.
  * Handles 'auto' selection based on model complexity and gracefully falls back to the
  * custom engine if the 'elk' engine is requested but not installed.
  *
- * @param type - The requested engine type: 'auto', 'custom', or 'elk'.
+ * @param type - The requested engine type: 'auto', 'custom', 'elk', 'orthogonal', or 'tsm'.
  * @param options - Configuration options for the layout engine.
  * @param model - Optional model data, used for complexity analysis if type is 'auto'.
  * @returns A promise resolving to the selected LayoutEngine instance.
@@ -26,6 +27,11 @@ export async function createLayoutEngine(
   // CUSTOM ENGINE (Default)
   if (resolvedType === 'custom') {
     return new CustomLayoutEngineAdapter(options);
+  }
+
+  // ORTHOGONAL / TSM ENGINE (Opt-in)
+  if (resolvedType === 'orthogonal' || resolvedType === 'tsm') {
+    return new OrthogonalLayoutEngine(options);
   }
 
   // ELK ENGINE (Optional install)

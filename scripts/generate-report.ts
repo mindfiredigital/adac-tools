@@ -8,12 +8,7 @@ const OUTPUT_FILE = path.join(process.cwd(), 'report.html');
 
 interface ReportEntry {
   file: string;
-  dagre: {
-    time: number;
-    svg: string;
-    success: boolean;
-    error?: string;
-  };
+
   elk: {
     time: number;
     svg: string;
@@ -39,21 +34,8 @@ async function main() {
 
     const entry: ReportEntry = {
       file,
-      dagre: { time: 0, svg: '', success: false },
       elk: { time: 0, svg: '', success: false },
     };
-
-    // Dagre
-    try {
-      const res = await generateDiagramSvg(content, 'dagre');
-      entry.dagre.time = res.duration;
-      entry.dagre.svg = res.svg;
-      entry.dagre.success = true;
-    } catch (e: unknown) {
-      const message = e instanceof Error ? e.message : String(e);
-      console.error(`Error generating Dagre for ${file}:`, message);
-      entry.dagre.error = message;
-    }
 
     // Elk
     try {
@@ -133,12 +115,9 @@ async function main() {
         <thead>
             <tr>
                 <th rowspan="2">File</th>
-                <th colspan="2">Dagre</th>
                 <th colspan="2">ElkJS</th>
             </tr>
             <tr>
-                <th>Time (ms)</th>
-                <th>Status</th>
                 <th>Time (ms)</th>
                 <th>Status</th>
             </tr>
@@ -150,8 +129,6 @@ async function main() {
     html += `
         <tr>
             <td>${item.file}</td>
-            <td>${item.dagre.success ? item.dagre.time : '-'}</td>
-            <td style="color: ${item.dagre.success ? 'green' : 'red'}">${item.dagre.success ? 'Success' : 'Failed'}</td>
             <td>${item.elk.success ? item.elk.time : '-'}</td>
             <td style="color: ${item.elk.success ? 'green' : 'red'}">${item.elk.success ? 'Success' : 'Failed'}</td>
         </tr>
@@ -169,10 +146,6 @@ async function main() {
     html += `
         <button type="button" class="collapsible">${item.file}</button>
         <div class="content">
-            <div class="svg-wrapper">
-                <h3>Dagre Layout (${item.dagre.time}ms)</h3>
-                ${item.dagre.success ? item.dagre.svg : `<p class="error">Failed: ${item.dagre.error}</p>`}
-            </div>
              <div class="svg-wrapper">
                 <h3>ElkJS Layout (${item.elk.time}ms)</h3>
                 ${item.elk.success ? item.elk.svg : `<p class="error">Failed: ${item.elk.error}</p>`}

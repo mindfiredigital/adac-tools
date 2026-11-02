@@ -1,6 +1,12 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import Flow from './flow';
 import { describe, it, expect, vi, afterEach } from 'vitest';
+import { generateDiagramBrowser } from '../helper/diagram-generator';
+const USE_BACKEND = import.meta.env.VITE_USE_BACKEND === 'true';
+
+vi.mock('../helper/diagram-generator', () => ({
+  generateDiagramBrowser: vi.fn(),
+}));
 
 // Mock React Flow hooks and components
 vi.mock('@xyflow/react', async () => {
@@ -288,13 +294,21 @@ describe('Flow', () => {
   });
 
   it('triggers diagram export', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockResolvedValue({
-        ok: true,
-        json: () => Promise.resolve({ svg: '<svg>test</svg>' }),
-      })
-    );
+    if (USE_BACKEND) {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: true,
+          json: () => Promise.resolve({ svg: '<svg>test</svg>' }),
+        })
+      );
+    } else {
+      vi.mocked(generateDiagramBrowser).mockResolvedValue({
+        svg: '<svg>test</svg>',
+        logs: [],
+        duration: 0,
+      });
+    }
 
     render(<Flow {...defaultProps} />);
     fireEvent.click(screen.getByText('Export Diagram'));

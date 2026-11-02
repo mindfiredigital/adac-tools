@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
 import { Upload, FileText, ArrowRight, Loader } from 'lucide-react';
+import { generateDiagramBrowser } from '../helper/diagram-generator';
+import type { GenerationResult } from '@mindfiredigital/adac-core';
+const USE_BACKEND = import.meta.env.VITE_USE_BACKEND === 'true';
 
 /**
  * Uploader component for ADAC YAML files.
@@ -29,26 +32,32 @@ export const Uploader = ({ onBack }: UploaderProps) => {
     setLoading(true);
     setError(null);
 
+    let results: GenerationResult;
+
     try {
       const text = await file.text();
 
-      // Assuming the api endpoint is at the root since we are proxying or strictly same origin
-      const response = await fetch('/api/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          content: text,
-          layout: 'elk', // Default to ELK
-        }),
-      });
+      if (USE_BACKEND) {
+        // Assuming the api endpoint is at the root since we are proxying or strictly same origin
+        const response = await fetch('/api/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            content: text,
+            layout: 'elk', // Default to ELK
+          }),
+        });
 
-      if (!response.ok) {
-        const err = await response.json();
-        throw new Error(err.error || 'Failed to generate diagram');
+        if (!response.ok) {
+          const err = await response.json();
+          throw new Error(err.error || 'Failed to generate diagram');
+        }
+
+        results = await response.json();
+      } else {
+        results = await generateDiagramBrowser(text, 'elk');
       }
-
-      const result = await response.json();
-      setSvgContent(result.svg);
+      setSvgContent(results.svg);
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : 'Unknown error';
       setError(message);

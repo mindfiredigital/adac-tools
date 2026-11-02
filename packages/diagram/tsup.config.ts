@@ -14,6 +14,13 @@ export default defineConfig({
     '@mindfiredigital/adac-cli',
     '@mindfiredigital/adac-cost',
     '@mindfiredigital/adac-export-terraform',
+    '@mindfiredigital/adac-validator',
+    '@mindfiredigital/adac-compliance',
+    '@mindfiredigital/adac-parser',
+    '@mindfiredigital/adac-layout-core',
+    '@mindfiredigital/adac-layout-elk',
+    '@mindfiredigital/adac-export-cloudformation',
+    '@mindfiredigital/adac-export-k8s',
     'elkjs',
     'fs-extra',
     'axios',
@@ -31,5 +38,14 @@ export default defineConfig({
       path.resolve(root, 'src/mappings'),
       path.resolve(root, 'dist/mappings')
     );
+    // Copy templates for export-cloudformation which reads them at runtime
+    await fs
+      .copy(
+        path.resolve(root, '../export-cloudformation/src/templates'),
+        path.resolve(root, 'dist/templates')
+      )
+      .catch(() =>
+        console.warn('Could not copy export-cloudformation templates')
+      );
   },
 });

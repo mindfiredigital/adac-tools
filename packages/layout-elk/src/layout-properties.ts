@@ -10,7 +10,7 @@ import type {
   AdacSize,
   AdacConnectionSide,
   AdacEdgeRouting,
-} from '@mindfiredigital/adac-schema';
+} from '@mindfiredigital/adac-validator';
 
 /**
  * Engine-independent resolution of the declarative layout properties
@@ -110,7 +110,7 @@ export function resolveSize(
 // ── Global options ──────────────────────────────────────────────────────────
 
 export interface NormalizedLayoutOptions {
-  engine?: 'elk' | 'dagre' | 'custom';
+  engine?: 'elk' | 'custom' | 'orthogonal' | 'tsm';
   unitSize: number;
   direction: AdacLayoutDirection;
   /** True when the author set `direction` rather than relying on the default. */

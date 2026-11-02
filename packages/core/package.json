@@ -23,17 +23,15 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "elkjs": "^0.11.1"
+    "elkjs": "^0.11.1",
+    "@mindfiredigital/adac-validator": "workspace:*"
   },
   "devDependencies": {
-    "@mindfiredigital/adac-compliance": "workspace:*",
-    "@mindfiredigital/adac-layout": "workspace:*",
-    "@mindfiredigital/adac-optimizer": "workspace:*",
-    "@mindfiredigital/adac-layout-core": "workspace:*",
-    "@mindfiredigital/adac-layout-dagre": "workspace:*",
-    "@mindfiredigital/adac-layout-elk": "workspace:*",
     "@mindfiredigital/adac-parser": "workspace:*",
-    "@mindfiredigital/adac-schema": "workspace:*",
+    "@mindfiredigital/adac-layout-core": "workspace:*",
+    "@mindfiredigital/adac-layout-elk": "workspace:*",
+    "@mindfiredigital/adac-icons-aws": "workspace:*",
+    "@mindfiredigital/adac-icons-gcp": "workspace:*",
     "tsup": "^8.3.5",
     "typescript": "^5.9.3",
     "vitest": "^4.0.18"

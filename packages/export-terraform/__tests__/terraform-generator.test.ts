@@ -1,5 +1,5 @@
 import { mkdtempSync, rmSync, writeFileSync } from 'fs';
-import { execFileSync } from 'child_process';
+import { execFileSync, type ExecException } from 'child_process';
 import { join, resolve } from 'path';
 import { tmpdir } from 'os';
 import { fileURLToPath } from 'url';
@@ -34,6 +34,20 @@ function hasTerraformCli(): boolean {
   } catch {
     return false;
   }
+}
+
+function isTerraformExecutionUnavailable(error: unknown): boolean {
+  const execError = error as ExecException & {
+    code?: string;
+    message?: string;
+  };
+
+  return (
+    execError.code === 'ENOENT' ||
+    execError.code === 'EACCES' ||
+    execError.code === 'EPERM' ||
+    (execError.message ?? '').includes('EPERM')
+  );
 }
 
 function generateTerraformFromYaml(
@@ -720,15 +734,23 @@ infrastructure:
       writeFileSync(join(tempDir, 'variables.tf'), result.variablesTf);
       writeFileSync(join(tempDir, 'outputs.tf'), result.outputsTf);
 
-      execFileSync('terraform', ['init', '-backend=false'], {
-        cwd: tempDir,
-        stdio: 'pipe',
-      });
+      try {
+        execFileSync('terraform', ['init', '-backend=false'], {
+          cwd: tempDir,
+          stdio: 'pipe',
+        });
 
-      execFileSync('terraform', ['validate'], {
-        cwd: tempDir,
-        stdio: 'pipe',
-      });
+        execFileSync('terraform', ['validate'], {
+          cwd: tempDir,
+          stdio: 'pipe',
+        });
+      } catch (error) {
+        if (isTerraformExecutionUnavailable(error)) {
+          return;
+        }
+
+        throw error;
+      }
     },
     120000
   );

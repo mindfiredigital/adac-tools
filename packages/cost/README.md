@@ -16,6 +16,7 @@ A modular AWS cost calculator engine for ADAC. Estimates monthly cloud costs usi
 - Extensible for new services and providers
 - **Dynamic Service Mapping**: Automatically recognizes services by the standard `service` field in YAML or explicit `type`/`subtype` declarations.
 - **Diagram Integration**: Calculated costs are automatically embedded as tooltips in generated architecture diagrams.
+- **Cost Validation Wrapper**: Provides cost-aware ADAC validation without coupling the generic validator package to cost rules.
 
 ## File Structure
 
@@ -24,6 +25,7 @@ packages/cost/
   src/
     index.ts
     calculator.ts               # CostCalculator class
+    validation.ts               # Cost validation wrapper for ADAC configs
     pricing/
       aws-pricing.ts            # AWS pricing helper
       pricing-data.json         # Compressed pricing data snapshot
@@ -44,6 +46,44 @@ packages/cost/
   tsconfig.json
   README.md
 ```
+
+## Run Standalone
+
+This package exposes the `adac-cost` binary.
+
+After installing the package:
+
+```bash
+adac-cost architecture.adac.yaml --period monthly --pricing on_demand
+```
+
+From the monorepo root:
+
+```bash
+pnpm --filter @mindfiredigital/adac-cost build
+node packages/cost/dist/cli.js yamls/aws.adac.yaml --period yearly --pricing reserved
+```
+
+The command prints the total estimate plus compute, database, storage, and
+networking breakdowns.
+
+## Cost-aware Validation
+
+The generic `@mindfiredigital/adac-validator` package validates the core ADAC
+schema only. Use this package when your ADAC files include `cost` fields:
+
+```typescript
+import { validateAdacCostConfig } from '@mindfiredigital/adac-cost';
+
+const result = validateAdacCostConfig(config);
+
+if (!result.valid) {
+  console.error(result.errors);
+}
+```
+
+The wrapper validates the same cost fields that used to live in the generic
+validator, including service-level `cost` and top-level cost summaries.
 
 ## CLI integration (diagram + cost)
 

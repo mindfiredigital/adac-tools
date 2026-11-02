@@ -82,7 +82,6 @@ vi.mock('vscode', () => {
   };
 });
 
-import { CompletionProvider } from '../src/providers/completion-provider';
 import { DiagnosticProvider } from '../src/providers/diagnostic-provider';
 
 describe('CompletionProvider', () => {

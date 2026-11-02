@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { RuleEvaluator } from '../src/evaluator';
 import compliantArchBase from './fixtures/compliantArch.json';
-import { AdacConfig } from '@mindfiredigital/adac-schema';
+import type { AdacConfig } from '@mindfiredigital/adac-validator';
 
 describe('RuleEvaluator', () => {
   it('should correctly sum violation stats for compliant architecture', () => {

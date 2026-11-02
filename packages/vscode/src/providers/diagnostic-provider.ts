@@ -322,8 +322,7 @@ export class DiagnosticProvider implements vscode.Disposable {
 
     // Collect service IDs
     const infra = parsed['infrastructure'] as
-      | Record<string, unknown>
-      | undefined;
+      Record<string, unknown> | undefined;
     if (infra && Array.isArray(infra['clouds'])) {
       for (const cloud of infra['clouds'] as Record<string, unknown>[]) {
         if (cloud['id'] && typeof cloud['id'] === 'string') {
@@ -381,8 +380,7 @@ export class DiagnosticProvider implements vscode.Disposable {
     }
 
     const infra = parsed['infrastructure'] as
-      | Record<string, unknown>
-      | undefined;
+      Record<string, unknown> | undefined;
     if (infra && Array.isArray(infra['clouds'])) {
       for (const cloud of infra['clouds'] as Record<string, unknown>[]) {
         if (cloud['id'] && typeof cloud['id'] === 'string') {

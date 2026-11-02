@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { DocumentationGenerator } from '../src/doc-generator.js';
 import { MarkdownRenderer } from '../src/renderers/markdown-renderer.js';
 import { HtmlRenderer } from '../src/renderers/html-renderer.js';
-import { AdacConfig } from '@mindfiredigital/adac-schema';
+import type { AdacConfig } from '@mindfiredigital/adac-validator';
 
 const mockModel: AdacConfig = {
   version: '0.1',
