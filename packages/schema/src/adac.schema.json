@@ -49,6 +49,9 @@
       "type": "string",
       "enum": ["elk", "dagre"],
       "description": "Layout engine for the diagram"
+    },
+    "layoutOptions": {
+      "$ref": "#/$defs/layout_options"
     }
   },
   "$defs": {
@@ -178,9 +181,219 @@
         },
         "description": {
           "type": "string"
+        },
+        "layout": {
+          "$ref": "#/$defs/element_layout"
+        },
+        "style": {
+          "$ref": "#/$defs/element_style"
         }
       },
       "additionalProperties": false
+    },
+    "layout_direction": {
+      "type": "string",
+      "enum": ["LR", "RL", "TB", "BT"],
+      "description": "Primary flow direction of a container's children"
+    },
+    "layout_unit": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Length in logical units, resolved to pixels through layoutOptions.unitSize"
+    },
+    "layout_gap": {
+      "description": "Space between sibling elements (logical units)",
+      "oneOf": [
+        { "$ref": "#/$defs/layout_unit" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "minProperties": 1,
+          "properties": {
+            "horizontal": { "$ref": "#/$defs/layout_unit" },
+            "vertical": { "$ref": "#/$defs/layout_unit" }
+          }
+        }
+      ]
+    },
+    "layout_padding": {
+      "description": "Space between a container boundary and its children (logical units)",
+      "oneOf": [
+        { "$ref": "#/$defs/layout_unit" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "minProperties": 1,
+          "properties": {
+            "top": { "$ref": "#/$defs/layout_unit" },
+            "right": { "$ref": "#/$defs/layout_unit" },
+            "bottom": { "$ref": "#/$defs/layout_unit" },
+            "left": { "$ref": "#/$defs/layout_unit" }
+          }
+        }
+      ]
+    },
+    "layout_dimension": {
+      "description": "A dimension in logical units, or 'auto'",
+      "oneOf": [
+        { "type": "string", "enum": ["auto"] },
+        { "type": "number", "exclusiveMinimum": 0 }
+      ]
+    },
+    "layout_size": {
+      "type": "object",
+      "additionalProperties": false,
+      "minProperties": 1,
+      "properties": {
+        "width": { "$ref": "#/$defs/layout_dimension" },
+        "height": { "$ref": "#/$defs/layout_dimension" }
+      }
+    },
+    "layout_align": {
+      "type": "string",
+      "enum": ["start", "center", "end"],
+      "description": "Cross-axis alignment"
+    },
+    "layout_justify": {
+      "type": "string",
+      "enum": ["start", "center", "end", "space-between", "space-around"],
+      "description": "Main-axis distribution"
+    },
+    "layout_edge_routing": {
+      "type": "string",
+      "enum": ["orthogonal", "polyline", "splines", "straight"],
+      "description": "Edge routing strategy"
+    },
+    "layout_position": {
+      "type": "string",
+      "enum": [
+        "top-left",
+        "top-center",
+        "top-right",
+        "center-left",
+        "center",
+        "center-right",
+        "bottom-left",
+        "bottom-center",
+        "bottom-right"
+      ],
+      "description": "Preferred region within the parent container"
+    },
+    "layout_options": {
+      "type": "object",
+      "description": "Global layout defaults for the whole diagram",
+      "additionalProperties": false,
+      "properties": {
+        "engine": {
+          "type": "string",
+          "enum": ["elk", "dagre", "custom"]
+        },
+        "unitSize": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "Pixels represented by one logical unit"
+        },
+        "unit": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "deprecated": true,
+          "description": "Deprecated alias of unitSize"
+        },
+        "direction": { "$ref": "#/$defs/layout_direction" },
+        "gap": { "$ref": "#/$defs/layout_gap" },
+        "containerPadding": { "$ref": "#/$defs/layout_padding" },
+        "align": { "$ref": "#/$defs/layout_align" },
+        "justify": { "$ref": "#/$defs/layout_justify" },
+        "edgeSpacing": { "$ref": "#/$defs/layout_unit" },
+        "edgeRouting": { "$ref": "#/$defs/layout_edge_routing" },
+        "routing": {
+          "$ref": "#/$defs/layout_edge_routing",
+          "deprecated": true,
+          "description": "Deprecated alias of edgeRouting"
+        },
+        "edgeLabels": {
+          "type": "boolean",
+          "description": "Draw each connection type as a label on its edge (default true)"
+        },
+        "background": {
+          "type": "boolean",
+          "description": "Default node/card background"
+        },
+        "labelMaxChars": {
+          "type": "integer",
+          "minimum": 4,
+          "maximum": 80,
+          "description": "Most characters on one line of a node label; longer labels wrap onto a second line, then are truncated (default: fits the caption width)"
+        }
+      }
+    },
+    "element_layout": {
+      "type": "object",
+      "description": "How an element arranges its direct children, and where it sits in its parent",
+      "additionalProperties": false,
+      "properties": {
+        "direction": { "$ref": "#/$defs/layout_direction" },
+        "gap": { "$ref": "#/$defs/layout_gap" },
+        "padding": { "$ref": "#/$defs/layout_padding" },
+        "align": { "$ref": "#/$defs/layout_align" },
+        "justify": { "$ref": "#/$defs/layout_justify" },
+        "wrap": { "type": "boolean" },
+        "maxItemsPerLine": { "type": "integer", "minimum": 1 },
+        "itemsPerLine": { "type": "integer", "minimum": 1 },
+        "order": { "type": "integer" },
+        "position": { "$ref": "#/$defs/layout_position" },
+        "size": { "$ref": "#/$defs/layout_size" },
+        "minSize": { "$ref": "#/$defs/layout_size" },
+        "maxSize": { "$ref": "#/$defs/layout_size" }
+      },
+      "not": {
+        "required": ["itemsPerLine", "maxItemsPerLine"]
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "wrap": { "const": false } },
+            "required": ["wrap"]
+          },
+          "then": {
+            "not": {
+              "anyOf": [
+                { "required": ["itemsPerLine"] },
+                { "required": ["maxItemsPerLine"] }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "element_style": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "background": {
+          "type": "boolean",
+          "description": "Override the global node/card background for this element"
+        },
+        "labelMaxChars": {
+          "type": "integer",
+          "minimum": 4,
+          "maximum": 80,
+          "description": "Override the global label line length (characters) for this element"
+        }
+      }
+    },
+    "connection_side": {
+      "type": "string",
+      "enum": ["left", "right", "top", "bottom", "auto"]
+    },
+    "connection_layout": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "fromSide": { "$ref": "#/$defs/connection_side" },
+        "toSide": { "$ref": "#/$defs/connection_side" },
+        "routing": { "$ref": "#/$defs/layout_edge_routing" }
+      }
     },
     "cloud": {
       "type": "object",
@@ -581,6 +794,13 @@
         "to": {
           "type": "string",
           "description": "Target application or service ID"
+        },
+        "bidirectional": {
+          "type": "boolean",
+          "description": "Render arrowheads on both ends of the connection"
+        },
+        "layout": {
+          "$ref": "#/$defs/connection_layout"
         },
         "source": {
           "type": "string",

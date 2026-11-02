@@ -44,6 +44,7 @@ export async function generateDiagramSvg(
           `Schema validation failed:\n${validation.errors?.join('\n')}`
         );
       }
+      validation.warnings?.forEach((w) => log(`Warning: ${w}`));
       log('Schema validation passed.');
     }
 
@@ -68,8 +69,22 @@ export async function generateDiagramSvg(
       }
     }
 
-    const graph = buildElkGraph(adac);
-    const engine = layoutOverride || adac.layout || 'elk';
+    const graph = buildElkGraph(adac, {
+      // validation has already reported deprecated aliases
+      onWarning: (message) => {
+        if (validate && /is deprecated/.test(message)) return;
+        log(`Warning: ${message}`);
+      },
+    });
+    const declaredEngine = adac.layoutOptions?.engine as
+      'elk' | 'dagre' | 'custom' | undefined;
+    // only layoutOptions.engine picks the engine; without it ELK is used
+    const engine = layoutOverride || declaredEngine || 'elk';
+    if (adac.layout && adac.layout !== engine) {
+      log(
+        `Warning: the top-level layout (${adac.layout}) is ignored; set layoutOptions.engine to choose the engine (using ${engine})`
+      );
+    }
     const checker = new ComplianceChecker();
     const { byService } = checker.checkCompliance(adac);
 

@@ -6,8 +6,18 @@ import {
 } from '@mindfiredigital/adac-schema';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { ElkNode, ElkEdge } from './types.js';
+import {
+  applyDeclarativeLayout,
+  collectVisuals,
+  layoutConnection,
+  rootElkOptions,
+} from './declarative-layout.js';
+import { normalizeLayoutOptions, type Warn } from './layout-properties.js';
 import path from 'path';
 import fs from 'fs';
+
+/** An icon node's box is as wide as its icon pill (42px icon + 5px padding each side). */
+const LEAF_WIDTH = 52;
 
 type IconProvider = 'aws' | 'gcp' | 'azure';
 
@@ -372,7 +382,17 @@ const GCP_ALIASES: Record<string, string> = {
   storage: 'Cloud Storage',
 };
 
-export function buildElkGraph(adac: AdacConfig): ElkNode {
+export interface BuildElkGraphOptions {
+  /** Receives deprecation and other non-fatal layout warnings. */
+  onWarning?: Warn;
+}
+
+export function buildElkGraph(
+  adac: AdacConfig,
+  buildOptions: BuildElkGraphOptions = {}
+): ElkNode {
+  const warn: Warn = buildOptions.onWarning ?? ((m) => console.warn(m));
+  const globalLayout = normalizeLayoutOptions(adac.layoutOptions, warn);
   const nodesMap = new Map<string, ElkNode>();
   const edges: ElkEdge[] = [];
 
@@ -599,15 +619,15 @@ export function buildElkGraph(adac: AdacConfig): ElkNode {
   (adac.applications || []).forEach((app: AdacApplication) => {
     const node: ElkNode = {
       id: app.id,
-      width: 80,
-      height: 100,
+      width: LEAF_WIDTH,
+      height: 90,
       labels: [{ text: app.name }],
       properties: {
         type: 'app',
         iconPath: detectIconForApp(app),
         title: app.type,
       },
-      layoutOptions: buildLeafLayoutOptions(app.type || '', 80, 100),
+      layoutOptions: buildLeafLayoutOptions(app.type || '', LEAF_WIDTH, 90),
     };
     nodesMap.set(app.id, node);
   });
@@ -653,8 +673,8 @@ export function buildElkGraph(adac: AdacConfig): ElkNode {
     const gcpCloud = isGcpCloud(cloud);
 
     (cloud.services || []).forEach((service: AdacService) => {
-      let width = 80;
-      let height = 100;
+      let width = LEAF_WIDTH;
+      let height = 90;
       let style: { type: string; style: string; cssClass?: string } =
         cloudStyles.service;
 
@@ -963,9 +983,20 @@ export function buildElkGraph(adac: AdacConfig): ElkNode {
           return;
         }
 
+        // A container that holds other items is a top-level boundary itself
+        const orphan = nodesMap.get(service.id)!;
+        if (
+          orphan.properties?.type === 'container' &&
+          orphan.children?.length
+        ) {
+          if (!rootChildren.includes(orphan)) rootChildren.push(orphan);
+          placedNodeIds.add(service.id);
+          return;
+        }
+
         ensureUtilityGroup();
         const group = nodesMap.get(utilityGroupId)!;
-        group.children?.push(nodesMap.get(service.id)!);
+        group.children?.push(orphan);
         placedNodeIds.add(service.id);
       }
     });
@@ -1035,7 +1066,7 @@ export function buildElkGraph(adac: AdacConfig): ElkNode {
 
         const implicitLayoutOptions: Record<string, string> = {
           ...LEAF_NODE_LAYOUT_OPTIONS,
-          'elk.nodeSize.minimum': '(80, 80)',
+          'elk.nodeSize.minimum': `(${LEAF_WIDTH}, 80)`,
         };
         if (isEntry) {
           implicitLayoutOptions['elk.layered.layering.layerConstraint'] =
@@ -1044,7 +1075,7 @@ export function buildElkGraph(adac: AdacConfig): ElkNode {
 
         const implicitNode: ElkNode = {
           id: endpointId,
-          width: 80,
+          width: LEAF_WIDTH,
           height: 80,
           labels: [{ text: endpointId }],
           properties: {
@@ -1059,11 +1090,20 @@ export function buildElkGraph(adac: AdacConfig): ElkNode {
       }
     });
 
+    const edgeId = conn.id || `${from}->${to}`;
+    const routed = layoutConnection(
+      conn,
+      edgeId,
+      nodesMap.get(from),
+      nodesMap.get(to),
+      globalLayout
+    );
     edges.push({
-      id: conn.id || `${from}->${to}`,
-      sources: [from],
-      targets: [to],
-      labels: [{ text: conn.type }],
+      id: edgeId,
+      sources: [routed.sourceRef],
+      targets: [routed.targetRef],
+      ...(globalLayout.edgeLabels ? { labels: [{ text: conn.type }] } : {}),
+      ...(routed.properties ? { properties: routed.properties } : {}),
     });
   });
 
@@ -1077,7 +1117,7 @@ export function buildElkGraph(adac: AdacConfig): ElkNode {
     }
   });
 
-  return {
+  const rootNode: ElkNode = {
     id: 'root',
     properties: {
       type: 'container',
@@ -1116,4 +1156,16 @@ export function buildElkGraph(adac: AdacConfig): ElkNode {
     children: rootChildren,
     edges,
   };
+
+  // Declarative layout & styling: global defaults, then each container's own
+  // `visual.layout` for its direct children.
+  Object.assign(rootNode.layoutOptions!, rootElkOptions(globalLayout));
+  applyDeclarativeLayout(rootNode, {
+    edges,
+    global: globalLayout,
+    visualById: collectVisuals(adac),
+    warn,
+  });
+
+  return rootNode;
 }

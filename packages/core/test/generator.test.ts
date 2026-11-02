@@ -321,3 +321,56 @@ describe('ADAC Core Renderer', () => {
     existSpy.mockRestore();
   });
 });
+
+describe('generator: layout engine and warnings', () => {
+  const yaml = (layoutOptions: string, extra = '') => `
+version: "0.2"
+metadata:
+  name: "Engine"
+  created: "2026-01-01"
+${extra}
+layoutOptions:
+${layoutOptions}
+infrastructure:
+  clouds:
+    - id: "aws-1"
+      provider: "aws"
+      region: "us-east-1"
+      services:
+        - id: "fn"
+          service: "lambda"
+`;
+
+  const svgWith = async (
+    content: string,
+    engine?: 'elk' | 'dagre'
+  ): Promise<string> => (await generateDiagramSvg(content, engine)).svg;
+
+  it('renders with ELK when layoutOptions.engine is not set, ignoring the legacy layout field', async () => {
+    const content = yaml('  direction: LR', 'layout: dagre');
+    const { svg, logs } = await generateDiagramSvg(content);
+    expect(svg).toBe(await svgWith(content, 'elk'));
+    expect(svg).not.toBe(await svgWith(content, 'dagre'));
+    expect(
+      logs.some((l) =>
+        l.includes(
+          'the top-level layout (dagre) is ignored; set layoutOptions.engine to choose the engine (using elk)'
+        )
+      )
+    ).toBe(true);
+  });
+
+  it('uses layoutOptions.engine when it is set', async () => {
+    const content = yaml('  engine: dagre', 'layout: elk');
+    expect(await svgWith(content)).toBe(await svgWith(content, 'dagre'));
+  });
+
+  it('reports a deprecated alias once when validating', async () => {
+    const { logs } = await generateDiagramSvg(
+      yaml('  unit: 50'),
+      undefined,
+      true
+    );
+    expect(logs.filter((l) => /unit.* is deprecated/.test(l))).toHaveLength(1);
+  });
+});

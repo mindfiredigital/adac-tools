@@ -82,8 +82,7 @@ export function runCLI(options: CLIOptions) {
     .description('Generate diagram from ADAC YAML file')
     .option(
       '-l, --layout <type>',
-      'Layout engine (elk, dagre or custom)',
-      'elk'
+      'Layout engine (elk, dagre or custom); defaults to layoutOptions.engine, then elk'
     )
     .option('-o, --output <path>', 'Output SVG file path')
     .option('--validate', 'Validate schema before generating')
@@ -124,7 +123,7 @@ export function runCLI(options: CLIOptions) {
           }
         }
 
-        const layout = opts.layout as 'elk' | 'dagre' | 'custom';
+        const layout = opts.layout as 'elk' | 'dagre' | 'custom' | undefined;
         // Commander turns --no-optimize into opts.optimize = false
         const skipOptimizer = opts.optimize === false;
         const skipOpen = opts.open === false;

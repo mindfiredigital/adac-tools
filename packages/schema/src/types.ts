@@ -1,3 +1,96 @@
+// ── Declarative layout & styling ────────────────────────────────────────────
+// Lengths are logical units unless stated otherwise; they are resolved to
+// pixels through `AdacLayoutOptions.unitSize`.
+
+export type AdacLayoutDirection = 'LR' | 'RL' | 'TB' | 'BT';
+export type AdacLayoutAlign = 'start' | 'center' | 'end';
+export type AdacLayoutJustify =
+  'start' | 'center' | 'end' | 'space-between' | 'space-around';
+export type AdacEdgeRouting =
+  'orthogonal' | 'polyline' | 'splines' | 'straight';
+export type AdacConnectionSide = 'left' | 'right' | 'top' | 'bottom' | 'auto';
+export type AdacLayoutPosition =
+  | 'top-left'
+  | 'top-center'
+  | 'top-right'
+  | 'center-left'
+  | 'center'
+  | 'center-right'
+  | 'bottom-left'
+  | 'bottom-center'
+  | 'bottom-right';
+
+export type AdacGap = number | { horizontal?: number; vertical?: number };
+export type AdacPadding =
+  number | { top?: number; right?: number; bottom?: number; left?: number };
+export type AdacDimension = number | 'auto';
+export interface AdacSize {
+  width?: AdacDimension;
+  height?: AdacDimension;
+}
+
+/** Root-level layout defaults (`layoutOptions`). */
+export interface AdacLayoutOptions {
+  engine?: 'elk' | 'dagre' | 'custom';
+  unitSize?: number;
+  /** @deprecated use `unitSize` */
+  unit?: number;
+  direction?: AdacLayoutDirection;
+  gap?: AdacGap;
+  containerPadding?: AdacPadding;
+  align?: AdacLayoutAlign;
+  justify?: AdacLayoutJustify;
+  edgeSpacing?: number;
+  edgeRouting?: AdacEdgeRouting;
+  /** @deprecated use `edgeRouting` */
+  routing?: AdacEdgeRouting;
+  background?: boolean;
+  edgeLabels?: boolean;
+  /** Most characters on one line of a node label; longer labels wrap, then truncate. */
+  labelMaxChars?: number;
+}
+
+/**
+ * `visual.layout`. `direction`, `gap`, `padding`, `align`, `justify`, `wrap`,
+ * `*ItemsPerLine`, `size`, `minSize` and `maxSize` control the element's
+ * direct children; `order` and `position` place the element in its parent.
+ */
+export interface AdacElementLayout {
+  direction?: AdacLayoutDirection;
+  gap?: AdacGap;
+  padding?: AdacPadding;
+  align?: AdacLayoutAlign;
+  justify?: AdacLayoutJustify;
+  wrap?: boolean;
+  maxItemsPerLine?: number;
+  itemsPerLine?: number;
+  order?: number;
+  position?: AdacLayoutPosition;
+  size?: AdacSize;
+  minSize?: AdacSize;
+  maxSize?: AdacSize;
+}
+
+export interface AdacElementStyle {
+  background?: boolean;
+  /** Most characters on one line of this element's label. */
+  labelMaxChars?: number;
+}
+
+export interface AdacConnectionLayout {
+  fromSide?: AdacConnectionSide;
+  toSide?: AdacConnectionSide;
+  routing?: AdacEdgeRouting;
+}
+
+export interface AdacVisual {
+  icon?: string;
+  group?: string;
+  description?: string;
+  layout?: AdacElementLayout;
+  style?: AdacElementStyle;
+}
+
 export interface AdacApplication {
   id: string;
   name: string;
@@ -12,11 +105,7 @@ export interface AdacApplication {
     rto_minutes?: number;
     rpo_minutes?: number;
   };
-  visual?: {
-    icon?: string;
-    group?: string;
-    description?: string;
-  };
+  visual?: AdacVisual;
   annotations?: {
     icon?: string;
     group?: string;
@@ -47,11 +136,7 @@ export interface AdacService {
   subnets?: string[];
   iam_role?: string;
 
-  visual?: {
-    icon?: string;
-    group?: string;
-    description?: string;
-  };
+  visual?: AdacVisual;
   annotations?: {
     icon?: string;
     group?: string;
@@ -95,11 +180,7 @@ export interface GcpService {
   zone?: string;
   region?: string;
   project?: string;
-  visual?: {
-    icon?: string;
-    group?: string;
-    description?: string;
-  };
+  visual?: AdacVisual;
   annotations?: {
     icon?: string;
     group?: string;
@@ -123,10 +204,12 @@ export interface AdacConnection {
   source?: string;
   target?: string;
   type: string;
+  bidirectional?: boolean;
+  layout?: AdacConnectionLayout;
 }
 
 export interface AdacConfig {
-  version: '0.1';
+  version: '0.1' | '0.2';
   metadata: {
     name: string;
     created: string;
@@ -145,4 +228,5 @@ export interface AdacConfig {
   connections?: AdacConnection[];
   cost?: Record<string, unknown>;
   layout?: 'elk' | 'dagre';
+  layoutOptions?: AdacLayoutOptions;
 }
