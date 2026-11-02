@@ -164,7 +164,8 @@ honour:
 Layout-only edges (ids starting `__adac_layout__`) and line groups are never
 drawn. The `custom`, `orthogonal` and `tsm` engines receive the plain hierarchy and
 ignore arrangement properties and the connection-level `bidirectional` and
-`routing` properties; only `background` still applies.
+`routing` properties; `background`, `labelMaxChars` and `edgeLabels` still
+apply.
 
 ## Known limitations
 
