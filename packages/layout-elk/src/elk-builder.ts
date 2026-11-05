@@ -1471,6 +1471,8 @@ export async function buildElkGraph(
       'elk.direction': 'RIGHT',
       'elk.hierarchyHandling': 'INCLUDE_CHILDREN',
       'elk.edgeRouting': edgeRoutingMode,
+      // Keep the declared order of siblings wherever crossings do not decide it
+      'elk.layered.considerModelOrder.strategy': 'NODES_AND_EDGES',
 
       'elk.layered.spacing.nodeNodeBetweenLayers':
         edgeSpacing.nodeNodeBetweenLayers,

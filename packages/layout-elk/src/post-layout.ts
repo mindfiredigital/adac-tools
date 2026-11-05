@@ -1,4 +1,4 @@
-import type { ElkEdge, ElkNode } from './types.js';
+import type { ElkEdge, ElkEdgeSection, ElkNode } from './types.js';
 import {
   DEFAULT_CONTAINER_BOX,
   isLayoutOnlyEdge,
@@ -25,15 +25,27 @@ export function applyLayoutPostProcessing(layout: ElkNode): string[] {
   let moved = false;
   walk(layout, (node) => {
     checkMaxSize(node, warnings);
-    if (node.properties?.stackAxis && restack(node)) moved = true;
   });
   walk(layout, (node) => {
-    if (node.properties?.arrangement && arrange(node)) moved = true;
+    if (node.properties?.stackAxis && restack(node)) moved = true;
   });
+  const arrangeAll = () =>
+    walk(layout, (node) => {
+      if (node.properties?.arrangement && arrange(node)) moved = true;
+    });
+  arrangeAll();
+  // trimming shrinks boxes, so containers that hold them are arranged again
+  if (tightenArranged(layout)) {
+    moved = true;
+    arrangeAll();
+  }
 
   if (moved) fixEdges(layout, pre);
   routeDeferredEdges(layout);
+  attachHintedSides(layout);
   distributeEdgeEnds(layout);
+  avoidCrossedContainers(layout);
+  separateParallelRuns(layout);
   return warnings;
 }
 
@@ -297,6 +309,31 @@ function fixEdges(root: ElkNode, pre: Map<string, Pt>): void {
   });
 }
 
+/**
+ * Sets `axis` of the end point `pts[i]` to `value` and carries along the run of
+ * corners behind it that lay on the same line (ELK often leaves a collinear
+ * point there), so the segment that joins the run to the rest of the route
+ * stays perpendicular. The far end of the route (`pts[0]` / `pts[last]`) is
+ * never part of the run.
+ */
+function shiftEndRun(
+  pts: Pt[],
+  i: number,
+  axis: 'x' | 'y',
+  value: number
+): void {
+  const old = pts[i][axis];
+  const step = i === 0 ? 1 : -1;
+  pts[i][axis] = value;
+  for (
+    let j = i + step;
+    j > 0 && j < pts.length - 1 && Math.abs(pts[j][axis] - old) < 0.75;
+    j += step
+  ) {
+    pts[j][axis] = value;
+  }
+}
+
 function zRoute(start: Pt, end: Pt, horizontalFirst: boolean): Pt[] {
   if (horizontalFirst) {
     if (start.y === end.y) return [];
@@ -374,6 +411,101 @@ function facingRoute(
   return undefined;
 }
 
+interface Seg {
+  a: Pt;
+  b: Pt;
+}
+
+/**
+ * Route for an edge that runs back against the flow, from a node on the right
+ * to a box on the left that lies above or below it: out of the node's left
+ * side, along a free corridor and band, and into the bottom (or top) of the
+ * box. The corridor and band are searched so that no run touches a foreign box
+ * or lies on another edge; the cheapest free route wins.
+ */
+function routeAroundBoxes(
+  from: AbsBox,
+  to: AbsBox,
+  foreign: (AbsBox & { id: string })[],
+  others: Seg[],
+  bounds: { w: number; h: number }
+): { start: Pt; end: Pt; bends: Pt[] } | undefined {
+  if (to.x + to.w > from.x) return undefined;
+  const below = from.y + from.h / 2 > to.y + to.h;
+  const above = from.y + from.h / 2 < to.y;
+  if (!below && !above) return undefined;
+
+  const start: Pt = { x: from.x, y: from.y + from.h / 2 };
+  const end: Pt = { x: to.x + to.w / 2, y: below ? to.y + to.h : to.y };
+  const m = ROUTE_CLEARANCE;
+  const STEP = 4;
+
+  const touches = (p: Pt, q: Pt) => {
+    const x0 = Math.min(p.x, q.x);
+    const x1 = Math.max(p.x, q.x);
+    const y0 = Math.min(p.y, q.y);
+    const y1 = Math.max(p.y, q.y);
+    return foreign.some(
+      (b) =>
+        x1 > b.x - m && x0 < b.x + b.w + m && y1 > b.y - m && y0 < b.y + b.h + m
+    );
+  };
+  const overlaps = (p: Pt, q: Pt) => {
+    const horizontal = Math.abs(p.y - q.y) < 0.5;
+    return others.some((o) => {
+      const oh = Math.abs(o.a.y - o.b.y) < 0.5;
+      if (oh !== horizontal) return false;
+      if (horizontal) {
+        return (
+          Math.abs(o.a.y - p.y) < 10 &&
+          Math.min(Math.max(o.a.x, o.b.x), Math.max(p.x, q.x)) -
+            Math.max(Math.min(o.a.x, o.b.x), Math.min(p.x, q.x)) >
+            2
+        );
+      }
+      return (
+        Math.abs(o.a.x - p.x) < 10 &&
+        Math.min(Math.max(o.a.y, o.b.y), Math.max(p.y, q.y)) -
+          Math.max(Math.min(o.a.y, o.b.y), Math.min(p.y, q.y)) >
+          2
+      );
+    });
+  };
+
+  let best: { cost: number; pts: Pt[] } | undefined;
+  const yFrom = below ? end.y + m : 0;
+  const yTo = below ? bounds.h : end.y - m;
+  const ys = new Set<number>([start.y]);
+  for (let y = yFrom; y <= yTo; y += STEP) ys.add(y);
+  for (let xv = start.x - m; xv >= end.x; xv -= STEP) {
+    if (touches(start, { x: xv, y: start.y })) continue;
+    if (overlaps(start, { x: xv, y: start.y })) continue;
+    for (const yh of ys) {
+      if (below ? yh < end.y + m : yh > end.y - m) continue;
+      const p1 = { x: xv, y: start.y };
+      const p2 = { x: xv, y: yh };
+      const p3 = { x: end.x, y: yh };
+      if (touches(p1, p2) || touches(p2, p3) || touches(p3, end)) continue;
+      if (overlaps(p1, p2) || overlaps(p2, p3) || overlaps(p3, end)) continue;
+      const pts = [start, p1, p2, p3, end].filter(
+        (p, i, all) => i === 0 || p.x !== all[i - 1].x || p.y !== all[i - 1].y
+      );
+      const bends = pts.length - 2;
+      const length = pts
+        .slice(1)
+        .reduce(
+          (sum, p, i) =>
+            sum + Math.abs(p.x - pts[i].x) + Math.abs(p.y - pts[i].y),
+          0
+        );
+      const cost = length + 40 * bends;
+      if (!best || cost < best.cost) best = { cost, pts };
+    }
+  }
+  if (!best) return undefined;
+  return { start, end, bends: best.pts.slice(1, -1) };
+}
+
 /**
  * Routes the edges the builder withheld from layering (see
  * `deferLineCrossingEdges`) between the final node boxes, as one orthogonal
@@ -433,6 +565,52 @@ function routeDeferredEdges(root: ElkNode): void {
       : undefined;
   };
 
+  const parentOf = new Map<string, string | undefined>();
+  const indexParents = (n: ElkNode, parent?: ElkNode) => {
+    parentOf.set(n.id, parent?.id);
+    n.children?.forEach((c) => indexParents(c, n));
+  };
+  indexParents(root);
+  const lineageOf = (id: string): Set<string> => {
+    const set = new Set<string>();
+    for (let c: string | undefined = id; c; c = parentOf.get(c)) set.add(c);
+    return set;
+  };
+  /** Boxes a route between the two nodes must keep clear of. */
+  const foreignBoxes = (a: string, b: string) => {
+    const related = new Set([...lineageOf(a), ...lineageOf(b)]);
+    const out: (AbsBox & { id: string })[] = [];
+    nodes.forEach((n, id) => {
+      const p = abs.get(id);
+      if (!p || n === root || n.properties?.type === LAYOUT_LINE_TYPE) return;
+      if (related.has(id)) return;
+      // anything inside the target or source belongs to it
+      const lineage = lineageOf(id);
+      if (lineage.has(a) || lineage.has(b)) return;
+      out.push({ id, ...p, w: n.width ?? 0, h: n.height ?? 0 });
+    });
+    return out;
+  };
+  /** Runs of the edges routed so far. */
+  const existingSegments = (): Seg[] => {
+    const segs: Seg[] = [];
+    walk(root, (n) => {
+      (n.edges ?? []).forEach((edge: ElkEdge) => {
+        if (isLayoutOnlyEdge(edge)) return;
+        const origin = abs.get(edge.container ?? n.id) ?? { x: 0, y: 0 };
+        edge.sections?.forEach((sec) => {
+          const pts = [
+            sec.startPoint,
+            ...(sec.bendPoints ?? []),
+            sec.endPoint,
+          ].map((p) => ({ x: p.x + origin.x, y: p.y + origin.y }));
+          pts.slice(1).forEach((p, i) => segs.push({ a: pts[i], b: p }));
+        });
+      });
+    });
+    return segs;
+  };
+
   walk(root, (container) => {
     const deferred = container.properties?.deferredEdges;
     if (!deferred || deferred.length === 0) return;
@@ -465,7 +643,21 @@ function routeDeferredEdges(root: ElkNode): void {
       let startPoint: Pt;
       let endPoint: Pt;
       let bends: Pt[];
-      if (facing) {
+      const around =
+        container === root && !explicitSide && sn && tn && sp && tp
+          ? routeAroundBoxes(
+              { ...sp, w: sn.width ?? 0, h: sn.height ?? 0 },
+              { ...tp, w: tn.width ?? 0, h: tn.height ?? 0 },
+              foreignBoxes(sourceId, targetId),
+              existingSegments(),
+              { w: root.width ?? 0, h: root.height ?? 0 }
+            )
+          : undefined;
+      if (around) {
+        startPoint = around.start;
+        endPoint = around.end;
+        bends = around.bends;
+      } else if (facing) {
         startPoint = facing.start;
         endPoint = facing.end;
         bends = facing.bends;
@@ -618,7 +810,10 @@ function straightenLeafLinks(
     if (!otherInfo || !myBox || !otherBox) continue;
 
     const dy = attachY(otherInfo.node, otherBox) - attachY(me.node, myBox);
-    if (Math.abs(dy) < 0.75 || Math.abs(dy) > MAX_STRAIGHTEN) continue;
+    // a node standing on its own at the top level has no neighbours to disturb,
+    // so it may travel the whole way to its partner
+    const limit = me.parent === root ? Infinity : MAX_STRAIGHTEN;
+    if (Math.abs(dy) < 0.75 || Math.abs(dy) > limit) continue;
 
     const parent = me.parent;
     const pad = innerPadding(parent, parent === root);
@@ -647,14 +842,7 @@ function straightenLeafLinks(
       section.endPoint,
     ];
     const i = e.end === 'start' ? 0 : pts.length - 1;
-    const next = e.end === 'start' ? 1 : pts.length - 2;
-    if (
-      next >= 0 &&
-      next < pts.length &&
-      Math.abs(pts[next].y - pts[i].y) < 0.75
-    )
-      pts[next].y += dy;
-    pts[i].y += dy;
+    shiftEndRun(pts, i, 'y', pts[i].y + dy);
     straightened.add(e.poly);
     moved = true;
   }
@@ -685,7 +873,7 @@ function innerPadding(
  * several edges meet the same side they are spread evenly across it, ordered
  * by where their other end lies, and never closer than `MIN_EDGE_GAP`.
  *
- * Only the end points and the corner next to each end move, so the route
+ * Only the end points and the run of corners behind each end move, so the route
  * between them (and its orthogonality) is kept; a straight edge gets one Z
  * when its two ends no longer line up.
  */
@@ -884,9 +1072,10 @@ function distributeEdgeEnds(root: ElkNode): void {
         const axis = alongAxis(e.side);
         const i = e.end === 'start' ? 0 : k;
         const next = e.end === 'start' ? 1 : k - 1;
-        // Move the corner next to this end only when that segment is
-        // perpendicular to the side, so the path stays orthogonal.
-        if (orthogonalAt(i, next, axis)) pts[next][axis] = q[axis];
+        // Move the corners next to this end only when that segment is
+        // perpendicular to the side, so the path stays orthogonal; the whole
+        // run of collinear corners moves with it.
+        if (orthogonalAt(i, next, axis)) shiftEndRun(pts, i, axis, q[axis]);
         pts[i] = q;
       }
     }
@@ -908,4 +1097,377 @@ function distributeEdgeEnds(root: ElkNode): void {
     poly.section.endPoint = rel(poly.pts[poly.pts.length - 1]);
     poly.section.bendPoints = poly.pts.slice(1, -1).map(rel);
   }
+}
+
+// ── Keeping routes out of unrelated containers ─────────────────────────────
+
+/** Clearance kept between a re-routed edge and the boxes it passes. */
+const ROUTE_CLEARANCE = 8;
+
+/**
+ * ELK routes edges before containers are rearranged, so a route made of a
+ * horizontal, a vertical and a horizontal run (a Z) can end up cutting through
+ * a container it has nothing to do with. Such a Z gets its vertical run moved
+ * to the nearest x where none of the three runs touch a foreign container or
+ * node; a route that cannot be freed is left as it is.
+ */
+function avoidCrossedContainers(root: ElkNode): void {
+  const abs = absolutePositions(root);
+  const parentOf = new Map<string, string | undefined>();
+  const nodes = new Map<string, ElkNode>();
+  const index = (n: ElkNode, parent?: ElkNode) => {
+    nodes.set(n.id, n);
+    parentOf.set(n.id, parent?.id);
+    n.children?.forEach((c) => index(c, n));
+  };
+  index(root);
+  const ownerOf = new Map<string, string>();
+  nodes.forEach((n) => n.ports?.forEach((p) => ownerOf.set(p.id, n.id)));
+  const owner = (ref: string | undefined) =>
+    ref ? (ownerOf.get(ref) ?? ref) : undefined;
+  const lineage = (id: string | undefined): Set<string> => {
+    const set = new Set<string>();
+    for (let c = id; c; c = parentOf.get(c)) set.add(c);
+    return set;
+  };
+
+  type Box = { x: number; y: number; w: number; h: number; id: string };
+  const boxes: Box[] = [];
+  nodes.forEach((n, id) => {
+    const p = abs.get(id);
+    if (!p || n === root || n.properties?.type === LAYOUT_LINE_TYPE) return;
+    boxes.push({ id, ...p, w: n.width ?? 0, h: n.height ?? 0 });
+  });
+
+  const hits = (a: Pt, b: Pt, box: Box): boolean => {
+    const m = ROUTE_CLEARANCE;
+    const x0 = Math.min(a.x, b.x);
+    const x1 = Math.max(a.x, b.x);
+    const y0 = Math.min(a.y, b.y);
+    const y1 = Math.max(a.y, b.y);
+    return (
+      x1 > box.x - m &&
+      x0 < box.x + box.w + m &&
+      y1 > box.y - m &&
+      y0 < box.y + box.h + m
+    );
+  };
+
+  walk(root, (n) => {
+    (n.edges ?? []).forEach((edge: ElkEdge) => {
+      if (isLayoutOnlyEdge(edge)) return;
+      const origin = abs.get(edge.container ?? n.id) ?? { x: 0, y: 0 };
+      const related = new Set([
+        ...lineage(owner(edge.sources?.[0])),
+        ...lineage(owner(edge.targets?.[0])),
+      ]);
+      const foreign = boxes.filter((b) => !related.has(b.id));
+      edge.sections?.forEach((section) => {
+        const pts = [
+          section.startPoint,
+          ...(section.bendPoints ?? []),
+          section.endPoint,
+        ].map((p) => ({ x: p.x + origin.x, y: p.y + origin.y }));
+        if (pts.length !== 4) return;
+        const [a, b, c, d] = pts;
+        const isZ =
+          Math.abs(a.y - b.y) < 0.5 &&
+          Math.abs(b.x - c.x) < 0.5 &&
+          Math.abs(c.y - d.y) < 0.5;
+        if (!isZ) return;
+
+        const clearAt = (x: number) =>
+          !foreign.some(
+            (box) =>
+              hits(a, { x, y: a.y }, box) ||
+              hits({ x, y: a.y }, { x, y: d.y }, box) ||
+              hits({ x, y: d.y }, d, box)
+          );
+        if (clearAt(b.x)) return;
+
+        const lo = Math.min(a.x, d.x) + ROUTE_CLEARANCE;
+        const hi = Math.max(a.x, d.x) - ROUTE_CLEARANCE;
+        let best: number | undefined;
+        for (let x = lo; x <= hi; x += 2) {
+          if (
+            clearAt(x) &&
+            (best === undefined || Math.abs(x - b.x) < Math.abs(best - b.x))
+          ) {
+            best = x;
+          }
+        }
+        if (best === undefined) {
+          // The runs cannot all be freed, but the bend should at least fall
+          // in open space: take the middle of the gap nearest the target
+          // that holds the vertical run.
+          const openAt = (x: number) =>
+            !foreign.some((box) => hits({ x, y: a.y }, { x, y: d.y }, box));
+          if (openAt(b.x)) return;
+          let near: number | undefined;
+          for (let x = lo; x <= hi; x += 2) {
+            if (
+              openAt(x) &&
+              (near === undefined || Math.abs(x - d.x) < Math.abs(near - d.x))
+            ) {
+              near = x;
+            }
+          }
+          if (near === undefined) return;
+          let left = near;
+          let right = near;
+          while (left - 2 >= lo && openAt(left - 2)) left -= 2;
+          while (right + 2 <= hi && openAt(right + 2)) right += 2;
+          best = (left + right) / 2;
+        }
+        section.bendPoints = [
+          { x: best - origin.x, y: a.y - origin.y },
+          { x: best - origin.x, y: d.y - origin.y },
+        ];
+      });
+    });
+  });
+}
+
+// ── Trimming empty margins ──────────────────────────────────────────────────
+
+/** The `elk.nodeSize.minimum` a container was given, if any. */
+function minimumSize(node: ElkNode): { w: number; h: number } {
+  const raw = node.layoutOptions?.['elk.nodeSize.minimum'];
+  const m = raw ? /\(\s*([0-9.]+)\s*,\s*([0-9.]+)\s*\)/.exec(raw) : null;
+  return { w: m ? Number(m[1]) : 0, h: m ? Number(m[2]) : 0 };
+}
+
+/**
+ * ELK sometimes leaves a margin around the content of a container that is
+ * larger than the container's padding (it keeps room for edges that cross the
+ * border), so two containers with identical content can differ in size. For
+ * containers that arrange their own children, that margin is trimmed across
+ * the arrangement: the content moves to the padding and the box shrinks to
+ * fit, never below its declared minimum. Returns true if anything moved.
+ */
+function tightenArranged(root: ElkNode): boolean {
+  let moved = false;
+  const visit = (node: ElkNode) => {
+    node.children?.forEach(visit);
+    const arrangement = node.properties?.arrangement;
+    const kids = node.children ?? [];
+    if (!arrangement || kids.length === 0 || node === root) return;
+    if (node.width === undefined || node.height === undefined) return;
+
+    const pad = arrangement.padding;
+    const minX = Math.min(...kids.map((k) => k.x ?? 0));
+    const minY = Math.min(...kids.map((k) => k.y ?? 0));
+    const maxX = Math.max(...kids.map((k) => (k.x ?? 0) + (k.width ?? 0)));
+    const maxY = Math.max(...kids.map((k) => (k.y ?? 0) + (k.height ?? 0)));
+    // `justify` spreads items along the main axis on purpose, so only the
+    // cross axis is trimmed
+    const trimX = arrangement.mainAxis === 'vertical';
+    const trimY = arrangement.mainAxis === 'horizontal';
+    const dx = trimX ? Math.max(0, minX - pad.left) : 0;
+    const dy = trimY ? Math.max(0, minY - pad.top) : 0;
+    const min = minimumSize(node);
+    const width = trimX ? Math.max(min.w, maxX - dx + pad.right) : node.width;
+    const height = trimY
+      ? Math.max(min.h, maxY - dy + pad.bottom)
+      : node.height;
+
+    if (dx > 0.5 || dy > 0.5) {
+      kids.forEach((k) => {
+        k.x = (k.x ?? 0) - dx;
+        k.y = (k.y ?? 0) - dy;
+      });
+      moved = true;
+    }
+    if (width < node.width - 0.5) {
+      node.width = width;
+      moved = true;
+    }
+    if (height < node.height - 0.5) {
+      node.height = height;
+      moved = true;
+    }
+  };
+  visit(root);
+  return moved;
+}
+
+// ── Top / bottom attachment ─────────────────────────────────────────────────
+
+/** How far an edge runs clear of a node before it turns, in pixels. */
+const SIDE_STUB = 20;
+
+/**
+ * Re-attaches the ends of edges that asked for the top or bottom of a node
+ * (`layout.fromSide` / `toSide`). The route keeps its shape: it leaves the
+ * requested side, runs clear of the node, and joins the old route at its first
+ * corner. Routes too short to bend are left alone.
+ */
+function attachHintedSides(root: ElkNode): void {
+  const abs = absolutePositions(root);
+  const nodes = new Map<string, ElkNode>();
+  const ownerOf = new Map<string, string>();
+  walk(root, (n) => {
+    nodes.set(n.id, n);
+    n.ports?.forEach((p) => ownerOf.set(p.id, n.id));
+  });
+  const owner = (ref: string | undefined) =>
+    ref ? (ownerOf.get(ref) ?? ref) : undefined;
+
+  walk(root, (container) => {
+    (container.edges ?? []).forEach((edge: ElkEdge) => {
+      const hint = {
+        source: edge.properties?.sideHintSource,
+        target: edge.properties?.sideHintTarget,
+      };
+      if (!hint.source && !hint.target) return;
+      const origin = abs.get(edge.container ?? container.id) ?? { x: 0, y: 0 };
+      edge.sections?.forEach((section) => {
+        let pts: Pt[] = [
+          section.startPoint,
+          ...(section.bendPoints ?? []),
+          section.endPoint,
+        ].map((p) => ({ x: p.x + origin.x, y: p.y + origin.y }));
+
+        const reattach = (
+          list: Pt[],
+          id: string | undefined,
+          side: 'N' | 'S'
+        ) => {
+          const node = id ? nodes.get(id) : undefined;
+          const pos = id ? abs.get(id) : undefined;
+          if (!node || !pos || list.length < 3) return list;
+          const w = node.width ?? 0;
+          const x = pos.x + w / 2;
+          const y = side === 'N' ? pos.y : pos.y + (node.height ?? 0);
+          const clear = side === 'N' ? y - SIDE_STUB : y + SIDE_STUB;
+          const next = list[1];
+          return [
+            { x, y },
+            { x, y: clear },
+            { x: next.x, y: clear },
+            ...(next.y === clear ? [] : [next]),
+            ...list.slice(2),
+          ];
+        };
+
+        if (hint.source) {
+          pts = reattach(pts, owner(edge.sources?.[0]), hint.source);
+        }
+        if (hint.target) {
+          pts = reattach(
+            [...pts].reverse(),
+            owner(edge.targets?.[0]),
+            hint.target
+          ).reverse();
+        }
+        const local = pts.map((p) => ({
+          x: p.x - origin.x,
+          y: p.y - origin.y,
+        }));
+        section.startPoint = local[0];
+        section.endPoint = local[local.length - 1];
+        section.bendPoints = local.slice(1, -1);
+      });
+    });
+  });
+}
+
+// ── Keeping edges apart ─────────────────────────────────────────────────────
+
+/** Edges whose parallel runs lie closer than this read as one line. */
+const RUN_SEPARATION = 8;
+
+/**
+ * Two edges that share a stretch of the same line look like one arrow. For each
+ * inner run of an edge (never the runs at its ends, which sit on a node) that
+ * lies on another edge's run, the run is moved sideways to the nearest free
+ * line that keeps it between its neighbouring corners.
+ */
+function separateParallelRuns(root: ElkNode): void {
+  const abs = absolutePositions(root);
+  interface Route {
+    section: ElkEdgeSection;
+    origin: Pt;
+    pts: Pt[];
+  }
+  const routes: Route[] = [];
+  walk(root, (n) => {
+    (n.edges ?? []).forEach((edge: ElkEdge) => {
+      if (isLayoutOnlyEdge(edge)) return;
+      const origin = abs.get(edge.container ?? n.id) ?? { x: 0, y: 0 };
+      edge.sections?.forEach((section) => {
+        routes.push({
+          section,
+          origin,
+          pts: [
+            section.startPoint,
+            ...(section.bendPoints ?? []),
+            section.endPoint,
+          ].map((p) => ({ x: p.x + origin.x, y: p.y + origin.y })),
+        });
+      });
+    });
+  });
+
+  const overlap = (a0: number, a1: number, b0: number, b1: number) =>
+    Math.min(Math.max(a0, a1), Math.max(b0, b1)) -
+    Math.max(Math.min(a0, a1), Math.min(b0, b1));
+
+  /** True if the run p→q lies on a run of any route other than `self`. */
+  const crowded = (self: Route, p: Pt, q: Pt): boolean => {
+    const vertical = Math.abs(p.x - q.x) < 0.5;
+    return routes.some((other) => {
+      if (other === self) return false;
+      return other.pts.slice(1).some((b, i) => {
+        const a = other.pts[i];
+        const bVertical = Math.abs(a.x - b.x) < 0.5;
+        if (bVertical !== vertical) return false;
+        return vertical
+          ? Math.abs(a.x - p.x) < RUN_SEPARATION &&
+              overlap(a.y, b.y, p.y, q.y) > 2
+          : Math.abs(a.y - p.y) < RUN_SEPARATION &&
+              overlap(a.x, b.x, p.x, q.x) > 2;
+      });
+    });
+  };
+
+  routes.forEach((route) => {
+    const { pts } = route;
+    let changed = false;
+    // inner runs only: neither end of the run is the route's own start or end
+    for (let i = 1; i + 2 < pts.length; i++) {
+      const p = pts[i];
+      const q = pts[i + 1];
+      const vertical = Math.abs(p.x - q.x) < 0.5;
+      const horizontal = Math.abs(p.y - q.y) < 0.5;
+      if (!vertical && !horizontal) continue;
+      if (!crowded(route, p, q)) continue;
+
+      const axis = vertical ? 'x' : 'y';
+      const before = pts[i - 1][axis];
+      const after = pts[i + 2][axis];
+      const lo = Math.min(before, after) + 2;
+      const hi = Math.max(before, after) - 2;
+      const here = p[axis];
+      for (const step of [1, -1, 2, -2, 3, -3]) {
+        const to = here + step * RUN_SEPARATION * 2;
+        if (to < lo || to > hi) continue;
+        const a = { ...p, [axis]: to };
+        const b = { ...q, [axis]: to };
+        if (crowded(route, a, b)) continue;
+        pts[i] = a;
+        pts[i + 1] = b;
+        changed = true;
+        break;
+      }
+    }
+    if (!changed) return;
+    const local = pts.map((pt) => ({
+      x: pt.x - route.origin.x,
+      y: pt.y - route.origin.y,
+    }));
+    route.section.startPoint = local[0];
+    route.section.endPoint = local[local.length - 1];
+    route.section.bendPoints = local.slice(1, -1);
+  });
 }

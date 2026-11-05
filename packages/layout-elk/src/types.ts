@@ -68,6 +68,12 @@ export interface ElkEdge extends ElkExtendedEdge {
   properties?: {
     /** Invisible edge that only exists to steer the layout; never rendered. */
     layoutOnly?: boolean;
+    /**
+     * Top / bottom side an end of the edge must meet. ELK would rearrange the
+     * whole node around a port, so post-layout re-attaches the end instead.
+     */
+    sideHintSource?: 'N' | 'S';
+    sideHintTarget?: 'N' | 'S';
     /** Draw arrowheads on both ends. */
     bidirectional?: boolean;
     /** Per-connection routing override. */

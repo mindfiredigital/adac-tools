@@ -157,6 +157,52 @@ export function applyDeclarativeLayout(
         }
       : {}),
   };
+  deferBackwardEdges(root, ctx);
+}
+
+/**
+ * A connection that runs into a top-level element pinned to the first layer
+ * (`position: *-left`) runs against the flow. Left in the layout, ELK would
+ * place the target after its source and drag it out of the first layer, so
+ * these edges are taken out of the layout and routed afterwards (see
+ * post-layout.ts).
+ */
+function deferBackwardEdges(
+  root: ElkNode,
+  ctx: DeclarativeLayoutContext
+): void {
+  const flow = ctx.global.direction;
+  const topOf = new Map<string, string>();
+  const first = new Set<string>();
+  (root.children ?? []).forEach((child) => {
+    const index = (n: ElkNode) => {
+      topOf.set(n.id, child.id);
+      n.ports?.forEach((p) => topOf.set(p.id, child.id));
+      n.children?.forEach(index);
+    };
+    index(child);
+    const position = ctx.visualById.get(child.id)?.layout?.position;
+    if (layerConstraintFor(position, flow) === 'FIRST') first.add(child.id);
+  });
+  if (first.size === 0) return;
+
+  const deferred: ElkEdge[] = [];
+  for (let i = ctx.edges.length - 1; i >= 0; i--) {
+    const e = ctx.edges[i];
+    if (isLayoutOnlyEdge(e)) continue;
+    const s = topOf.get(e.sources[0]);
+    const t = topOf.get(e.targets[0]);
+    if (s && t && s !== t && first.has(t) && !first.has(s)) {
+      ctx.edges.splice(i, 1);
+      deferred.unshift(e);
+    }
+  }
+  if (deferred.length > 0) {
+    root.properties = {
+      ...root.properties,
+      deferredEdges: [...(root.properties?.deferredEdges ?? []), ...deferred],
+    };
+  }
 }
 
 function visit(
@@ -284,18 +330,20 @@ function orderAndArrange(
     !isRoot && logical.length >= 2 && (resolved.arranged || orderDeclared);
 
   if (!arranged) {
-    // A lone child still honours `align` (centred in a box wider than it).
+    // A lone child still honours `align` and `justify` (centred in a box
+    // wider than it).
     if (
       !isRoot &&
       logical.length === 1 &&
       resolved.arranged &&
-      resolved.align !== undefined
+      (resolved.align !== undefined || needsJustify(resolved))
     ) {
       parent.properties = {
         ...parent.properties,
         arrangement: {
           mainAxis: axisOf(resolved.direction),
           align: resolved.align,
+          justify: needsJustify(resolved) ? resolved.justify : undefined,
           padding: mergePadding(
             DEFAULT_CONTAINER_BOX,
             global.containerPadding,
@@ -373,7 +421,7 @@ function orderAndArrange(
   };
 
   const edges = (parent.edges ??= []);
-  deferLineCrossingEdges(parent, lines, itemsFollowFlow, ctx);
+  deferLineCrossingEdges(parent, lines, itemsFollowFlow, flowPositive, ctx);
 
   if (lines.length === 1) {
     if (itemsFollowFlow) edges.push(...chain(lines[0], parent.id));
@@ -411,14 +459,17 @@ function deferLineCrossingEdges(
   parent: ElkNode,
   lines: ElkNode[][],
   itemsFollowFlow: boolean,
+  flowPositive: boolean,
   ctx: DeclarativeLayoutContext
 ): void {
   // top-level child of `parent` that contains each descendant id
   const childOf = new Map<string, string>();
   const lineOf = new Map<string, number>();
+  const placeOf = new Map<string, number>();
   lines.forEach((line, i) =>
-    line.forEach((item) => {
+    line.forEach((item, place) => {
       lineOf.set(item.id, i);
+      placeOf.set(item.id, place);
       const index = (n: ElkNode) => {
         childOf.set(n.id, item.id);
         n.ports?.forEach((p) => childOf.set(p.id, item.id));
@@ -437,7 +488,15 @@ function deferLineCrossingEdges(
     const sameLine = lineOf.get(s) === lineOf.get(t);
     // items follow the flow: only edges between different lines are a problem;
     // items share a layer: edges within a line are the problem.
-    if (itemsFollowFlow ? !sameLine : sameLine) {
+    // items that follow the flow are chained in order, so an edge running
+    // against that order would fight the chain as well
+    const against =
+      itemsFollowFlow &&
+      sameLine &&
+      (flowPositive
+        ? placeOf.get(t)! < placeOf.get(s)!
+        : placeOf.get(t)! > placeOf.get(s)!);
+    if (itemsFollowFlow ? !sameLine || against : sameLine) {
       ctx.edges.splice(i, 1);
       deferred.unshift(e);
     }
@@ -498,12 +557,31 @@ export function layoutConnection(
     return port.id;
   };
 
+  // A port on the top or bottom makes ELK rearrange the node's whole column,
+  // so those sides are realised after layout (see post-layout.ts).
+  const vertical = (side: string | undefined): 'N' | 'S' | undefined =>
+    side === 'top' ? 'N' : side === 'bottom' ? 'S' : undefined;
+  const sideHint = {
+    source: vertical(conn.layout?.fromSide),
+    target: vertical(conn.layout?.toSide),
+  };
   result.sourceRef =
-    attach(from, 'out', sideToElk(conn.layout?.fromSide)) ?? fromId;
-  result.targetRef = attach(to, 'in', sideToElk(conn.layout?.toSide)) ?? toId;
+    attach(
+      from,
+      'out',
+      sideHint.source ? undefined : sideToElk(conn.layout?.fromSide)
+    ) ?? fromId;
+  result.targetRef =
+    attach(
+      to,
+      'in',
+      sideHint.target ? undefined : sideToElk(conn.layout?.toSide)
+    ) ?? toId;
 
   const routing = conn.layout?.routing ?? global.edgeRouting;
   const properties: NonNullable<ElkEdge['properties']> = {};
+  if (sideHint.source) properties.sideHintSource = sideHint.source;
+  if (sideHint.target) properties.sideHintTarget = sideHint.target;
   if (conn.bidirectional) properties.bidirectional = true;
   // ELK routes a whole graph one way; the renderer realises a connection's
   // own routing (including `orthogonal` under a non-orthogonal default)
