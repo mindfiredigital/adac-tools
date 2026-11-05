@@ -133,7 +133,7 @@ export function runCLI(options: CLIOptions) {
     .description('Generate diagram from ADAC YAML file')
     .option(
       '-l, --layout <type>',
-      'Layout engine (elk, custom, orthogonal, or tsm)'
+      'Layout engine (elk, custom, orthogonal, or tsm); defaults to layoutOptions.engine, then elk'
     )
     .option('-o, --output <path>', 'Output SVG file path')
     .option('--validate', 'Validate schema before generating')

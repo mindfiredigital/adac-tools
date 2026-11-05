@@ -18,3 +18,6 @@ export type {
   ValidationOptions,
   ValidationResult,
 };
+
+// layout and styling types used by the layout engines
+export type * from './types.js';
