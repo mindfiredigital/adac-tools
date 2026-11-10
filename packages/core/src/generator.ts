@@ -1,6 +1,7 @@
 import { parseAdacFromContent } from '@mindfiredigital/adac-parser';
 import { buildElkGraph } from '@mindfiredigital/adac-layout-elk';
 import {
+  unsupportedLayoutEngineWarning,
   validateAdacConfig,
   type AdacConfig,
 } from '@mindfiredigital/adac-validator';
@@ -57,7 +58,10 @@ export async function generateDiagramSvg(
     const adac = parseAdacFromContent(inputContent, { validate: false });
 
     if (validate) {
-      const validation = validateAdacConfig(adac);
+      const validation = validateAdacConfig(adac, {
+        // a --layout override, otherwise the validator reads the file's own engine
+        engine: layoutOverride,
+      });
       if (!validation.valid) {
         throw new Error(
           `Schema validation failed:\n${validation.errors?.join('\n')}`
@@ -93,6 +97,11 @@ export async function generateDiagramSvg(
     const engine = normalizeLayoutEngine(
       layoutOverride ?? adac.layoutOptions?.engine ?? adac.layout ?? 'elk'
     );
+    // validation has already reported this when it ran
+    if (!validate) {
+      const unsupported = unsupportedLayoutEngineWarning(adac, engine);
+      if (unsupported) log(`Warning: ${unsupported}`);
+    }
     const graph = await buildElkGraph(adac, {
       // icon-sized nodes and the declarative container rules are the ELK look
       declarativeStyle: engine === 'elk',
@@ -172,7 +181,7 @@ export async function generateDiagram(
 ): Promise<void> {
   const fs = await getFs();
   const raw = await fs.readFile(input, 'utf8');
-  const { svg } = await generateDiagramSvg(
+  const { svg, logs } = await generateDiagramSvg(
     raw,
     layoutOverride,
     validate,
@@ -182,6 +191,11 @@ export async function generateDiagram(
     complianceProvider,
     iconResolver
   );
+  // surface generation warnings (unsupported engine, deprecated options, ...)
+  for (const line of logs) {
+    const warning = /^\[[^\]]*\] (Warning: .*)$/s.exec(line);
+    if (warning) console.warn(warning[1]);
+  }
   await fs.outputFile(output, svg);
   console.log(`Diagram generated: ${output}`);
 }

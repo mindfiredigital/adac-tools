@@ -10,7 +10,7 @@ vi.mock('@mindfiredigital/adac-validator', async (importOriginal) => {
     await importOriginal<typeof import('@mindfiredigital/adac-validator')>();
   return {
     ...actual,
-    validateAdacConfig: vi.fn((config) => {
+    validateAdacConfig: vi.fn((config, options) => {
       if (
         config &&
         config.metadata &&
@@ -18,7 +18,8 @@ vi.mock('@mindfiredigital/adac-validator', async (importOriginal) => {
       ) {
         return { valid: false };
       }
-      return actual.validateAdacConfig(config);
+      // forward options so a --layout override reaches the real validator
+      return actual.validateAdacConfig(config, options);
     }),
   };
 });

@@ -167,6 +167,33 @@ ignore arrangement properties and the connection-level `bidirectional` and
 `routing` properties; `background`, `labelMaxChars` and `edgeLabels` still
 apply.
 
+## Engine support
+
+| Property                                                                                                                                                         | `elk` | `custom` / `orthogonal` / `tsm` |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | :---: | :-----------------------------: |
+| `layoutOptions`: `direction`, `gap`, `containerPadding`, `align`, `justify`, `edgeSpacing`, `edgeRouting` (and deprecated `routing`)                             |  yes  |               no                |
+| `visual.layout`: `direction`, `gap`, `padding`, `align`, `justify`, `wrap`, `itemsPerLine`, `maxItemsPerLine`, `order`, `position`, `size`, `minSize`, `maxSize` |  yes  |               no                |
+| `connections[].layout`: `fromSide`, `toSide`, `routing`; `bidirectional`                                                                                         |  yes  |               no                |
+| `layoutOptions`: `unitSize`, `background`, `edgeLabels`, `labelMaxChars`                                                                                         |  yes  |               yes               |
+
+When a file **declares** any property marked "no" and the engine in effect is not
+`elk` (`--layout`, then `layoutOptions.engine`, then the top-level `layout`), the
+generator logs one warning per file. It names the engine and lists the ignored
+groups, for example:
+
+```
+Warning: Layout engine "custom" ignores declarative layout properties:
+layoutOptions (direction, gap); visual.layout (align, size). The diagram will
+not follow the declared arrangement. Use --layout elk or set
+layoutOptions.engine: elk.
+```
+
+The same warning is printed by `adac validate` and by `adac diagram`, and appears in
+the generation log (`--validate`, API consumers). It is a **warning, not an
+error**: the file is still valid and a diagram is still produced, just without
+the declared arrangement. Only properties the author wrote count; files that
+declare none of them, or only the shared properties, never warn.
+
 ## Known limitations
 
 - `order` among the root's own children is best-effort; use `position` or

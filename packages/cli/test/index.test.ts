@@ -64,6 +64,36 @@ describe('ADAC CLI', () => {
     process.argv = originalArgv;
     (process as unknown as { exit: typeof process.exit }).exit = originalExit;
   });
+
+  it('should print validation warnings and still pass', async () => {
+    const originalArgv = process.argv;
+    const originalExit = process.exit;
+    process.argv = ['node', 'adac', 'validate', 'test.yaml'];
+    const mockExit = vi.fn();
+    (process as unknown as { exit: typeof process.exit }).exit =
+      mockExit as unknown as typeof process.exit;
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+    mockOptions.validateAdacCostConfig.mockReturnValueOnce({
+      valid: true,
+      warnings: [
+        'Layout engine "custom" ignores declarative layout properties',
+      ],
+    });
+
+    await runCLI(mockOptions);
+
+    expect(warnSpy).toHaveBeenCalledTimes(1);
+    expect(warnSpy).toHaveBeenCalledWith(
+      'Warning: Layout engine "custom" ignores declarative layout properties'
+    );
+    expect(mockExit).toHaveBeenCalledWith(0);
+    warnSpy.mockRestore();
+    logSpy.mockRestore();
+    process.argv = originalArgv;
+    (process as unknown as { exit: typeof process.exit }).exit = originalExit;
+  });
 });
 
 describe('ADAC CLI - cost command', () => {
