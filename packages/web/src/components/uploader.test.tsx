@@ -113,4 +113,71 @@ describe('Uploader', () => {
       expect(screen.getByText(/Invalid schema/i)).toBeInTheDocument();
     });
   });
+
+  describe('layout engine warning', () => {
+    const SHOWN =
+      'Layout engine "custom" ignores declarative layout properties: layoutOptions (gap).';
+    const WARNING = `${SHOWN} Use --layout elk or set layoutOptions.engine: elk.`;
+
+    function mockGeneration(logs: string[]) {
+      const result = {
+        svg: '<svg id="test-svg">test</svg>',
+        logs,
+        duration: 0,
+      };
+      if (USE_BACKEND) {
+        vi.stubGlobal(
+          'fetch',
+          vi.fn().mockResolvedValue({
+            ok: true,
+            json: () => Promise.resolve(result),
+          })
+        );
+      } else {
+        vi.mocked(generateDiagramBrowser).mockResolvedValue(result);
+      }
+    }
+
+    async function generate() {
+      const file = new File(['content: test'], 'test.yaml', {
+        type: 'text/yaml',
+      });
+      file.text = vi.fn().mockResolvedValue('content: test');
+      render(<Uploader onBack={vi.fn()} />);
+      const input = document.querySelector('input[type="file"]')!;
+      fireEvent.change(input, { target: { files: [file] } });
+      fireEvent.click(screen.getByText('Generate Diagram'));
+      await waitFor(() => {
+        expect(screen.getByText('Generated Diagram')).toBeInTheDocument();
+      });
+    }
+
+    it('shows a dismissible banner when the engine ignores layout properties', async () => {
+      mockGeneration([`[2026-01-01T00:00:00.000Z] Warning: ${WARNING}`]);
+      await generate();
+
+      expect(screen.getByRole('alert')).toHaveTextContent(SHOWN);
+
+      fireEvent.click(screen.getByRole('button', { name: 'Dismiss warning' }));
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+      // the diagram stays
+      expect(screen.getByText('Generated Diagram')).toBeInTheDocument();
+    });
+
+    it('shows no banner without a warning', async () => {
+      mockGeneration(['[2026-01-01T00:00:00.000Z] Generation complete in 5ms']);
+      await generate();
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    });
+
+    it('lets the file choose its engine instead of forcing elk', async () => {
+      mockGeneration([]);
+      await generate();
+      if (!USE_BACKEND) {
+        expect(generateDiagramBrowser).toHaveBeenLastCalledWith(
+          'content: test'
+        );
+      }
+    });
+  });
 });

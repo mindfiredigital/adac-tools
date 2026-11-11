@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Upload, FileText, ArrowRight, Loader } from 'lucide-react';
 import { generateDiagramBrowser } from '../helper/diagram-generator';
 import type { GenerationResult } from '@mindfiredigital/adac-core';
+import { layoutEngineWarnings } from '../helper/generation-warnings';
+import { WarningBanner } from './warning-banner';
 const USE_BACKEND = import.meta.env.VITE_USE_BACKEND === 'true';
 
 /**
@@ -17,11 +19,13 @@ export const Uploader = ({ onBack }: UploaderProps) => {
   const [loading, setLoading] = useState(false);
   const [svgContent, setSvgContent] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [warnings, setWarnings] = useState<string[]>([]);
 
   const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       setFile(e.target.files[0]);
       setError(null);
+      setWarnings([]);
       setSvgContent(null);
     }
   };
@@ -31,6 +35,7 @@ export const Uploader = ({ onBack }: UploaderProps) => {
 
     setLoading(true);
     setError(null);
+    setWarnings([]);
 
     let results: GenerationResult;
 
@@ -42,10 +47,8 @@ export const Uploader = ({ onBack }: UploaderProps) => {
         const response = await fetch('/api/generate', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            content: text,
-            layout: 'elk', // Default to ELK
-          }),
+          // no layout: the file's own engine applies, ELK when it names none
+          body: JSON.stringify({ content: text }),
         });
 
         if (!response.ok) {
@@ -55,9 +58,10 @@ export const Uploader = ({ onBack }: UploaderProps) => {
 
         results = await response.json();
       } else {
-        results = await generateDiagramBrowser(text, 'elk');
+        results = await generateDiagramBrowser(text);
       }
       setSvgContent(results.svg);
+      setWarnings(layoutEngineWarnings(results.logs));
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : 'Unknown error';
       setError(message);
@@ -173,6 +177,8 @@ export const Uploader = ({ onBack }: UploaderProps) => {
           )}
         </div>
       </div>
+
+      <WarningBanner messages={warnings} onClose={() => setWarnings([])} />
     </div>
   );
 };
