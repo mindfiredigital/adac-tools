@@ -105,6 +105,8 @@ export async function generateDiagramSvg(
     const graph = await buildElkGraph(adac, {
       // icon-sized nodes and the declarative container rules are the ELK look
       declarativeStyle: engine === 'elk',
+      // which default layout options were filled in, for explaining a diagram
+      onDebug: (message) => log(message),
       // validation has already reported deprecated aliases
       onWarning: (message) => {
         if (validate && /is deprecated/.test(message)) return;

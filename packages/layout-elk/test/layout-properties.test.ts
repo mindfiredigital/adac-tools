@@ -84,7 +84,7 @@ describe('normalizeLayoutOptions', () => {
     expect(o).toMatchObject({
       unitSize: 100,
       direction: 'LR',
-      directionDeclared: false,
+      provenance: {},
       background: false,
     });
     expect(o.gap).toBeUndefined();
