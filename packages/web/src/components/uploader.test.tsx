@@ -6,6 +6,7 @@ import {
   waitFor,
 } from '@testing-library/react';
 import { Uploader } from './uploader';
+import { generateDiagramBrowser } from '../helper/diagram-generator';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 const USE_BACKEND = import.meta.env.VITE_USE_BACKEND === 'true';
 
@@ -20,6 +21,17 @@ vi.mock('lucide-react', () => ({
   Loader: () => <div data-testid="loader-icon" />,
   Download: () => <div data-testid="download-icon" />,
 }));
+
+// A spy, not a replacement: the real helper still runs. It only lets a test
+// await the promise of a generation that is already in flight.
+vi.mock('../helper/diagram-generator', async (importActual) => {
+  const actual =
+    await importActual<typeof import('../helper/diagram-generator')>();
+  return {
+    ...actual,
+    generateDiagramBrowser: vi.fn(actual.generateDiagramBrowser),
+  };
+});
 
 // The browser path runs the real helper and generator. Only external I/O is
 // stubbed: `fetch`, which serves the backend and the icon files.
@@ -64,6 +76,7 @@ function stubBackend(body: object, ok = true) {
 describe('Uploader', () => {
   beforeEach(() => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(notFound));
+    vi.mocked(generateDiagramBrowser).mockClear();
   });
 
   it('renders correctly', () => {
@@ -166,6 +179,17 @@ describe('Uploader', () => {
     });
 
     it('does not show the diagram or warnings of the previous file', async () => {
+      // the backend answers with a diagram and a warning; the browser path
+      // produces both from the real generator
+      if (USE_BACKEND) {
+        stubBackend({
+          svg: '<svg id="stale-svg">stale</svg>',
+          logs: [
+            '[2026-01-01T00:00:00.000Z] Warning: Layout engine "custom" ignores declarative layout properties: layoutOptions (gap).',
+          ],
+          duration: 0,
+        });
+      }
       const first = deferredFile(CUSTOM_ENGINE_YAML);
       render(<Uploader onBack={vi.fn()} />);
       pick(first.file);
@@ -174,13 +198,31 @@ describe('Uploader', () => {
       pick(yamlFile(PLAIN_YAML));
       await act(async () => {
         first.settle().resolve();
-        // let the stale generation finish
-        await new Promise((r) => setTimeout(r, 2000));
       });
+      // the request the first file started, awaited until it has finished
+      const started = USE_BACKEND
+        ? vi.mocked(fetch)
+        : vi.mocked(generateDiagramBrowser);
+      await waitFor(() => expect(started).toHaveBeenCalledTimes(1));
+      await act(async () => {
+        const request = USE_BACKEND
+          ? vi
+              .mocked(fetch)
+              .mock.results[0].value.then((r: Response) => r.json())
+          : vi.mocked(generateDiagramBrowser).mock.results[0].value;
+        const result = await request;
+        // it really was a successful, warning-carrying response
+        expect(result.svg).toContain('<svg');
+        expect((result.logs as string[]).join(' ')).toMatch(
+          /ignores declarative layout properties/
+        );
+      });
+      // let the component's continuation of that request run
+      await act(async () => {});
 
       expect(screen.queryByText('Generated Diagram')).not.toBeInTheDocument();
       expect(screen.queryByRole('status')).not.toBeInTheDocument();
-    }, 15000);
+    }, 30000);
   });
 
   describe('layout engine warning', () => {
