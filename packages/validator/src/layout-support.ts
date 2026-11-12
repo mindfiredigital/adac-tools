@@ -36,10 +36,11 @@ export const ELK_ONLY_ELEMENT_LAYOUT = [
   'maxItemsPerLine',
   'order',
   'position',
-  'size',
-  'minSize',
-  'maxSize',
 ] as const;
+// `size`, `minSize` and `maxSize` are deliberately absent: every engine applies
+// them to a leaf element, and the raw document cannot tell a leaf from a
+// container (only ELK applies them to containers), so listing them would warn
+// about sizing that is in fact honoured.
 
 export const ELK_ONLY_CONNECTION_LAYOUT = [
   'fromSide',

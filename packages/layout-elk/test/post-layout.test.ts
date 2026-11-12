@@ -95,6 +95,77 @@ describe('straightening links between icon nodes', () => {
   });
 });
 
+describe('straightening and a declared align', () => {
+  // a row aligned to its bottom edge: a (80px) and b (120px) joined side to
+  // side; moving one of them to line up the icons would undo the alignment
+  const row = (align?: 'end'): ElkNode => ({
+    id: 'root',
+    x: 0,
+    y: 0,
+    width: 600,
+    height: 400,
+    children: [
+      {
+        id: 'row',
+        x: 0,
+        y: 0,
+        width: 400,
+        height: 300,
+        layoutOptions: { 'elk.padding': '[top=20,left=20,bottom=20,right=20]' },
+        properties: {
+          type: 'container',
+          arrangement: {
+            mainAxis: 'horizontal',
+            align,
+            padding: { top: 20, right: 20, bottom: 20, left: 20 },
+          },
+        } as never,
+        children: [
+          {
+            id: 'a',
+            x: 20,
+            y: 20,
+            width: 52,
+            height: 80,
+            properties: { type: 'service' },
+          },
+          {
+            id: 'b',
+            x: 200,
+            y: 20,
+            width: 52,
+            height: 120,
+            properties: { type: 'service' },
+          },
+        ],
+        edges: [
+          {
+            id: 'e',
+            sources: ['a'],
+            targets: ['b'],
+            container: 'row',
+            sections: [
+              {
+                id: 's',
+                startPoint: { x: 72, y: 50 },
+                endPoint: { x: 200, y: 50 },
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  });
+  const bottoms = (g: ElkNode) =>
+    g.children![0].children!.map((n) => n.y! + n.height!);
+
+  it('keeps the bottoms aligned for align: end', () => {
+    const g = row('end');
+    applyLayoutPostProcessing(g);
+    expect(bottoms(g)).toEqual([140, 140]);
+  });
+});
+
 describe('re-attaching edge ends to the icon', () => {
   // ELK leaves a collinear point at the end of each run; moving only the end
   // and the corner beside it used to leave a diagonal segment behind

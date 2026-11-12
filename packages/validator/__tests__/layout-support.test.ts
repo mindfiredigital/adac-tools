@@ -36,6 +36,19 @@ function config(overrides: Json = {}, serviceVisual?: Json): Json {
 const warningsOf = (cfg: Json, engine?: 'elk' | 'custom') =>
   validateAdacConfig(cfg, engine ? { engine } : {}).warnings ?? [];
 
+const withBidirectional = (value: unknown) =>
+  config({
+    connections: [
+      {
+        id: 'c1',
+        from: 'vpc',
+        to: 'db',
+        type: 'api-call',
+        bidirectional: value,
+      },
+    ],
+  });
+
 describe('collectDeclaredLayoutProperties', () => {
   it('lists the ELK-only properties written in each group', () => {
     const declared = collectDeclaredLayoutProperties(
@@ -52,12 +65,12 @@ describe('collectDeclaredLayoutProperties', () => {
             },
           ],
         },
-        { layout: { align: 'center', size: { width: 2 } } }
+        { layout: { align: 'center', order: 1 } }
       )
     );
     expect(declared).toEqual({
       layoutOptions: ['direction', 'gap'],
-      elementLayout: ['align', 'size'],
+      elementLayout: ['align', 'order'],
       connectionLayout: ['fromSide'],
     });
   });
@@ -87,39 +100,37 @@ describe('collectDeclaredLayoutProperties', () => {
     });
   });
 
+  it('ignores size, minSize and maxSize, which every engine applies to leaves', () => {
+    const declared = collectDeclaredLayoutProperties(
+      config(
+        {},
+        {
+          layout: {
+            size: { width: 2 },
+            minSize: { width: 1 },
+            maxSize: { width: 3 },
+          },
+        }
+      )
+    );
+    expect(declared.elementLayout).toEqual([]);
+  });
+
   it('tolerates a malformed document', () => {
     expect(() => collectDeclaredLayoutProperties(null)).not.toThrow();
     expect(() =>
       collectDeclaredLayoutProperties({ layoutOptions: 'x', connections: 3 })
     ).not.toThrow();
   });
-});
 
-describe('bidirectional', () => {
-  const withBidirectional = (value: unknown) =>
-    config({
-      connections: [
-        {
-          id: 'c1',
-          from: 'vpc',
-          to: 'db',
-          type: 'api-call',
-          bidirectional: value,
-        },
-      ],
-    });
-
-  it('counts an enabled flag as ELK-only', () => {
+  it('counts an enabled bidirectional flag as ELK-only', () => {
     const declared = collectDeclaredLayoutProperties(withBidirectional(true));
     expect(declared.connectionLayout).toEqual(['bidirectional']);
   });
 
-  it('ignores false, the default, which every engine already shows', () => {
+  it('ignores bidirectional: false, the default every engine already shows', () => {
     const declared = collectDeclaredLayoutProperties(withBidirectional(false));
     expect(declared.connectionLayout).toEqual([]);
-    expect(
-      unsupportedLayoutEngineWarning(withBidirectional(false), 'custom')
-    ).toBeUndefined();
   });
 });
 
@@ -161,6 +172,18 @@ describe('unsupportedLayoutEngineWarning', () => {
 
   it('is silent when nothing declarative is written', () => {
     expect(unsupportedLayoutEngineWarning(config(), 'tsm')).toBeUndefined();
+  });
+
+  it('is silent for bidirectional: false on a non-elk engine', () => {
+    expect(
+      unsupportedLayoutEngineWarning(withBidirectional(false), 'custom')
+    ).toBeUndefined();
+  });
+
+  it('warns about an enabled bidirectional flag on a non-elk engine', () => {
+    expect(
+      unsupportedLayoutEngineWarning(withBidirectional(true), 'custom')
+    ).toContain('connection layout (bidirectional)');
   });
 
   it('is silent for properties that work on every engine', () => {

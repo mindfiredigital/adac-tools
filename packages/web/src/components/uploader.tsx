@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { Upload, FileText, ArrowRight, Loader } from 'lucide-react';
 import { generateDiagramBrowser } from '../helper/diagram-generator';
 import type { GenerationResult } from '@mindfiredigital/adac-core';
@@ -20,10 +20,15 @@ export const Uploader = ({ onBack }: UploaderProps) => {
   const [svgContent, setSvgContent] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [warnings, setWarnings] = useState<string[]>([]);
+  // identity of the request whose result may still be shown; picking another
+  // file invalidates it, so a slow earlier generation cannot overwrite the new one
+  const activeRequest = useRef(0);
 
   const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
+      activeRequest.current += 1;
       setFile(e.target.files[0]);
+      setLoading(false);
       setError(null);
       setWarnings([]);
       setSvgContent(null);
@@ -32,6 +37,9 @@ export const Uploader = ({ onBack }: UploaderProps) => {
 
   const handleGenerate = async () => {
     if (!file) return;
+
+    const request = ++activeRequest.current;
+    const isCurrent = () => request === activeRequest.current;
 
     setLoading(true);
     setError(null);
@@ -60,13 +68,15 @@ export const Uploader = ({ onBack }: UploaderProps) => {
       } else {
         results = await generateDiagramBrowser(text);
       }
+      if (!isCurrent()) return;
       setSvgContent(results.svg);
       setWarnings(layoutEngineWarnings(results.logs));
     } catch (e: unknown) {
+      if (!isCurrent()) return;
       const message = e instanceof Error ? e.message : 'Unknown error';
       setError(message);
     } finally {
-      setLoading(false);
+      if (isCurrent()) setLoading(false);
     }
   };
 

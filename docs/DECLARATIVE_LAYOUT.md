@@ -217,12 +217,13 @@ apply.
 
 ## Engine support
 
-| Property                                                                                                                                                         | `elk` | `custom` / `orthogonal` / `tsm` |
-| ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | :---: | :-----------------------------: |
-| `layoutOptions`: `direction`, `gap`, `containerPadding`, `align`, `justify`, `edgeSpacing`, `edgeRouting` (and deprecated `routing`)                             |  yes  |               no                |
-| `visual.layout`: `direction`, `gap`, `padding`, `align`, `justify`, `wrap`, `itemsPerLine`, `maxItemsPerLine`, `order`, `position`, `size`, `minSize`, `maxSize` |  yes  |               no                |
-| `connections[].layout`: `fromSide`, `toSide`, `routing`; `bidirectional`                                                                                         |  yes  |               no                |
-| `layoutOptions`: `unitSize`, `background`, `edgeLabels`, `labelMaxChars`                                                                                         |  yes  |               yes               |
+| Property                                                                                                                             | `elk` | `custom` / `orthogonal` / `tsm` |
+| ------------------------------------------------------------------------------------------------------------------------------------ | :---: | :-----------------------------: |
+| `layoutOptions`: `direction`, `gap`, `containerPadding`, `align`, `justify`, `edgeSpacing`, `edgeRouting` (and deprecated `routing`) |  yes  |               no                |
+| `visual.layout`: `direction`, `gap`, `padding`, `align`, `justify`, `wrap`, `itemsPerLine`, `maxItemsPerLine`, `order`, `position`   |  yes  |               no                |
+| `connections[].layout`: `fromSide`, `toSide`, `routing`; `bidirectional`                                                             |  yes  |               no                |
+| `visual.layout`: `size`, `minSize`, `maxSize` (on leaf elements; containers are sized by `elk` only, silently)                       |  yes  |               yes               |
+| `layoutOptions`: `unitSize`, `background`, `edgeLabels`, `labelMaxChars`                                                             |  yes  |               yes               |
 
 When a file **declares** any property marked "no" and the engine in effect is not
 `elk` (`--layout`, then `layoutOptions.engine`, then the top-level `layout`), the
@@ -231,7 +232,7 @@ groups, for example:
 
 ```
 Warning: Layout engine "custom" ignores declarative layout properties:
-layoutOptions (direction, gap); visual.layout (align, size). The diagram will
+layoutOptions (direction, gap); visual.layout (align, order). The diagram will
 not follow the declared arrangement. Use --layout elk or set
 layoutOptions.engine: elk.
 ```

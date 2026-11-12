@@ -12,7 +12,7 @@ export const WarningBanner = ({ messages, onClose }: WarningBannerProps) => {
 
   return (
     <div
-      role="alert"
+      role="status"
       className="fixed bottom-4 right-4 z-50 max-w-md flex items-start gap-3 rounded-lg border border-gray-600 bg-black/95 p-4 text-sm text-gray-300 shadow-2xl"
     >
       <span aria-hidden="true" className="text-lg leading-none text-gray-400">

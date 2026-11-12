@@ -743,6 +743,25 @@ describe('ADAC CLI - Branch Coverage', () => {
     }
   );
 
+  it('documents the full engine fallback order in diagram --help', async () => {
+    const stdout = vi.spyOn(process.stdout, 'write').mockReturnValue(true);
+    const options = {
+      generateDiagram: vi.fn().mockResolvedValue(undefined),
+      parseAdac: vi.fn().mockReturnValue({}),
+      validateAdacCostConfig: vi.fn().mockReturnValue({ valid: true }),
+      version: '1.0.0',
+    };
+
+    process.argv = ['node', 'adac', 'diagram', '--help'];
+    await runCLI(options);
+
+    const help = stdout.mock.calls.map((c) => String(c[0])).join('');
+    stdout.mockRestore();
+    expect(help).toMatch(
+      /layoutOptions\.engine,\s+then\s+the\s+top-level\s+layout,\s+then\s+elk/
+    );
+  });
+
   it('should exit with code 1 for an unsupported --layout value', async () => {
     const generateDiagram = vi.fn().mockResolvedValue(undefined);
     const options = {

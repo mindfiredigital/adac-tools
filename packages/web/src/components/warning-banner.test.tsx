@@ -3,9 +3,9 @@ import { describe, it, expect, vi } from 'vitest';
 import { WarningBanner } from './warning-banner';
 
 describe('WarningBanner', () => {
-  it('shows each message in an alert', () => {
+  it('shows each message in a status banner', () => {
     render(<WarningBanner messages={['first', 'second']} onClose={vi.fn()} />);
-    expect(screen.getByRole('alert')).toBeInTheDocument();
+    expect(screen.getByRole('status')).toBeInTheDocument();
     expect(screen.getByText('Layout warning')).toBeInTheDocument();
     expect(screen.getByText('first')).toBeInTheDocument();
     expect(screen.getByText('second')).toBeInTheDocument();
@@ -13,7 +13,7 @@ describe('WarningBanner', () => {
 
   it('is pinned to the bottom-right corner', () => {
     render(<WarningBanner messages={['x']} onClose={vi.fn()} />);
-    const banner = screen.getByRole('alert');
+    const banner = screen.getByRole('status');
     expect(banner).toHaveClass('fixed', 'bottom-4', 'right-4');
   });
 

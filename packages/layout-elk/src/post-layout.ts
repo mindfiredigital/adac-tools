@@ -798,6 +798,9 @@ function straightenLeafLinks(
     if (straightened.has(e.poly)) continue;
     const me = info.get(e.nodeId);
     if (!me?.parent || !isIconNode(me.node)) continue;
+    // an explicit align places the item on the cross axis; moving it to meet
+    // its partner would undo that
+    if (me.parent.properties?.arrangement?.align) continue;
     if (e.side !== 'W' && e.side !== 'E') continue;
     if (perNode.get(e.nodeId) !== 1) continue;
     const other = ends.find((o) => o.poly === e.poly && o !== e);
