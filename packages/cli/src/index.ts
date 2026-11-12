@@ -79,6 +79,7 @@ export type CLIOptions = {
   validateAdacCostConfig: (config: unknown) => {
     valid: boolean;
     errors?: string[];
+    warnings?: string[];
   };
   /** CLI version string displayed by Commander. */
   version: string;
@@ -133,7 +134,23 @@ export function runCLI(options: CLIOptions) {
     .description('Generate diagram from ADAC YAML file')
     .option(
       '-l, --layout <type>',
-      'Layout engine (elk, custom, orthogonal, or tsm)'
+      'Layout engine (elk, custom, orthogonal, or tsm); when omitted, uses layoutOptions.engine, then the top-level layout, then elk'
+    )
+    .addHelpText(
+      'after',
+      `
+Declarative layout support by engine:
+  Property group                                             elk  custom  orthogonal  tsm
+  layoutOptions: direction, gap, containerPadding, align,
+    justify, edgeSpacing, edgeRouting                        yes  no      no          no
+  visual.layout: direction, gap, padding, align, justify,
+    wrap, itemsPerLine, maxItemsPerLine, order, position     yes  no      no          no
+  connection: layout (fromSide, toSide, routing),
+    bidirectional                                            yes  no      no          no
+  visual.layout: size, minSize, maxSize (leaf elements)      yes  yes     yes         yes
+  background, edgeLabels, labelMaxChars, unitSize            yes  yes     yes         yes
+A file that declares an "elk"-only property but uses another engine gets one
+warning; use --layout elk or layoutOptions.engine: elk to apply it.`
     )
     .option('-o, --output <path>', 'Output SVG file path')
     .option('--validate', 'Validate schema before generating')
@@ -270,6 +287,8 @@ export function runCLI(options: CLIOptions) {
 
         const config = options.parseAdac(inputPath, { validate: false });
         const result = options.validateAdacCostConfig(config);
+
+        result.warnings?.forEach((w) => console.warn(`Warning: ${w}`));
 
         if (result.valid) {
           console.log('✅ Validation passed.');

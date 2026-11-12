@@ -73,7 +73,7 @@
     "body": [
       "- id: '${1:app-id}'",
       "  name: '${2:App Name}'",
-      "  type: ${3|frontend,backend,api,database,cache,queue,worker,batch-job,mobile,desktop,iot,ml-model,data-pipeline,microservice|}",
+      "  type: ${3|frontend,backend,api,database,cache,queue,worker,batch-job,mobile,desktop,iot,ml-model,data-pipeline,microservice,user|}",
       "  technology: '${4:Technology}'",
       "  owner: '${5:Team Name}'"
     ]

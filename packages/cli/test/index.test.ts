@@ -64,6 +64,36 @@ describe('ADAC CLI', () => {
     process.argv = originalArgv;
     (process as unknown as { exit: typeof process.exit }).exit = originalExit;
   });
+
+  it('should print validation warnings and still pass', async () => {
+    const originalArgv = process.argv;
+    const originalExit = process.exit;
+    process.argv = ['node', 'adac', 'validate', 'test.yaml'];
+    const mockExit = vi.fn();
+    (process as unknown as { exit: typeof process.exit }).exit =
+      mockExit as unknown as typeof process.exit;
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+    mockOptions.validateAdacCostConfig.mockReturnValueOnce({
+      valid: true,
+      warnings: [
+        'Layout engine "custom" ignores declarative layout properties',
+      ],
+    });
+
+    await runCLI(mockOptions);
+
+    expect(warnSpy).toHaveBeenCalledTimes(1);
+    expect(warnSpy).toHaveBeenCalledWith(
+      'Warning: Layout engine "custom" ignores declarative layout properties'
+    );
+    expect(mockExit).toHaveBeenCalledWith(0);
+    warnSpy.mockRestore();
+    logSpy.mockRestore();
+    process.argv = originalArgv;
+    (process as unknown as { exit: typeof process.exit }).exit = originalExit;
+  });
 });
 
 describe('ADAC CLI - cost command', () => {
@@ -712,6 +742,25 @@ describe('ADAC CLI - Branch Coverage', () => {
       expect(mockExit).not.toHaveBeenCalled();
     }
   );
+
+  it('documents the full engine fallback order in diagram --help', async () => {
+    const stdout = vi.spyOn(process.stdout, 'write').mockReturnValue(true);
+    const options = {
+      generateDiagram: vi.fn().mockResolvedValue(undefined),
+      parseAdac: vi.fn().mockReturnValue({}),
+      validateAdacCostConfig: vi.fn().mockReturnValue({ valid: true }),
+      version: '1.0.0',
+    };
+
+    process.argv = ['node', 'adac', 'diagram', '--help'];
+    await runCLI(options);
+
+    const help = stdout.mock.calls.map((c) => String(c[0])).join('');
+    stdout.mockRestore();
+    expect(help).toMatch(
+      /layoutOptions\.engine,\s+then\s+the\s+top-level\s+layout,\s+then\s+elk/
+    );
+  });
 
   it('should exit with code 1 for an unsupported --layout value', async () => {
     const generateDiagram = vi.fn().mockResolvedValue(undefined);
