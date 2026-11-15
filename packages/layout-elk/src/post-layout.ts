@@ -810,7 +810,11 @@ function straightenLeafLinks(
     // an explicit align places the item on the cross axis, and a justify on a
     // vertical stack spaces the items along y; moving the item to meet its
     // partner would undo either
-    const arrangement = arrangedAncestor(me.parent)?.properties?.arrangement;
+    // (the root's own arrangement comes from the global defaults, and its
+    // top-level items are meant to meet their partners)
+    const owner = arrangedAncestor(me.parent);
+    const arrangement =
+      owner && owner !== root ? owner.properties?.arrangement : undefined;
     if (arrangement?.align) continue;
     if (
       arrangement?.mainAxis === 'vertical' &&
