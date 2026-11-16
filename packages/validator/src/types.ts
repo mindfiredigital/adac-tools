@@ -32,6 +32,8 @@ export interface AdacSize {
 /** Root-level layout defaults (`layoutOptions`). */
 export interface AdacLayoutOptions {
   engine?: 'elk' | 'custom' | 'orthogonal' | 'tsm';
+  /** Default profile for undeclared options on elk; `v1` when omitted. */
+  defaults?: 'v1' | 'none';
   unitSize?: number;
   /** @deprecated use `unitSize` */
   unit?: number;

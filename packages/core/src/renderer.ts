@@ -4300,6 +4300,9 @@ export async function renderSvg(
   // patch, so the line looks cut at the text instead of striking through it.
   const captionOverlays: string[] = [];
   const captionPatches: LabelBox[] = [];
+  // Drawn content that sits outside a node's own box (captions wider than an
+  // icon-wide node, container icons); the legend must keep clear of it.
+  const legendKeepOut: LabelBox[] = [];
   const edgeSegments: LabelBox[] = [];
   allEdges.forEach((e) =>
     (e.sections || []).forEach((sec) => {
@@ -4756,6 +4759,12 @@ export async function renderSvg(
       if (props.iconPath) {
         const iconUri = await getIconDataUri({ path: props.iconPath });
         if (iconUri) {
+          legendKeepOut.push({
+            x: containerX + containerW - 28,
+            y: containerY + 6,
+            w: 20,
+            h: 20,
+          });
           output += `<image
             href="${iconUri}"
             x="${containerX + containerW - 28}" y="${containerY + 6}"
@@ -4943,6 +4952,7 @@ export async function renderSvg(
       }
 
       const captionBox = captionBoxAt(line1Y);
+      legendKeepOut.push(captionBox);
       if (crossed) {
         captionPatches.push(captionBox);
         captionOverlays.push(
@@ -5045,8 +5055,6 @@ export async function renderSvg(
       <path d="M0,1.5 L8.5,5 L0,8.5 Z"
         fill="#8FA3BF" stroke="none"/>
     </marker>`;
-  const rootRect = `<rect width="${width}" height="${height}" class="${provider}-root" />
-                    <rect width="${width}" height="${height}" fill="url(#dotGrid)" pointer-events="none" />`;
 
   const nodesOutput = (
     await Promise.all((layout.children ?? []).map((n) => renderNode(n)))
@@ -5092,22 +5100,82 @@ export async function renderSvg(
     .join('');
 
   // ── Legend ──
+  const LEGEND_W = 160;
+  const LEGEND_H = 80;
+  // Extra canvas height the legend needs when nothing inside the diagram is
+  // clear (set by renderLegend, read when the canvas size is written).
+  let legendExtraHeight = 0;
+  let legendExtraWidth = 0;
+
+  // Where to put the legend on elk/custom. Container backgrounds are a pale
+  // translucent wash, so a legend sitting inside a container is harmless; what
+  // it must not cover is a node, a container's border or title, or an edge.
+  // The outermost containers (AWS, VPC) span nearly the whole canvas, so
+  // treating them as solid obstacles left no free spot at all.
+  const placeLegendClear = (): { x: number; y: number } => {
+    const GAP = 6; // breathing room around anything the legend must not touch
+    const BORDER = 4; // thickness of a container's border strip
+    type Rect = { x: number; y: number; right: number; bottom: number };
+    const obstacles: Rect[] = [];
+    const add = (x: number, y: number, w: number, h: number) =>
+      obstacles.push({ x, y, right: x + w, bottom: y + h });
+
+    for (const box of allNodeBoxes) {
+      if (!box.isContainer) {
+        add(box.x, box.y, box.right - box.x, box.bottom - box.y);
+        continue;
+      }
+      const w = box.right - box.x;
+      const h = box.bottom - box.y;
+      // the four sides of the frame, not its interior
+      add(box.x - BORDER, box.y - BORDER, w + 2 * BORDER, 2 * BORDER);
+      add(box.x - BORDER, box.bottom - BORDER, w + 2 * BORDER, 2 * BORDER);
+      add(box.x - BORDER, box.y - BORDER, 2 * BORDER, h + 2 * BORDER);
+      add(box.right - BORDER, box.y - BORDER, 2 * BORDER, h + 2 * BORDER);
+      // the title pill that sits on the top edge
+      const node = nodesMap.get(box.id);
+      const { actualLabelW } = calculateLabelDimensions(
+        node?.labels?.[0]?.text || '',
+        w
+      );
+      add(box.x + 16, box.y - 14, actualLabelW, 28);
+    }
+    // edges as drawn (per-edge routing overrides included), with their labels
+    for (const s of edgeSegments) add(s.x - 2, s.y - 2, s.w + 4, s.h + 4);
+    for (const b of placedEdgeLabels) add(b.x, b.y, b.w, b.h);
+    for (const b of placedLabels) add(b.l, b.t, b.r - b.l, b.b - b.t);
+    for (const b of legendKeepOut) add(b.x, b.y, b.w, b.h);
+
+    const isClear = (x: number, y: number) =>
+      !obstacles.some(
+        (o) =>
+          y - GAP < o.bottom &&
+          y + LEGEND_H + GAP > o.y &&
+          x - GAP < o.right &&
+          x + LEGEND_W + GAP > o.x
+      );
+
+    const maxX = width - LEGEND_W - 20;
+    const maxY = height - LEGEND_H - 20;
+    // Bottom-right first, then sweep up and left, so the legend stays in the
+    // corner whenever the corner is free. A canvas smaller than the legend
+    // has no inside spot at all.
+    for (let y = maxY; y >= 20; y -= 20) {
+      for (let x = maxX; x >= 20; x -= 20) {
+        if (isClear(x, y)) return { x, y };
+      }
+    }
+    // Nothing inside the diagram is clear: grow the canvas and put the legend
+    // underneath, rather than drawing it over the diagram.
+    legendExtraHeight = LEGEND_H + 40;
+    legendExtraWidth = Math.max(0, LEGEND_W + 40 - width);
+    return { x: Math.max(20, maxX), y: height + 20 };
+  };
+
   const renderLegend = () => {
-    const LEGEND_W = 160;
-    const LEGEND_H = 80;
-    // Legend bounds check: push left if there's a container collision.
-    // For orthogonal, only leaf node cards count as a collision — container
-    // backgrounds are a pale translucent wash (see `.aws-container { fill:
-    // none }` plus a light per-type tint), not solid content, so the legend
-    // sitting on top of one is harmless. Treating them as obstacles was
-    // pushing the legend away from its default bottom-right corner (which
-    // sits inside the outermost wrapper container that spans nearly the
-    // whole canvas) all the way up next to whatever small node happens to
-    // be at the top — usually the diagram's own entry point. custom/elk
-    // keep the original behavior.
-    const legendObstacles = isOrthogonalLayout
-      ? allNodeBoxes.filter((box) => !box.isContainer)
-      : allNodeBoxes;
+    // Orthogonal/tsm: only leaf node cards count as a collision (see
+    // placeLegendClear for why containers do not); that path is unchanged.
+    const legendObstacles = allNodeBoxes.filter((box) => !box.isContainer);
     let LX = width - LEGEND_W - 20;
     let LY = height - LEGEND_H - 20;
     const legendOverlaps = (box: (typeof allNodeBoxes)[number]) =>
@@ -5116,56 +5184,46 @@ export async function renderSvg(
       LX < box.right &&
       LX + LEGEND_W > box.x;
 
-    for (const box of legendObstacles) {
-      if (legendOverlaps(box)) {
-        LX = box.x - LEGEND_W - 20; // push outside container
+    if (!isOrthogonalLayout) {
+      const spot = placeLegendClear();
+      LX = spot.x;
+      LY = spot.y;
+    } else {
+      for (const box of legendObstacles) {
+        if (legendOverlaps(box)) {
+          LX = box.x - LEGEND_W - 20; // push outside container
+        }
       }
-    }
-    // Clamp legend to visible area — never render at negative coords
-    if (LX < 20) LX = 20;
-    // If clamped position still overlaps, try above the blocking box, then top-left.
-    const blockingBox = legendObstacles.find((box) => legendOverlaps(box));
-    if (blockingBox) {
-      LY = Math.max(20, blockingBox.y - LEGEND_H - 20);
-      if (legendObstacles.some((box) => legendOverlaps(box))) {
-        LY = 20;
+      // Clamp legend to visible area — never render at negative coords
+      if (LX < 20) LX = 20;
+      // If clamped position still overlaps, try above the blocking box, then top-left.
+      const blockingBox = legendObstacles.find((box) => legendOverlaps(box));
+      if (blockingBox) {
+        LY = Math.max(20, blockingBox.y - LEGEND_H - 20);
+        if (legendObstacles.some((box) => legendOverlaps(box))) {
+          LY = 20;
+        }
       }
-    }
-    const maxLegendY = Math.max(20, height - LEGEND_H - 20);
-    const candidatePositions = isOrthogonalLayout
-      ? // Prefer bottom-left outright, then scan upward only as far as
-        // needed to clear a leaf node — the opposite order from custom/elk
-        // below, which scan from the top and so tend to settle near the
-        // diagram's entry point instead of the bottom corner.
-        [
-          { x: 20, y: maxLegendY },
-          { x: LX, y: LY },
-        ]
-      : [
-          { x: LX, y: LY },
-          { x: 20, y: LY },
-          { x: width - LEGEND_W - 20, y: 20 },
-          { x: 20, y: 20 },
-        ];
-    if (isOrthogonalLayout) {
+      const maxLegendY = Math.max(20, height - LEGEND_H - 20);
+      // Prefer bottom-left outright, then scan upward only as far as needed
+      // to clear a leaf node.
+      const candidatePositions = [
+        { x: 20, y: maxLegendY },
+        { x: LX, y: LY },
+      ];
       for (let y = maxLegendY; y >= 20; y -= 20) {
         candidatePositions.push({ x: 20, y });
         candidatePositions.push({ x: width - LEGEND_W - 20, y });
       }
-    } else {
-      for (let y = 20; y <= maxLegendY; y += 20) {
-        candidatePositions.push({ x: 20, y });
-        candidatePositions.push({ x: width - LEGEND_W - 20, y });
+      const clearPosition = candidatePositions.find((candidate) => {
+        LX = Math.max(20, Math.min(candidate.x, width - LEGEND_W - 20));
+        LY = Math.max(20, Math.min(candidate.y, maxLegendY));
+        return !legendObstacles.some((box) => legendOverlaps(box));
+      });
+      if (clearPosition) {
+        LX = Math.max(20, Math.min(clearPosition.x, width - LEGEND_W - 20));
+        LY = Math.max(20, Math.min(clearPosition.y, maxLegendY));
       }
-    }
-    const clearPosition = candidatePositions.find((candidate) => {
-      LX = Math.max(20, Math.min(candidate.x, width - LEGEND_W - 20));
-      LY = Math.max(20, Math.min(candidate.y, maxLegendY));
-      return !legendObstacles.some((box) => legendOverlaps(box));
-    });
-    if (clearPosition) {
-      LX = Math.max(20, Math.min(clearPosition.x, width - LEGEND_W - 20));
-      LY = Math.max(20, Math.min(clearPosition.y, maxLegendY));
     }
     const edgeColor =
       provider === 'gcp'
@@ -5188,9 +5246,14 @@ export async function renderSvg(
     return `<g id="legend">${legendContent}</g>`;
   };
   const legendOutput = renderLegend();
+  // the canvas grows only when the legend had no clear spot inside it
+  const canvasHeight = height + legendExtraHeight;
+  const canvasWidth = width + legendExtraWidth;
+  const rootRect = `<rect width="${canvasWidth}" height="${canvasHeight}" class="${provider}-root" />
+                    <rect width="${canvasWidth}" height="${canvasHeight}" fill="url(#dotGrid)" pointer-events="none" />`;
 
   return `<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg" data-layout="${escapeXml(layoutEngine)}" style="width: 100%; height: auto; max-width: 100%; background-color: #EEF2F7;">
+<svg width="${canvasWidth}" height="${canvasHeight}" viewBox="0 0 ${canvasWidth} ${canvasHeight}" xmlns="http://www.w3.org/2000/svg" data-layout="${escapeXml(layoutEngine)}" style="width: 100%; height: auto; max-width: 100%; background-color: #EEF2F7;">
   <defs>
     <style>${CSS_STYLES}</style>
 

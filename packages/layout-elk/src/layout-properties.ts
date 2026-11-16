@@ -109,12 +109,92 @@ export function resolveSize(
 
 // ── Global options ──────────────────────────────────────────────────────────
 
+/**
+ * The `layoutOptions` properties a default profile may fill in. Everything
+ * else is either already defaulted (`unitSize`, `background`, `edgeLabels`)
+ * or must stay an explicit author decision (see docs/DECLARATIVE_LAYOUT.md).
+ */
+export const DEFAULTABLE_OPTIONS = [
+  'direction',
+  'gap',
+  'containerPadding',
+  'align',
+  'justify',
+  'edgeSpacing',
+  'edgeRouting',
+] as const;
+export type DefaultableOption = (typeof DEFAULTABLE_OPTIONS)[number];
+
+/** Where a resolved option came from. Absent: neither declared nor defaulted. */
+export type OptionSource = 'declared' | 'default';
+export type OptionProvenance = Partial<Record<DefaultableOption, OptionSource>>;
+
+/** A default profile: values for undeclared `layoutOptions`, in logical units. */
+export type LayoutDefaults = Partial<
+  Pick<AdacLayoutOptions, DefaultableOption>
+>;
+
+/**
+ * Named default profiles for undeclared `layoutOptions` (elk only). Chosen by
+ * trial over the sample corpus; see docs/DECLARATIVE_LAYOUT.md ("Defaults").
+ *
+ * Deliberately absent: `gap`, `edgeSpacing`, `align`, `justify` and
+ * `edgeRouting` (mixed or harmful), and everything structural (`order`,
+ * `position`, `wrap`, `itemsPerLine`, sizes, connection `layout`), which would
+ * invent placement.
+ */
+export const LAYOUT_DEFAULT_PROFILES: Record<
+  NonNullable<AdacLayoutOptions['defaults']>,
+  LayoutDefaults
+> = {
+  none: {},
+  v1: {
+    direction: 'LR',
+    // same 60px title band as the builder, slightly tighter sides
+    containerPadding: { top: 0.6, right: 0.3, bottom: 0.3, left: 0.3 },
+  },
+};
+
+/**
+ * The profile for a build: the file's own `layoutOptions.defaults` first, then
+ * a caller override, then `v1`. An unknown name (the document was not
+ * validated) warns and falls back to `v1` rather than silently dropping the
+ * defaults.
+ */
+export function resolveLayoutDefaults(
+  declared: unknown,
+  override?: LayoutDefaults,
+  warn: Warn = () => {}
+): LayoutDefaults {
+  if (declared !== undefined) {
+    if (
+      typeof declared === 'string' &&
+      Object.prototype.hasOwnProperty.call(LAYOUT_DEFAULT_PROFILES, declared)
+    ) {
+      return LAYOUT_DEFAULT_PROFILES[
+        declared as keyof typeof LAYOUT_DEFAULT_PROFILES
+      ];
+    }
+    warn(
+      `layoutOptions.defaults "${String(declared)}" is not a known profile ` +
+        `(${Object.keys(LAYOUT_DEFAULT_PROFILES).join(', ')}); using v1`
+    );
+    return LAYOUT_DEFAULT_PROFILES.v1;
+  }
+  return override ?? LAYOUT_DEFAULT_PROFILES.v1;
+}
+
 export interface NormalizedLayoutOptions {
   engine?: 'elk' | 'custom' | 'orthogonal' | 'tsm';
   unitSize: number;
+  /** Always set (`LR` unless overridden); see `provenance.direction` for its source. */
   direction: AdacLayoutDirection;
-  /** True when the author set `direction` rather than relying on the default. */
-  directionDeclared: boolean;
+  /**
+   * Per property: `declared` (the author wrote it) or `default` (filled in
+   * from the default profile). A property in neither state is absent here and
+   * the engine's own behaviour applies. Explicit values always win.
+   */
+  provenance: OptionProvenance;
   gap?: PartialGap;
   containerPadding?: PartialBox;
   align?: AdacLayoutAlign;
@@ -130,14 +210,58 @@ export interface NormalizedLayoutOptions {
 }
 
 /**
+ * Fills undeclared defaultable options from a profile and records where each
+ * came from. The parsed document is never modified; the validator and the
+ * non-ELK warning keep seeing only what the author wrote. `routing` counts as
+ * a declared `edgeRouting`.
+ */
+export function applyLayoutDefaults(
+  declared: AdacLayoutOptions,
+  defaults: LayoutDefaults = {}
+): { merged: AdacLayoutOptions; provenance: OptionProvenance } {
+  const merged: AdacLayoutOptions = { ...declared };
+  const provenance: OptionProvenance = {};
+  const mergedRecord = merged as Record<string, unknown>;
+  for (const key of DEFAULTABLE_OPTIONS) {
+    const own =
+      key === 'edgeRouting'
+        ? (declared.edgeRouting ?? declared.routing)
+        : declared[key];
+    if (own !== undefined) {
+      provenance[key] = 'declared';
+    } else if (defaults[key] !== undefined) {
+      mergedRecord[key] = defaults[key];
+      provenance[key] = 'default';
+    }
+  }
+  return { merged, provenance };
+}
+
+/** The defaulted options, for the once-per-generation log line. */
+export function describeAppliedDefaults(
+  provenance: OptionProvenance,
+  defaults: LayoutDefaults | undefined
+): string | undefined {
+  const applied = DEFAULTABLE_OPTIONS.filter(
+    (key) => provenance[key] === 'default'
+  );
+  if (applied.length === 0 || !defaults) return undefined;
+  return applied
+    .map((key) => `${key}=${JSON.stringify(defaults[key])}`)
+    .join(', ');
+}
+
+/**
  * Applies the deprecated aliases (`unit` → `unitSize`, `routing` →
  * `edgeRouting`), emitting a warning when they are used.
  */
 export function normalizeLayoutOptions(
   options: AdacLayoutOptions | undefined,
-  warn: Warn = () => {}
+  warn: Warn = () => {},
+  defaults?: LayoutDefaults
 ): NormalizedLayoutOptions {
-  const o = options ?? {};
+  const declared = options ?? {};
+  const { merged: o, provenance } = applyLayoutDefaults(declared, defaults);
 
   if (o.unit !== undefined) {
     warn('layoutOptions.unit is deprecated; use layoutOptions.unitSize');
@@ -153,7 +277,7 @@ export function normalizeLayoutOptions(
     engine: o.engine,
     unitSize,
     direction: o.direction ?? 'LR',
-    directionDeclared: o.direction !== undefined,
+    provenance,
     gap: resolveGap(o.gap, unitSize),
     containerPadding: resolvePadding(o.containerPadding, unitSize),
     align: o.align,
