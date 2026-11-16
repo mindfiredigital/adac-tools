@@ -48,6 +48,15 @@ describe('Adac Validator', () => {
     expect(validateAdacConfig(validConfig)).toEqual({ valid: true });
   });
 
+  it('accepts the external "user" application type and rejects unknown ones', () => {
+    const withType = (type: string) => ({
+      ...validConfig,
+      applications: [{ id: 'users', name: 'Users', type }],
+    });
+    expect(validateAdacConfig(withType('user')).valid).toBe(true);
+    expect(validateAdacConfig(withType('not-a-type')).valid).toBe(false);
+  });
+
   it('should return validation errors for invalid ADAC config', () => {
     const result = validateAdacConfig(invalidConfig);
 

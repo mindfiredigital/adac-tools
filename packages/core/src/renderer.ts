@@ -1,5 +1,11 @@
 import ELK from 'elkjs';
-import { type ElkNode, type ElkEdge } from '@mindfiredigital/adac-layout-elk';
+import {
+  type ElkNode,
+  type ElkEdge,
+  LAYOUT_LINE_TYPE,
+  applyLayoutPostProcessing,
+  isLayoutOnlyEdge,
+} from '@mindfiredigital/adac-layout-elk';
 import {
   CustomLayoutEngine,
   OrthogonalLayoutEngine,
@@ -298,6 +304,16 @@ const CSS_STYLES = `
     stroke-width: 1px;
     filter: url(#nodeShadow);
   }
+  /* No card behind the icon unless background is enabled (global or per element) */
+  .node-card-plain {
+    fill:           transparent;
+    stroke:         none;
+    filter:         none;
+    pointer-events: all;
+  }
+  .node-icon-bg-plain {
+    fill: transparent;
+  }
   .node-icon-bg {
     fill:   #F7FAFC;
     stroke: none;
@@ -368,6 +384,312 @@ const CSS_STYLES = `
       font-family: Arial, sans-serif;
   }
 `;
+
+type ElkSection = NonNullable<ElkEdge['sections']>[number];
+
+/**
+ * The declarative layout adds ports, layout-only edges, invisible line groups
+ * and withheld ("deferred") edges that only the ELK path understands. The other
+ * engines get the plain hierarchy instead.
+ */
+function flattenLayoutArtifacts(root: ElkNode): ElkNode {
+  const portOwner = new Map<string, string>();
+  const index = (n: ElkNode) => {
+    n.ports?.forEach((p) => portOwner.set(p.id, n.id));
+    n.children?.forEach(index);
+  };
+  index(root);
+  const owner = (ref: string) => portOwner.get(ref) ?? ref;
+
+  const flatten = (n: ElkNode): ElkNode => {
+    const children = (n.children ?? []).flatMap((c) =>
+      c.properties?.type === LAYOUT_LINE_TYPE
+        ? (c.children ?? []).map(flatten)
+        : [flatten(c)]
+    );
+    // edges owned by an invisible line group move up to the real container
+    const lineEdges = (n.children ?? [])
+      .filter((c) => c.properties?.type === LAYOUT_LINE_TYPE)
+      .flatMap((c) => c.edges ?? []);
+    const edges = [
+      ...(n.edges ?? []),
+      ...lineEdges,
+      ...(n.properties?.deferredEdges ?? []),
+    ]
+      .filter((e) => !isLayoutOnlyEdge(e))
+      .map((e) => ({
+        ...e,
+        sources: e.sources.map(owner),
+        targets: e.targets.map(owner),
+      }));
+    const { ports: _ports, ...rest } = n;
+    void _ports;
+    return { ...rest, children, edges };
+  };
+  return flatten(root);
+}
+
+type Pt = { x: number; y: number };
+
+const isOrthogonal = (pts: Pt[]) =>
+  pts.every(
+    (p, i) =>
+      i === 0 ||
+      Math.abs(p.x - pts[i - 1].x) < 0.75 ||
+      Math.abs(p.y - pts[i - 1].y) < 0.75
+  );
+
+/**
+ * The polyline actually drawn for a routed section, honouring a per-edge
+ * routing override. ELK routes a whole graph one way, so a connection that
+ * declares another routing is converted here. Splines are sampled, so labels,
+ * caption checks and arrow stubs follow the curve that is drawn.
+ */
+export function drawnPoints(s: ElkSection, routing?: string): Pt[] {
+  const pts: Pt[] = [s.startPoint, ...(s.bendPoints ?? []), s.endPoint];
+  if (routing === 'straight') return [pts[0], pts[pts.length - 1]];
+  if (routing === 'orthogonal' && !isOrthogonal(pts)) {
+    // one Z per sloped segment, turning halfway along its major axis
+    const out: Pt[] = [pts[0]];
+    for (let i = 1; i < pts.length; i++) {
+      const a = pts[i - 1];
+      const b = pts[i];
+      if (Math.abs(a.x - b.x) >= 0.75 && Math.abs(a.y - b.y) >= 0.75) {
+        if (Math.abs(b.x - a.x) >= Math.abs(b.y - a.y)) {
+          const mx = (a.x + b.x) / 2;
+          out.push({ x: mx, y: a.y }, { x: mx, y: b.y });
+        } else {
+          const my = (a.y + b.y) / 2;
+          out.push({ x: a.x, y: my }, { x: b.x, y: my });
+        }
+      }
+      out.push(b);
+    }
+    return out;
+  }
+  if (routing === 'polyline' && pts.length > 2 && isOrthogonal(pts)) {
+    // straight segments through the middle of each inner leg
+    const mids = pts.slice(1, -2).map((p, i) => ({
+      x: (p.x + pts[i + 2].x) / 2,
+      y: (p.y + pts[i + 2].y) / 2,
+    }));
+    return [pts[0], ...mids, pts[pts.length - 1]];
+  }
+  if (routing === 'splines' && pts.length > 2) {
+    const mid = (a: Pt, b: Pt) => ({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 });
+    const out: Pt[] = [pts[0], mid(pts[0], pts[1])];
+    for (let i = 1; i < pts.length - 1; i++) {
+      const p0 = out[out.length - 1];
+      const c = pts[i];
+      const p1 = mid(pts[i], pts[i + 1]);
+      for (const t of [0.25, 0.5, 0.75, 1]) {
+        const u = 1 - t;
+        out.push({
+          x: u * u * p0.x + 2 * u * t * c.x + t * t * p1.x,
+          y: u * u * p0.y + 2 * u * t * c.y + t * t * p1.y,
+        });
+      }
+    }
+    out.push(pts[pts.length - 1]);
+    return out;
+  }
+  return pts;
+}
+
+/** SVG path data for one routed section, honouring a per-edge routing override. */
+function edgePathData(s: ElkSection, routing?: string): string {
+  const pts: Pt[] = [s.startPoint, ...(s.bendPoints ?? []), s.endPoint];
+  if (routing === 'splines' && pts.length > 2) {
+    const mid = (a: Pt, b: Pt) => ({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 });
+    let d = `M ${pts[0].x} ${pts[0].y}`;
+    const first = mid(pts[0], pts[1]);
+    d += ` L ${first.x} ${first.y}`;
+    for (let i = 1; i < pts.length - 1; i++) {
+      const m = mid(pts[i], pts[i + 1]);
+      d += ` Q ${pts[i].x} ${pts[i].y} ${m.x} ${m.y}`;
+    }
+    d += ` L ${pts[pts.length - 1].x} ${pts[pts.length - 1].y}`;
+    return d;
+  }
+  return drawnPoints(s, routing)
+    .map((p, i) => `${i ? 'L' : 'M'} ${p.x} ${p.y}`)
+    .join(' ');
+}
+
+/**
+ * Two connections between the same pair of nodes in opposite directions would
+ * be drawn on top of each other; nudge them apart so both stay visible.
+ */
+export function separateOpposingEdges(
+  edges: ElkEdge[],
+  owner: (ref: string) => string
+): void {
+  const OFFSET = 4;
+  const key = (a: string, b: string) =>
+    a < b ? `${a}\u0000${b}` : `${b}\u0000${a}`;
+  const groups = new Map<string, ElkEdge[]>();
+  for (const e of edges) {
+    if (e.properties?.bidirectional) continue;
+    const a = owner(e.sources[0]);
+    const b = owner(e.targets[0]);
+    if (a === b) continue;
+    const k = key(a, b);
+    groups.set(k, [...(groups.get(k) ?? []), e]);
+  }
+  for (const group of groups.values()) {
+    const forward = group.filter(
+      (e) => owner(e.sources[0]) <= owner(e.targets[0])
+    );
+    const backward = group.filter((e) => !forward.includes(e));
+    if (forward.length === 0 || backward.length === 0) continue;
+    // ends that meet a shared side are already spread apart during layout;
+    // only edges that are still drawn on top of each other need nudging
+    const segmentsOf = (e: ElkEdge) =>
+      (e.sections ?? []).flatMap((s) => {
+        const pts: Pt[] = [s.startPoint, ...(s.bendPoints ?? []), s.endPoint];
+        return pts.slice(1).map((p, i) => [pts[i], p] as const);
+      });
+    const overlap = (
+      [a, b]: readonly [Pt, Pt],
+      [c, d]: readonly [Pt, Pt]
+    ): boolean =>
+      (
+        [
+          ['y', 'x'],
+          ['x', 'y'],
+        ] as const
+      ).some(([k, o]) => {
+        const flat = (p: Pt, q: Pt) => Math.abs(p[k] - q[k]) < 1;
+        if (!flat(a, b) || !flat(c, d) || Math.abs(a[k] - c[k]) >= 1)
+          return false;
+        const lo = Math.max(Math.min(a[o], b[o]), Math.min(c[o], d[o]));
+        const hi = Math.min(Math.max(a[o], b[o]), Math.max(c[o], d[o]));
+        return hi - lo > 1;
+      });
+    const fs = forward.flatMap(segmentsOf);
+    const bs = backward.flatMap(segmentsOf);
+    if (!fs.some((f) => bs.some((g) => overlap(f, g)))) continue;
+    const shift = (list: ElkEdge[], d: number) =>
+      list.forEach((e) =>
+        e.sections?.forEach((s) => {
+          const pts: Pt[] = [s.startPoint, ...(s.bendPoints ?? []), s.endPoint];
+          const last = pts.length - 1;
+          // an end on a horizontal segment meets a left / right side
+          const flatAt = (i: number) =>
+            Math.abs(pts[i === 0 ? 1 : last - 1].y - pts[i].y) < 0.75;
+          const flatStart = flatAt(0);
+          const flatEnd = flatAt(last);
+          pts.forEach((pt, i) => {
+            if (i === 0 || i === last) {
+              // slide an end along the side it meets, not into the node
+              if (i === 0 ? flatStart : flatEnd) pt.y += d;
+              else pt.x += d;
+            } else {
+              pt.x += d;
+              pt.y += d;
+            }
+          });
+        })
+      );
+    shift(forward, OFFSET);
+    shift(backward, -OFFSET);
+  }
+}
+
+const escapeXml = (text: string) =>
+  text.replace(
+    /[<>&'"]/g,
+    (c) =>
+      ({
+        '<': '&lt;',
+        '>': '&gt;',
+        '&': '&amp;',
+        "'": '&apos;',
+        '"': '&quot;',
+      })[c] as string
+  );
+
+interface LabelBox {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+const boxesOverlap = (a: LabelBox, b: LabelBox, pad = 0) =>
+  a.x < b.x + b.w + pad &&
+  b.x < a.x + a.w + pad &&
+  a.y < b.y + b.h + pad &&
+  b.y < a.y + a.h + pad;
+
+/**
+ * Chooses where to draw an edge label. Every segment (and, on long ones, its
+ * quarter points) is a candidate; the label goes on the longest spot that fits
+ * and stays clear of nodes, container headers and labels already placed, so it
+ * never sits on top of text. Falls back to the longest segment's midpoint.
+ */
+function placeEdgeLabel(
+  points: { x: number; y: number }[],
+  textLen: number,
+  obstacles: LabelBox[],
+  placed: LabelBox[]
+): { x: number; y: number; box: LabelBox } {
+  const W = textLen + 4;
+  const H = 14;
+  const boxAt = (x: number, y: number): LabelBox => ({
+    x: x - W / 2,
+    y: y - 10,
+    w: W,
+    h: H,
+  });
+
+  interface Candidate {
+    x: number;
+    y: number;
+    len: number;
+    fits: boolean;
+    box: LabelBox;
+  }
+  const candidates: Candidate[] = [];
+  for (let i = 0; i < points.length - 1; i++) {
+    const a = points[i];
+    const b = points[i + 1];
+    const len = Math.hypot(b.x - a.x, b.y - a.y);
+    if (len === 0) continue;
+    const horizontal = Math.abs(b.x - a.x) >= Math.abs(b.y - a.y);
+    const fits = len >= (horizontal ? W + 8 : H + 8);
+    const ts =
+      len > 2 * W
+        ? [0.5, 0.3, 0.7, 0.15, 0.85]
+        : len > W + 16
+          ? [0.5, 0.25, 0.75]
+          : [0.5];
+    for (const t of ts) {
+      const x = a.x + (b.x - a.x) * t;
+      const y = a.y + (b.y - a.y) * t - 6;
+      candidates.push({ x, y, len, fits, box: boxAt(x, y) });
+    }
+  }
+
+  const clear = (c: Candidate) =>
+    !obstacles.some((o) => boxesOverlap(c.box, o, 2)) &&
+    !placed.some((o) => boxesOverlap(c.box, o, 2));
+  const longest = (list: Candidate[]) =>
+    list.reduce<Candidate | undefined>(
+      (best, c) => (!best || c.len > best.len ? c : best),
+      undefined
+    );
+
+  const chosen =
+    longest(candidates.filter((c) => c.fits && clear(c))) ??
+    longest(candidates.filter(clear)) ??
+    longest(candidates);
+  if (!chosen) {
+    const p = points[0] ?? { x: 0, y: 0 };
+    return { x: p.x, y: p.y - 6, box: boxAt(p.x, p.y - 6) };
+  }
+  return { x: chosen.x, y: chosen.y, box: chosen.box };
+}
 
 function getProvider(node: ElkNode): 'aws' | 'gcp' | 'azure' {
   const cssClass = (node.properties?.cssClass as string) || '';
@@ -2227,6 +2549,8 @@ export async function renderSvg(
   iconResolver?: (iconName: string) => Promise<string | null>
 ): Promise<string> {
   let layout: ElkNode;
+  // the declarative layout adds layout-only structure that only ELK understands
+  const source = layoutEngine === 'elk' ? graph : flattenLayoutArtifacts(graph);
   const isOrthogonalLayout =
     layoutEngine === 'orthogonal' || layoutEngine === 'tsm';
   const allNodeBoxes: {
@@ -2269,7 +2593,7 @@ export async function renderSvg(
       }
       node.children?.forEach(collectAllEdges);
     };
-    collectAllEdges(graph);
+    collectAllEdges(source);
 
     // Map every node id to its immediate parent id in the original
     // (pre-layout) tree. Used below to "lift" a real connection between two
@@ -2834,9 +3158,8 @@ export async function renderSvg(
       return amn;
     };
 
-    layout = await layoutNode(graph);
-
-    layout.properties = graph.properties;
+    layout = await layoutNode(source);
+    layout.properties = source.properties;
 
     // Pass 1: Global absolute positioning calculation
     const absPositions = new Map<
@@ -3410,6 +3733,7 @@ export async function renderSvg(
         sources: [srcId],
         targets: [tgtId],
         labels: origEdge.labels,
+        properties: origEdge.properties,
         sections: [
           {
             id: `global-s${origEdge.id}`,
@@ -3491,6 +3815,90 @@ export async function renderSvg(
   } else {
     const elk = new ELK();
     layout = (await elk.layout(graph)) as ElkNode;
+    // align / justify / maxSize and routing of withheld edges
+    applyLayoutPostProcessing(layout).forEach((w) => console.warn(w));
+  }
+
+  // ELK output is moved into canvas coordinates with a margin (the other
+  // engines do this while they lay out)
+  const padding = 40;
+  if (layoutEngine === 'elk' && layout.children && layout.children.length > 0) {
+    let minX = Infinity,
+      minY = Infinity,
+      maxX = -Infinity,
+      maxY = -Infinity;
+    layout.children.forEach((child) => {
+      const cx = child.x || 0,
+        cy = child.y || 0,
+        cw = child.width || 0,
+        ch = child.height || 0;
+      minX = Math.min(minX, cx);
+      minY = Math.min(minY, cy);
+      maxX = Math.max(maxX, cx + cw);
+      maxY = Math.max(maxY, cy + ch);
+    });
+
+    // Also include edge coordinates in bounds calculation
+    // so that routed edges are never clipped
+    // Edges are stored relative to the container they were routed in, so
+    // bring them to canvas coordinates first (see `frameOrigin`).
+    const preShiftPos = new Map<string, { x: number; y: number }>();
+    const indexPre = (n: ElkNode, ox: number, oy: number) => {
+      const x = ox + (n.x || 0),
+        y = oy + (n.y || 0);
+      preShiftPos.set(n.id, { x, y });
+      n.children?.forEach((c) => indexPre(c, x, y));
+    };
+    indexPre(layout, 0, 0);
+    const frameOrigin = (e: ElkEdge) =>
+      preShiftPos.get(e.container || layout.id) ?? { x: 0, y: 0 };
+
+    if (layout.edges) {
+      layout.edges.forEach((e) => {
+        const o = frameOrigin(e);
+        e.sections?.forEach((s) => {
+          [s.startPoint, s.endPoint, ...(s.bendPoints || [])].forEach((p) => {
+            const pt = { x: p.x + o.x, y: p.y + o.y };
+            minX = Math.min(minX, pt.x);
+            minY = Math.min(minY, pt.y);
+            maxX = Math.max(maxX, pt.x);
+            maxY = Math.max(maxY, pt.y);
+          });
+        });
+      });
+    }
+
+    if (minX !== Infinity) {
+      const shiftX = -minX + padding,
+        shiftY = -minY + padding;
+      layout.children.forEach((c) => {
+        if (c.x !== undefined) c.x += shiftX;
+        if (c.y !== undefined) c.y += shiftY;
+      });
+
+      // Shift edge coordinates by the same amount so they
+      // stay aligned with the nodes after the viewBox adjustment
+      // Only edges expressed in the root's own frame move with it: the others
+      // are placed from their container's (already shifted) position.
+      if (layout.edges) {
+        layout.edges.forEach((e) => {
+          if (e.container && e.container !== layout.id) return;
+          e.sections?.forEach((s) => {
+            s.startPoint.x += shiftX;
+            s.startPoint.y += shiftY;
+            s.endPoint.x += shiftX;
+            s.endPoint.y += shiftY;
+            s.bendPoints?.forEach((b) => {
+              b.x += shiftX;
+              b.y += shiftY;
+            });
+          });
+        });
+      }
+
+      layout.width = maxX - minX + 2 * padding;
+      layout.height = maxY - minY + 2 * padding;
+    }
   }
 
   const width = layout.width || 800;
@@ -3566,6 +3974,7 @@ export async function renderSvg(
   const collectEdges = (n: ElkNode) => {
     if (n.edges) {
       n.edges.forEach((e) => {
+        if (isLayoutOnlyEdge(e)) return;
         if (e.id && processedEdgeIds.has(e.id)) return;
         if (e.id) processedEdgeIds.add(e.id);
 
@@ -3601,6 +4010,17 @@ export async function renderSvg(
     n.children?.forEach(collectEdges);
   };
   collectEdges(layout);
+
+  const portOwner = new Map<string, string>();
+  const indexPorts = (n: ElkNode) => {
+    n.ports?.forEach((p) => portOwner.set(p.id, n.id));
+    n.children?.forEach(indexPorts);
+  };
+  indexPorts(layout);
+  // the other engines route (and separate) their own edges
+  if (layoutEngine === 'elk') {
+    separateOpposingEdges(allEdges, (ref) => portOwner.get(ref) ?? ref);
+  }
 
   const orthogonalContainerVisualBounds = new Map<
     string,
@@ -3851,18 +4271,92 @@ export async function renderSvg(
       ? 'url(#arrow-azure)'
       : 'url(#arrow)';
 
-  const escapeXml = (s: string) =>
-    s.replace(
-      /[<>&'"]/g,
-      (c) =>
-        ({
-          '<': '&lt;',
-          '>': '&gt;',
-          '&': '&amp;',
-          "'": '&apos;',
-          '"': '&quot;',
-        })[c] || ''
+  // Text that edge labels must not cover: every leaf node (icon + caption)
+  // and the title band of every container.
+  const labelObstacles: LabelBox[] = [];
+  const collectObstacles = (n: ElkNode, ox: number, oy: number) => {
+    const x = ox + (n.x || 0),
+      y = oy + (n.y || 0);
+    if (n.id !== layout.id && n.properties?.type !== LAYOUT_LINE_TYPE) {
+      if (n.children && n.children.length > 0) {
+        labelObstacles.push({ x, y, w: n.width || 0, h: 34 });
+      } else {
+        // the caption is wider than a narrow icon box
+        const w = Math.max(n.width || 0, 80);
+        labelObstacles.push({
+          x: x - (w - (n.width || 0)) / 2,
+          y,
+          w,
+          h: n.height || 0,
+        });
+      }
+    }
+    n.children?.forEach((c) => collectObstacles(c, x, y));
+  };
+  collectObstacles(layout, 0, 0);
+  const placedEdgeLabels: LabelBox[] = [];
+
+  // Captions that an edge runs across are redrawn above the edges on a white
+  // patch, so the line looks cut at the text instead of striking through it.
+  const captionOverlays: string[] = [];
+  const captionPatches: LabelBox[] = [];
+  const edgeSegments: LabelBox[] = [];
+  allEdges.forEach((e) =>
+    (e.sections || []).forEach((sec) => {
+      const pts = drawnPoints(sec, e.properties?.routing);
+      for (let i = 0; i < pts.length - 1; i++) {
+        const a = pts[i];
+        const b = pts[i + 1];
+        edgeSegments.push({
+          x: Math.min(a.x, b.x),
+          y: Math.min(a.y, b.y),
+          w: Math.abs(a.x - b.x),
+          h: Math.abs(a.y - b.y),
+        });
+      }
+    })
+  );
+  // captions are cut by a white patch only in the declarative (ELK) look
+  const crossesEdge = (box: LabelBox) =>
+    layoutEngine === 'elk' &&
+    edgeSegments.some(
+      (g) =>
+        g.x <= box.x + box.w &&
+        g.x + g.w >= box.x &&
+        g.y <= box.y + box.h &&
+        g.y + g.h >= box.y
     );
+
+  const edgesOutput = (layoutEngine === 'elk' ? allEdges : [])
+    .map((e) => {
+      return (e.sections || [])
+        .map((s) => {
+          const d = edgePathData(s, e.properties?.routing);
+          const markerStart = e.properties?.bidirectional
+            ? ` marker-start="${defaultArrow}"`
+            : '';
+          let edgeSvg = `<path d="${d}" class="${defaultEdgeClass}"${markerStart} marker-end="${defaultArrow}"/>`;
+
+          // Add edge label if available
+          const edgeLabel = e.labels?.[0]?.text;
+          if (edgeLabel) {
+            const textLen = edgeLabel.length * 6.5;
+            const spot = placeEdgeLabel(
+              drawnPoints(s, e.properties?.routing),
+              textLen,
+              labelObstacles,
+              placedEdgeLabels
+            );
+            placedEdgeLabels.push(spot.box);
+            // Background rect keeps the text readable over the line
+            edgeSvg += `<rect x="${spot.box.x}" y="${spot.box.y}" width="${spot.box.w}" height="${spot.box.h}" rx="2" fill="white" fill-opacity="0.85"/>`;
+            edgeSvg += `<text x="${spot.x}" y="${spot.y}" class="edge-label" text-anchor="middle">${escapeXml(edgeLabel)}</text>`;
+          }
+          return edgeSvg;
+        })
+        .join('');
+    })
+    .join('');
 
   const placedLabels: { l: number; r: number; t: number; b: number }[] = [];
   let edgePathsOutput = '';
@@ -3897,7 +4391,7 @@ export async function renderSvg(
     });
   });
 
-  allEdges.forEach((e) => {
+  (layoutEngine === 'elk' ? [] : allEdges).forEach((e) => {
     (e.sections || []).forEach((s) => {
       const pts = [s.startPoint, ...(s.bendPoints || []), s.endPoint];
       let d = `M ${pts[0].x} ${pts[0].y}`;
@@ -4181,6 +4675,15 @@ export async function renderSvg(
       }
     }
 
+    // Invisible wrapper that only exists to realise wrapped lines
+    if (props.type === LAYOUT_LINE_TYPE) {
+      return (
+        await Promise.all(
+          (node.children ?? []).map((c) => renderNode(c, absX, absY))
+        )
+      ).join('');
+    }
+
     let output = `<g id="node-${nodeId}">`;
     if (tooltips.length) {
       const tooltipText = tooltips.map(escapeXml).join('\n');
@@ -4272,6 +4775,7 @@ export async function renderSvg(
       const ICON_SIZE = 42; // icon image size in px
       const ICON_BG_PAD = 5; // padding around icon background
       const CARD_W = nw;
+      const CAPTION_W = Math.max(nw, 80);
       const CARD_H = nh;
 
       // Icon centered horizontally
@@ -4292,7 +4796,9 @@ export async function renderSvg(
           : 'aws-node-label';
 
       // Compliance + base class
-      let cardClass = 'node-card';
+      // `background` (global or per element) restores the legacy white card
+      const hasBackground = props.background === true;
+      let cardClass = hasBackground ? 'node-card' : 'node-card node-card-plain';
       if (complianceClass) cardClass += ` ${complianceClass}`;
 
       // ── Card background ─────────────────────────────────
@@ -4317,16 +4823,16 @@ export async function renderSvg(
 
       if (iconUri) {
         // Icon background pill
-        output += `<rect
-          x="${iconX - ICON_BG_PAD}"
-          y="${iconY - ICON_BG_PAD}"
-          width="${ICON_SIZE + ICON_BG_PAD * 2}"
-          height="${ICON_SIZE + ICON_BG_PAD * 2}"
-          rx="8" ry="8"
-          class="node-icon-bg"/>`;
-        output += `<image
-          href="${iconUri}"
-          x="${iconX}" y="${iconY}"
+        output += `<rect 
+          x="${iconX - ICON_BG_PAD}" 
+          y="${iconY - ICON_BG_PAD}" 
+          width="${ICON_SIZE + ICON_BG_PAD * 2}" 
+          height="${ICON_SIZE + ICON_BG_PAD * 2}" 
+          rx="8" ry="8" 
+          class="node-icon-bg${hasBackground ? '' : ' node-icon-bg-plain'}"/>`;
+        output += `<image 
+          href="${iconUri}" 
+          x="${iconX}" y="${iconY}" 
           width="${ICON_SIZE}" height="${ICON_SIZE}"
           preserveAspectRatio="xMidYMid meet"/>`;
       } else {
@@ -4370,7 +4876,9 @@ export async function renderSvg(
 
       // ── Label (1 or 2 lines, centered) ──────────────────
       // Max label width = card width minus 6px padding each side
-      const maxLabelChars = Math.floor((CARD_W - 12) / 6.0);
+      // The node box is only as wide as its icon; the caption may be wider.
+      const maxLabelChars =
+        props.labelMaxChars ?? Math.floor((CAPTION_W - 12) / 6.0);
 
       // Word-wrap: try to split into max 2 lines at word boundary
       const words = label.split(' ');
@@ -4400,23 +4908,48 @@ export async function renderSvg(
 
       const LINE_H = 13; // line height in px
       // If two lines, shift first line up by half LINE_H to center block
-      const line1Y = line2
+      const baseLine1Y = line2
         ? labelStartY + Math.round(LINE_H / 2) - 2
         : labelStartY + 4;
+      const captionW =
+        Math.max(truncate(line1).length, truncate(line2).length) * 5.5 + 4;
+      // The patch hangs from the bottom of the icon pill down over the text
+      const pillBottom = iconY + ICON_SIZE + ICON_BG_PAD;
+      const captionBoxAt = (y1: number): LabelBox => ({
+        x: absX + CARD_W / 2 - captionW / 2,
+        y: pillBottom,
+        w: captionW,
+        h: y1 + (line2 ? LINE_H : 0) + 2 - pillBottom,
+      });
+      // An arrow that ends at the icon from below has its head over the
+      // caption's first line: move the caption down, clear of the head.
+      const ARROW_HEAD = 11;
+      const crossed = crossesEdge(captionBoxAt(baseLine1Y));
+      const line1Y = baseLine1Y + (crossed ? ARROW_HEAD : 0);
       const line2Y = line1Y + LINE_H;
 
-      output += `<text
-        x="${absX + CARD_W / 2}" y="${line1Y}"
-        class="${nodeLabelCls}"
-        text-anchor="middle"
+      let captionSvg = `<text 
+        x="${absX + CARD_W / 2}" y="${line1Y}" 
+        class="${nodeLabelCls}" 
+        text-anchor="middle" 
         dominant-baseline="auto">${escapeXml(truncate(line1))}</text>`;
 
       if (line2) {
-        output += `<text
-          x="${absX + CARD_W / 2}" y="${line2Y}"
-          class="${nodeLabelCls}"
-          text-anchor="middle"
+        captionSvg += `<text 
+          x="${absX + CARD_W / 2}" y="${line2Y}" 
+          class="${nodeLabelCls}" 
+          text-anchor="middle" 
           dominant-baseline="auto">${escapeXml(truncate(line2))}</text>`;
+      }
+
+      const captionBox = captionBoxAt(line1Y);
+      if (crossed) {
+        captionPatches.push(captionBox);
+        captionOverlays.push(
+          `<rect x="${captionBox.x}" y="${captionBox.y}" width="${captionBox.w}" height="${captionBox.h}" rx="2" fill="white" fill-opacity="0.9"/>${captionSvg}`
+        );
+      } else {
+        output += captionSvg;
       }
 
       const contents: string[] = node?.properties?.contents || [];
@@ -4518,6 +5051,45 @@ export async function renderSvg(
   const nodesOutput = (
     await Promise.all((layout.children ?? []).map((n) => renderNode(n)))
   ).join('');
+
+  // The white patches also hide arrowheads that end inside a caption; redraw
+  // those last few pixels above them.
+  const STUB = 12;
+  const inPatch = (p: { x: number; y: number }) =>
+    captionPatches.some(
+      (b) =>
+        p.x >= b.x - 1 &&
+        p.x <= b.x + b.w + 1 &&
+        p.y >= b.y - 1 &&
+        p.y <= b.y + b.h + 1
+    );
+  const arrowStubs = allEdges
+    .map((e) =>
+      (e.sections || [])
+        .map((sec) => {
+          const pts = drawnPoints(sec, e.properties?.routing);
+          const n = pts.length;
+          const stub = (
+            tip: { x: number; y: number },
+            from: { x: number; y: number }
+          ) => {
+            const len = Math.hypot(tip.x - from.x, tip.y - from.y) || 1;
+            const k = Math.min(STUB, len) / len;
+            const a = {
+              x: tip.x + (from.x - tip.x) * k,
+              y: tip.y + (from.y - tip.y) * k,
+            };
+            return `<path d="M ${a.x} ${a.y} L ${tip.x} ${tip.y}" class="${defaultEdgeClass}" marker-end="${defaultArrow}"/>`;
+          };
+          let out = '';
+          if (inPatch(pts[n - 1])) out += stub(pts[n - 1], pts[n - 2]);
+          if (e.properties?.bidirectional && inPatch(pts[0]))
+            out += stub(pts[0], pts[1]);
+          return out;
+        })
+        .join('')
+    )
+    .join('');
 
   // ── Legend ──
   const renderLegend = () => {
@@ -4684,6 +5256,6 @@ export async function renderSvg(
     <!-- Arrow marker for the active provider only -->
     ${arrowMarkerDefs}
   </defs>
-  ${rootRect}${nodesOutput}${edgePathsOutput}${edgeLabelsOutput}${legendOutput}
+  ${rootRect}${nodesOutput}${edgesOutput}${edgePathsOutput}${edgeLabelsOutput}${captionOverlays.join('')}${arrowStubs}${legendOutput}
 </svg>`;
 }

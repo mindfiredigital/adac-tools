@@ -63,6 +63,7 @@ export async function generateDiagramSvg(
           `Schema validation failed:\n${validation.errors?.join('\n')}`
         );
       }
+      validation.warnings?.forEach((w) => log(`Warning: ${w}`));
       log('Schema validation passed.');
     }
 
@@ -87,10 +88,20 @@ export async function generateDiagramSvg(
       }
     }
 
-    const graph = await buildElkGraph(adac);
+    // the CLI / caller override, then layoutOptions.engine, then the top-level
+    // layout; ELK when none is declared (the declarative layout needs it)
     const engine = normalizeLayoutEngine(
-      layoutOverride ?? adac.layout ?? 'custom'
+      layoutOverride ?? adac.layoutOptions?.engine ?? adac.layout ?? 'elk'
     );
+    const graph = await buildElkGraph(adac, {
+      // icon-sized nodes and the declarative container rules are the ELK look
+      declarativeStyle: engine === 'elk',
+      // validation has already reported deprecated aliases
+      onWarning: (message) => {
+        if (validate && /is deprecated/.test(message)) return;
+        log(`Warning: ${message}`);
+      },
+    });
 
     let complianceTooltipMap: ComplianceTooltipMap | undefined;
 

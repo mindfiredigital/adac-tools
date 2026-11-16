@@ -938,3 +938,58 @@ describe('ADAC Core Renderer', () => {
     existSpy.mockRestore();
   });
 });
+
+describe('generator: layout engine and warnings', () => {
+  const yaml = (layoutOptions: string, extra = '') => `
+version: "0.2"
+metadata:
+  name: "Engine"
+  created: "2026-01-01"
+${extra}
+layoutOptions:
+${layoutOptions}
+infrastructure:
+  clouds:
+    - id: "aws-1"
+      provider: "aws"
+      region: "us-east-1"
+      services:
+        - id: "fn"
+          service: "lambda"
+`;
+
+  const svgWith = async (
+    content: string,
+    engine?: 'elk' | 'custom' | 'orthogonal' | 'tsm'
+  ): Promise<string> => (await generateDiagramSvg(content, engine)).svg;
+
+  it('renders with ELK when no engine is declared', async () => {
+    const content = yaml('  direction: LR');
+    expect(await svgWith(content)).toBe(await svgWith(content, 'elk'));
+    expect(await svgWith(content)).not.toBe(await svgWith(content, 'custom'));
+  });
+
+  it('uses layoutOptions.engine when it is set', async () => {
+    const content = yaml('  engine: custom');
+    expect(await svgWith(content)).toBe(await svgWith(content, 'custom'));
+  });
+
+  it('prefers layoutOptions.engine over the top-level layout field', async () => {
+    const content = yaml('  engine: custom', 'layout: orthogonal');
+    expect(await svgWith(content)).toBe(await svgWith(content, 'custom'));
+  });
+
+  it('uses the top-level layout when layoutOptions.engine is not set', async () => {
+    const content = yaml('  direction: LR', 'layout: custom');
+    expect(await svgWith(content)).toBe(await svgWith(content, 'custom'));
+  });
+
+  it('reports a deprecated alias once when validating', async () => {
+    const { logs } = await generateDiagramSvg(
+      yaml('  unit: 50'),
+      undefined,
+      true
+    );
+    expect(logs.filter((l) => /unit.* is deprecated/.test(l))).toHaveLength(1);
+  });
+});

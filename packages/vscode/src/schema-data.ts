@@ -667,6 +667,7 @@ export const APPLICATION_TYPES = [
   'ml-model',
   'data-pipeline',
   'microservice',
+  'user',
 ];
 
 /** Environment values */

@@ -1,0 +1,137 @@
+# Declarative layout & styling (ADAC 0.2)
+#
+# Describes how the diagram should be organised, not where anything sits:
+#   - layoutOptions     global defaults (direction, spacing, routing, background)
+#   - visual.layout     how an element arranges its direct children
+#   - visual.style      per-element styling
+#   - connections[].layout   which side a connection leaves / enters
+#
+# Lengths are logical units; 1 unit = layoutOptions.unitSize pixels.
+version: '0.2'
+
+metadata:
+  name: 'Declarative layout example'
+  created: '2026-01-01'
+  description: 'A VPC that stacks a public and a private subnet; the private subnet wraps its services into rows.'
+
+layoutOptions:
+  engine: elk
+  unitSize: 100
+  direction: LR # overall flow: left to right
+  gap: 0.6
+  containerPadding: 0.5
+  edgeSpacing: 0.4
+  edgeRouting: orthogonal
+  background: false # no card behind icons unless an element asks for one
+
+infrastructure:
+  clouds:
+    - id: 'aws-main'
+      provider: 'aws'
+      region: 'us-east-1'
+      services:
+        - id: 'vpc'
+          service: 'vpc'
+          name: 'Production VPC'
+          visual:
+            layout:
+              direction: TB # subnets are stacked
+              gap: 0.8
+              minSize: { width: 6 }
+
+        - id: 'public-subnet'
+          service: 'subnet'
+          name: 'Public Subnet'
+          configuration: { vpc: 'vpc' }
+          visual:
+            layout:
+              direction: LR
+              align: center
+              order: 1 # sits above the private subnet
+
+        - id: 'private-subnet'
+          service: 'subnet'
+          name: 'Private Subnet'
+          configuration: { vpc: 'vpc' }
+          visual:
+            layout:
+              direction: LR
+              itemsPerLine: 3 # wrap after three services
+              justify: center
+              order: 2
+
+        - id: 'alb'
+          service: 'alb'
+          name: 'Load Balancer'
+          configuration: { subnets: ['public-subnet'] }
+          visual:
+            layout: { order: 1 }
+
+        - id: 'nat'
+          service: 'nat-gateway'
+          name: 'NAT Gateway'
+          configuration: { subnets: ['public-subnet'] }
+          visual:
+            layout: { order: 2 }
+
+        - id: 'api'
+          service: 'lambda'
+          name: 'API'
+          configuration: { subnets: ['private-subnet'] }
+          visual:
+            layout: { order: 1 }
+
+        - id: 'worker'
+          service: 'lambda'
+          name: 'Worker'
+          configuration: { subnets: ['private-subnet'] }
+          visual:
+            layout: { order: 2 }
+
+        - id: 'scheduler'
+          service: 'lambda'
+          name: 'Scheduler'
+          configuration: { subnets: ['private-subnet'] }
+          visual:
+            layout: { order: 3 }
+
+        - id: 'aurora'
+          service: 'rds-aurora-postgres'
+          name: 'Aurora'
+          configuration: { subnets: ['private-subnet'] }
+          visual:
+            layout: { order: 4 }
+            style:
+              background: true # this one keeps the classic card
+
+        - id: 'redis'
+          service: 'elasticache-redis'
+          name: 'Redis'
+          configuration: { subnets: ['private-subnet'] }
+          visual:
+            layout: { order: 5 }
+
+connections:
+  - id: 'users-to-alb'
+    from: 'users'
+    to: 'alb'
+    type: 'api-call'
+    layout:
+      fromSide: right
+      toSide: left
+
+  - id: 'alb-to-api'
+    from: 'alb'
+    to: 'api'
+    type: 'api-call'
+
+  - id: 'api-to-db'
+    from: 'api'
+    to: 'aurora'
+    type: 'database-query'
+    bidirectional: true
+
+  - id: 'worker-to-cache'
+    from: 'worker'
+    to: 'redis'
+    type: 'cache-read'

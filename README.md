@@ -240,6 +240,7 @@ This project adheres to a [Code of Conduct](CODE_OF_CONDUCT.md) that we expect a
 ## 📚 Additional Resources
 
 - [API Reference](docs/API_REFERENCE.md) - Detailed API documentation
+- [Declarative Layout & Styling](docs/DECLARATIVE_LAYOUT.md) - Layout and styling properties (ADAC 0.2)
 - [Code Quality Guidelines](docs/CODE_QUALITY.md) - Standards and best practices
 - [Testing Strategy](docs/TESTING.md) - Testing approach and coverage targets
 - [GitHub Discussions](https://github.com/mindfiredigital/adac-tools/discussions) - Ask questions and share ideas

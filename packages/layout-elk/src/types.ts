@@ -23,10 +23,39 @@ export interface ElkNode extends BaseElkNode {
     nodeRole?: string;
     title?: string;
     insight_tags?: string[];
+    /** Resolved `visual.style.background` (falls back to the global default). */
+    background?: boolean;
+    /** Resolved most characters on one line of the label. */
+    labelMaxChars?: number;
+    /** Declared `maxSize` in pixels; ELK cannot enforce it, so it is checked after layout. */
+    maxSize?: { width?: number; height?: number };
+    /** Child arrangement that is realised after layout (align / justify). */
+    arrangement?: ElkArrangement;
+    /**
+     * The children are stacked along this axis inside a single ELK layer,
+     * where ELK does not honour their declared order; post-layout restores it.
+     */
+    stackAxis?: 'horizontal' | 'vertical';
+    /**
+     * Connections between items of one arranged container that must not take
+     * part in layering (it would stagger wrapped lines). They are routed after
+     * layout and moved into `edges`.
+     */
+    deferredEdges?: ElkEdge[];
     isStacked?: boolean;
     direction?: string;
     contents?: string[];
   };
+}
+
+/** Post-layout child arrangement of a container (see post-layout.ts). */
+export interface ElkArrangement {
+  mainAxis: 'horizontal' | 'vertical';
+  align?: 'start' | 'center' | 'end';
+  justify?: 'start' | 'center' | 'end' | 'space-between' | 'space-around';
+  padding: { top: number; right: number; bottom: number; left: number };
+  /** Align against the extent of the items themselves, not the container's inner box. */
+  fitToItems?: boolean;
 }
 
 export interface ElkEdge extends ElkExtendedEdge {
@@ -36,6 +65,20 @@ export interface ElkEdge extends ElkExtendedEdge {
   container?: string;
   labels?: { text: string }[];
   sections?: ElkEdgeSection[];
+  properties?: {
+    /** Invisible edge that only exists to steer the layout; never rendered. */
+    layoutOnly?: boolean;
+    /**
+     * Top / bottom side an end of the edge must meet. ELK would rearrange the
+     * whole node around a port, so post-layout re-attaches the end instead.
+     */
+    sideHintSource?: 'N' | 'S';
+    sideHintTarget?: 'N' | 'S';
+    /** Draw arrowheads on both ends. */
+    bidirectional?: boolean;
+    /** Per-connection routing override. */
+    routing?: 'orthogonal' | 'polyline' | 'splines' | 'straight';
+  };
 }
 
 export interface ElkEdgeSection extends BaseElkEdgeSection {
