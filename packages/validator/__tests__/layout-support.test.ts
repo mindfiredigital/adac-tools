@@ -276,6 +276,18 @@ describe('collectDeclaredLayoutProperties', () => {
       expect(elementLayoutOf(cfg)).toEqual(['maxSize', 'minSize', 'size']);
     });
 
+    it('skips a service whose type is not a string', () => {
+      const cfg = withServices((visual) => [
+        { id: 'vpc', service: 'vpc' },
+        { id: 'sn', service: 'subnet', config: { vpc: 'vpc' }, visual },
+        { id: 'odd', service: { toString: null } },
+        { id: 'db', service: 'rds' },
+      ]);
+      expect(() => collectDeclaredLayoutProperties(cfg)).not.toThrow();
+      // the valid subnet still takes the unparented rds
+      expect(elementLayoutOf(cfg)).toEqual(['maxSize', 'minSize', 'size']);
+    });
+
     it('credits the vpc of a subnet placed in an availability zone', () => {
       const cfg = withServices((visual) => [
         { id: 'vpc', service: 'vpc', visual },

@@ -151,8 +151,11 @@ function containerIds(
     const cfg = service.config || service.configuration;
     return isObject(cfg) ? cfg : {};
   };
-  const typeOf = (service: Record<string, unknown>) =>
-    service.service || service.subtype || service.type;
+  /** The builder's type pick; a non-string type never matches a name. */
+  const typeOf = (service: Record<string, unknown>) => {
+    const type = service.service || service.subtype || service.type;
+    return typeof type === 'string' ? type : undefined;
+  };
 
   const vpcOfSubnet = new Map<string, string>();
   for (const service of services) {
@@ -230,7 +233,10 @@ function containerIds(
   // The other orphans go to the root or the utility group, outside any element.
   const subnetIds = new Set(
     services
-      .filter((s) => ['subnet', 'subnetwork'].includes(String(typeOf(s))))
+      .filter((s) => {
+        const type = typeOf(s);
+        return type === 'subnet' || type === 'subnetwork';
+      })
       .map((s) => text(s.id))
       .filter((id): id is string => id !== undefined)
   );
@@ -251,7 +257,8 @@ function containerIds(
     const id = text(service.id);
     if (!id || placed.has(id)) continue;
     placed.add(id);
-    if (!VPC_BOUND_TYPES.has(String(typeOf(service)))) continue;
+    const type = typeOf(service);
+    if (type === undefined || !VPC_BOUND_TYPES.has(type)) continue;
     if (!defaultVpc || !nodes.has(defaultVpc)) continue;
     const subnets = subnetsUnder(defaultVpc);
     // a stable pick of the first subnet with the fewest children
