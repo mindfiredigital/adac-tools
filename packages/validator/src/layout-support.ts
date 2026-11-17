@@ -72,34 +72,119 @@ function pick(source: unknown, names: readonly string[], into: Set<string>) {
   }
 }
 
-function strings(value: unknown): string[] {
-  if (typeof value === 'string') return [value];
-  return Array.isArray(value)
-    ? value.filter((v): v is string => typeof v === 'string')
-    : [];
+/** A non-empty string, else `undefined`. */
+function text(value: unknown): string | undefined {
+  return typeof value === 'string' && value !== '' ? value : undefined;
 }
 
 /**
- * Ids of the services that hold other elements, found the way the ELK builder
- * nests them: another service names it as its `vpc` / `vnet` / `subnet` /
- * `subnets`, or it `runs` applications. The document has no `children` field,
- * so this is what "has nested children" means here.
+ * Ids of the elements that end up holding another element. It repeats the
+ * hierarchy pass of the ELK builder, in the same order, so a parent counts only
+ * when a child is really attached to it:
+ * - a service's parent is its `subnets` (one: that subnet; several: the one VPC
+ *   they share, none when they span VPCs), else its `vpc` / `vnet`; a subnet
+ *   with an `availability_zone` sits in an implicit zone of its `vpc` instead
+ * - a service `runs` an application only when that element exists and no
+ *   earlier service claimed it
+ * - a parent must exist, must not be the service itself, and a service already
+ *   placed is not attached again
+ * The document has no `children` field, so this is what "has children" means.
  */
-function containerIds(services: Record<string, unknown>[]): Set<string> {
-  const ids = new Set<string>();
+function containerIds(
+  services: Record<string, unknown>[],
+  applications: Record<string, unknown>[]
+): Set<string> {
+  const nodes = new Set<string>();
+  const group = (item: Record<string, unknown>) => {
+    const tags = item.insight_tags;
+    const name = isObject(tags) ? text(tags.group) : undefined;
+    return name === undefined
+      ? undefined
+      : `group-${name.replace(/\s+/g, '-')}`;
+  };
+  for (const item of [...applications, ...services]) {
+    const id = text(item.id);
+    if (id) nodes.add(id);
+    const groupId = group(item);
+    if (groupId) nodes.add(groupId);
+  }
+
+  const configOf = (service: Record<string, unknown>) => {
+    const cfg = service.config || service.configuration;
+    return isObject(cfg) ? cfg : {};
+  };
+  const typeOf = (service: Record<string, unknown>) =>
+    service.service || service.subtype || service.type;
+
+  const vpcOfSubnet = new Map<string, string>();
   for (const service of services) {
-    const cfg = service.config ?? service.configuration;
-    if (isObject(cfg)) {
-      [cfg.vpc, cfg.vnet, cfg.subnet, cfg.subnets].forEach((ref) =>
-        strings(ref).forEach((id) => ids.add(id))
-      );
-    }
-    strings(service.subnets).forEach((id) => ids.add(id));
-    if (Array.isArray(service.runs) && service.runs.length > 0) {
-      if (typeof service.id === 'string') ids.add(service.id);
+    const cfg = configOf(service);
+    const id = text(service.id);
+    const vpc = text(cfg.vpc) ?? text(cfg.vnet);
+    const type = typeOf(service);
+    if (id && vpc && (type === 'subnet' || type === 'subnetwork')) {
+      vpcOfSubnet.set(id, vpc);
     }
   }
-  return ids;
+
+  const containers = new Set<string>();
+  const placed = new Set<string>();
+
+  for (const service of services) {
+    const id = text(service.id);
+    if (!id) continue;
+    const cfg = configOf(service);
+    const vpc = text(cfg.vpc);
+    let parent: string | undefined;
+
+    const zone = text(cfg.availability_zone);
+    if (zone && vpc) {
+      const zoneId = `${vpc}-${zone}`;
+      if (!nodes.has(zoneId)) {
+        nodes.add(zoneId);
+        if (nodes.has(vpc)) {
+          containers.add(vpc);
+          placed.add(zoneId);
+        }
+      }
+      if (typeOf(service) === 'subnet') parent = zoneId;
+    } else if (vpc) {
+      parent = vpc;
+    }
+
+    const subnets =
+      service.subnets || cfg.subnets || (cfg.subnet ? [cfg.subnet] : []);
+    if (Array.isArray(subnets) && subnets.length === 1) {
+      parent = text(subnets[0]);
+    } else if (Array.isArray(subnets) && subnets.length > 1) {
+      const vpcs = new Set<string>();
+      for (const subnet of subnets) {
+        const owner = vpcOfSubnet.get(String(subnet));
+        if (owner) vpcs.add(owner);
+      }
+      if (vpcs.size === 1) parent = [...vpcs][0];
+    }
+    parent ??= vpc ?? text(cfg.vnet);
+    if (parent === id) parent = undefined;
+
+    if (Array.isArray(service.runs)) {
+      for (const app of service.runs) {
+        const appId = text(app);
+        if (appId && !placed.has(appId) && nodes.has(appId)) {
+          containers.add(id);
+          placed.add(appId);
+        }
+      }
+    }
+
+    if (parent && nodes.has(parent) && !placed.has(id)) {
+      containers.add(parent);
+      placed.add(id);
+    }
+    // an unplaced service joins its logical group, which also places it
+    if (group(service)) placed.add(id);
+  }
+  return containers;
 }
 
 /**
@@ -128,7 +213,10 @@ export function collectDeclaredLayoutProperties(
         }
       }
     }
-    const containers = containerIds(services);
+    const applications = Array.isArray(config.applications)
+      ? config.applications.filter(isObject)
+      : [];
+    const containers = containerIds(services, applications);
 
     const visit = (item: unknown) => {
       if (isObject(item) && isObject(item.visual)) {
@@ -138,7 +226,7 @@ export function collectDeclaredLayoutProperties(
         }
       }
     };
-    if (Array.isArray(config.applications)) config.applications.forEach(visit);
+    applications.forEach(visit);
     services.forEach(visit);
     if (Array.isArray(config.connections)) {
       for (const conn of config.connections) {

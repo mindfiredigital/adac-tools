@@ -125,8 +125,12 @@ describe('collectDeclaredLayoutProperties', () => {
       },
     };
     /** `vpc` (with `visual`) and `other`, built by `make`; `db` is a plain leaf. */
-    const withServices = (make: (visual: Json) => Json[]) =>
+    const withServices = (
+      make: (visual: Json) => Json[],
+      applications: Json[] = []
+    ) =>
       config({
+        applications,
         infrastructure: {
           clouds: [
             {
@@ -157,9 +161,74 @@ describe('collectDeclaredLayoutProperties', () => {
       expect(elementLayoutOf(cfg)).toEqual(['maxSize', 'minSize', 'size']);
     });
 
-    it('lists them for a service that runs applications', () => {
+    it('lists them for a service that runs an application', () => {
+      const cfg = withServices(
+        (visual) => [{ id: 'svc', service: 'ecs', runs: ['app'], visual }],
+        [{ id: 'app', type: 'service' }]
+      );
+      expect(elementLayoutOf(cfg)).toEqual(['maxSize', 'minSize', 'size']);
+    });
+
+    it('leaves them out when the application it runs does not exist', () => {
       const cfg = withServices((visual) => [
-        { id: 'svc', service: 'ecs', runs: ['app'], visual },
+        { id: 'svc', service: 'ecs', runs: ['missing'], visual },
+      ]);
+      expect(elementLayoutOf(cfg)).toEqual([]);
+    });
+
+    it('leaves them out for an application another service already runs', () => {
+      const cfg = withServices(
+        (visual) => [
+          { id: 'first', service: 'ecs', runs: ['app'] },
+          { id: 'second', service: 'ecs', runs: ['app'], visual },
+        ],
+        [{ id: 'app', type: 'service' }]
+      );
+      expect(elementLayoutOf(cfg)).toEqual([]);
+    });
+
+    it('leaves them out for a parent that does not exist', () => {
+      const cfg = withServices((visual) => [
+        { id: 'vpc', service: 'vpc', visual },
+        { id: 'db', service: 'rds', config: { vpc: 'other' } },
+      ]);
+      expect(elementLayoutOf(cfg)).toEqual([]);
+    });
+
+    it('leaves them out for a service that names itself', () => {
+      const cfg = withServices((visual) => [
+        { id: 'sn', service: 'subnet', config: { vpc: 'sn' }, visual },
+      ]);
+      expect(elementLayoutOf(cfg)).toEqual([]);
+    });
+
+    it('credits the subnet, not the vpc, when a service names both', () => {
+      const services = (visual: Json) => [
+        { id: 'vpc', service: 'vpc', visual },
+        { id: 'sn', service: 'subnet' },
+        { id: 'db', service: 'rds', config: { vpc: 'vpc' }, subnets: ['sn'] },
+      ];
+      expect(elementLayoutOf(withServices(services))).toEqual([]);
+    });
+
+    it('credits the vpc, not a subnet, when several subnets are named', () => {
+      const services = (visual: Json) => [
+        { id: 'vpc', service: 'vpc' },
+        { id: 'a', service: 'subnet', config: { vpc: 'vpc' }, visual },
+        { id: 'b', service: 'subnet', config: { vpc: 'vpc' } },
+        { id: 'db', service: 'rds', subnets: ['a', 'b'] },
+      ];
+      expect(elementLayoutOf(withServices(services))).toEqual([]);
+    });
+
+    it('credits the vpc of a subnet placed in an availability zone', () => {
+      const cfg = withServices((visual) => [
+        { id: 'vpc', service: 'vpc', visual },
+        {
+          id: 'sn',
+          service: 'subnet',
+          config: { vpc: 'vpc', availability_zone: 'a' },
+        },
       ]);
       expect(elementLayoutOf(cfg)).toEqual(['maxSize', 'minSize', 'size']);
     });
