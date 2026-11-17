@@ -208,6 +208,40 @@ describe('layout schema validation', () => {
       );
       expect(result.valid).toBe(false);
     });
+
+    it('rejects an explicit size larger than maxSize', () => {
+      const result = validateAdacConfig(
+        withLayout({ size: { width: 6 }, maxSize: { width: 5 } })
+      );
+      expect(result.valid).toBe(false);
+      expect(result.errors?.join('\n')).toMatch(/size\/width/);
+    });
+
+    it('rejects a height-only bound violation', () => {
+      const tooSmall = validateAdacConfig(
+        withLayout({ size: { height: 2 }, minSize: { height: 3 } })
+      );
+      expect(tooSmall.valid).toBe(false);
+      expect(tooSmall.errors?.join('\n')).toMatch(/minSize\/height/);
+
+      const tooLarge = validateAdacConfig(
+        withLayout({ size: { height: 9 }, maxSize: { height: 8 } })
+      );
+      expect(tooLarge.valid).toBe(false);
+      expect(tooLarge.errors?.join('\n')).toMatch(/size\/height/);
+    });
+
+    it('accepts equal numeric bounds', () => {
+      const result = validateAdacConfig(
+        withLayout({
+          size: { width: 4, height: 3 },
+          minSize: { width: 4, height: 3 },
+          maxSize: { width: 4, height: 3 },
+        })
+      );
+      expect(result.errors).toBeUndefined();
+      expect(result.valid).toBe(true);
+    });
   });
 
   describe('deprecated aliases', () => {

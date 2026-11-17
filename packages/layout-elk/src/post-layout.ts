@@ -21,11 +21,9 @@ import {
 export function applyLayoutPostProcessing(layout: ElkNode): string[] {
   const warnings: string[] = [];
   const pre = absolutePositions(layout);
+  const preSize = sizes(layout);
 
   let moved = false;
-  walk(layout, (node) => {
-    checkMaxSize(node, warnings);
-  });
   walk(layout, (node) => {
     if (node.properties?.stackAxis && restack(node)) moved = true;
   });
@@ -40,13 +38,36 @@ export function applyLayoutPostProcessing(layout: ElkNode): string[] {
     arrangeAll();
   }
 
-  if (moved) fixEdges(layout, pre);
+  if (moved) fixEdges(layout, pre, preSize);
   routeDeferredEdges(layout);
   attachHintedSides(layout);
   distributeEdgeEnds(layout);
   avoidCrossedContainers(layout);
   separateParallelRuns(layout);
+  // checked last, against the final (trimmed / straightened) boxes
+  walk(layout, (node) => {
+    checkMaxSize(node, warnings);
+  });
   return warnings;
+}
+
+function sizes(root: ElkNode): Map<string, { w: number; h: number }> {
+  const map = new Map<string, { w: number; h: number }>();
+  walk(root, (n) => map.set(n.id, { w: n.width ?? 0, h: n.height ?? 0 }));
+  return map;
+}
+
+/** Moves `p` onto the nearest border of `b` (all in one frame). */
+function snapToBorder(p: Pt, b: AbsBox): Pt {
+  const x = Math.min(Math.max(p.x, b.x), b.x + b.w);
+  const y = Math.min(Math.max(p.y, b.y), b.y + b.h);
+  const d = [
+    { v: Math.abs(x - b.x), pt: { x: b.x, y } },
+    { v: Math.abs(b.x + b.w - x), pt: { x: b.x + b.w, y } },
+    { v: Math.abs(y - b.y), pt: { x, y: b.y } },
+    { v: Math.abs(b.y + b.h - y), pt: { x, y: b.y + b.h } },
+  ].sort((a, c) => a.v - c.v);
+  return d[0].pt;
 }
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
@@ -209,12 +230,20 @@ function arrange(container: ElkNode): boolean {
         }
       }
       for (const item of line) {
+        // centring a leaf on its icon must not push its caption out of the
+        // band; the band always holds the item, so clamping is enough
         const target =
           arrangement.align === 'start'
             ? bandStart
             : arrangement.align === 'end'
               ? bandEnd - crossSize(item)
-              : bandStart + (bandEnd - bandStart) / 2 - centerOffset(item);
+              : Math.min(
+                  Math.max(
+                    bandStart + (bandEnd - bandStart) / 2 - centerOffset(item),
+                    bandStart
+                  ),
+                  Math.max(bandStart, bandEnd - crossSize(item))
+                );
         const d = target - crossStart(item);
         move(() => shiftCross(item, d), d);
       }
@@ -259,8 +288,24 @@ function arrange(container: ElkNode): boolean {
  * container frame. Edges whose two ends moved together are translated; edges
  * whose ends moved apart are re-routed with a single orthogonal Z.
  */
-function fixEdges(root: ElkNode, pre: Map<string, Pt>): void {
+function fixEdges(
+  root: ElkNode,
+  pre: Map<string, Pt>,
+  preSize: Map<string, { w: number; h: number }>
+): void {
   const post = absolutePositions(root);
+  const nodes = new Map<string, ElkNode>();
+  walk(root, (n) => nodes.set(n.id, n));
+  const resized = (id: string | undefined): boolean => {
+    const before = id ? preSize.get(id) : undefined;
+    const n = id ? nodes.get(id) : undefined;
+    return (
+      !!before &&
+      !!n &&
+      (Math.abs(before.w - (n.width ?? 0)) > 0.01 ||
+        Math.abs(before.h - (n.height ?? 0)) > 0.01)
+    );
+  };
   const delta = (id: string | undefined): Pt => {
     const a = id ? pre.get(id) : undefined;
     const b = id ? post.get(id) : undefined;
@@ -278,20 +323,58 @@ function fixEdges(root: ElkNode, pre: Map<string, Pt>): void {
     (n.edges ?? []).forEach((edge: ElkEdge) => {
       const frame = edge.container ?? n.id;
       const dFrame = delta(frame);
-      const ds = delta(owner(edge.sources?.[0]));
-      const dt = delta(owner(edge.targets?.[0]));
+      const sourceId = owner(edge.sources?.[0]);
+      const targetId = owner(edge.targets?.[0]);
+      const ds = delta(sourceId);
+      const dt = delta(targetId);
       const together = ds.x === dt.x && ds.y === dt.y;
-      if (together && ds.x === dFrame.x && ds.y === dFrame.y) return;
+      const sourceResized = resized(sourceId);
+      const targetResized = resized(targetId);
+      if (
+        together &&
+        ds.x === dFrame.x &&
+        ds.y === dFrame.y &&
+        !sourceResized &&
+        !targetResized
+      ) {
+        return;
+      }
 
       const toFrame = (p: Pt, d: Pt): Pt => ({
         x: p.x + d.x - dFrame.x,
         y: p.y + d.y - dFrame.y,
       });
+      const framePos = post.get(frame) ?? { x: 0, y: 0 };
+      /** The node's final box in the edge's frame. */
+      const boxInFrame = (id: string): AbsBox | undefined => {
+        const n = nodes.get(id);
+        const p = post.get(id);
+        return n && p
+          ? {
+              x: p.x - framePos.x,
+              y: p.y - framePos.y,
+              w: n.width ?? 0,
+              h: n.height ?? 0,
+            }
+          : undefined;
+      };
+      const reattach = (p: Pt, id: string | undefined, isResized: boolean) => {
+        const box = isResized && id ? boxInFrame(id) : undefined;
+        return box ? snapToBorder(p, box) : p;
+      };
 
       edge.sections?.forEach((section) => {
-        const start = toFrame(section.startPoint, ds);
-        const end = toFrame(section.endPoint, dt);
-        if (together) {
+        const start = reattach(
+          toFrame(section.startPoint, ds),
+          sourceId,
+          sourceResized
+        );
+        const end = reattach(
+          toFrame(section.endPoint, dt),
+          targetId,
+          targetResized
+        );
+        if (together && !sourceResized && !targetResized) {
           section.bendPoints = section.bendPoints?.map((b) => toFrame(b, ds));
         } else {
           const firstTarget = section.bendPoints?.[0] ?? section.endPoint;
@@ -735,11 +818,9 @@ function spreadAlongSide(wanted: number[], len: number): number[] {
   const margin = Math.min(MIN_EDGE_GAP, len / 4);
   const room = len - 2 * margin;
   if (room < (n - 1) * MIN_EDGE_GAP) {
-    return wanted.map((_, i) =>
-      len / (n + 1) >= MIN_EDGE_GAP
-        ? (len * (i + 1)) / (n + 1)
-        : len / 2 + (i - (n - 1) / 2) * MIN_EDGE_GAP
-    );
+    // too short for the minimum gap: spread evenly, centred, never past the
+    // ends of the side (the gap shrinks below MIN_EDGE_GAP only when it must)
+    return wanted.map((_, i) => (len * (i + 1)) / (n + 1));
   }
   const pos = wanted.map((w) => Math.min(Math.max(w, margin), len - margin));
   for (let i = 1; i < n; i++) {
@@ -1410,16 +1491,49 @@ function separateParallelRuns(root: ElkNode): void {
     section: ElkEdgeSection;
     origin: Pt;
     pts: Pt[];
+    /** Boxes unrelated to the edge's two ends, which its runs must clear. */
+    foreign: AbsBox[];
   }
+
+  const parentOf = new Map<string, string | undefined>();
+  const nodes = new Map<string, ElkNode>();
+  const index = (n: ElkNode, parent?: ElkNode) => {
+    nodes.set(n.id, n);
+    parentOf.set(n.id, parent?.id);
+    n.children?.forEach((c) => index(c, n));
+  };
+  index(root);
+  const ownerOf = new Map<string, string>();
+  nodes.forEach((n) => n.ports?.forEach((p) => ownerOf.set(p.id, n.id)));
+  const owner = (ref: string | undefined) =>
+    ref ? (ownerOf.get(ref) ?? ref) : undefined;
+  const lineage = (id: string | undefined): Set<string> => {
+    const set = new Set<string>();
+    for (let c = id; c; c = parentOf.get(c)) set.add(c);
+    return set;
+  };
+  const boxes: (AbsBox & { id: string })[] = [];
+  nodes.forEach((n, id) => {
+    const p = abs.get(id);
+    if (!p || n === root || n.properties?.type === LAYOUT_LINE_TYPE) return;
+    boxes.push({ id, ...p, w: n.width ?? 0, h: n.height ?? 0 });
+  });
+
   const routes: Route[] = [];
   walk(root, (n) => {
     (n.edges ?? []).forEach((edge: ElkEdge) => {
       if (isLayoutOnlyEdge(edge)) return;
       const origin = abs.get(edge.container ?? n.id) ?? { x: 0, y: 0 };
+      const related = new Set([
+        ...lineage(owner(edge.sources?.[0])),
+        ...lineage(owner(edge.targets?.[0])),
+      ]);
+      const foreign = boxes.filter((b) => !related.has(b.id));
       edge.sections?.forEach((section) => {
         routes.push({
           section,
           origin,
+          foreign,
           pts: [
             section.startPoint,
             ...(section.bendPoints ?? []),
@@ -1452,6 +1566,22 @@ function separateParallelRuns(root: ElkNode): void {
     });
   };
 
+  /** True if the run p→q comes within ROUTE_CLEARANCE of a foreign box. */
+  const blocked = (self: Route, p: Pt, q: Pt): boolean => {
+    const m = ROUTE_CLEARANCE;
+    const x0 = Math.min(p.x, q.x);
+    const x1 = Math.max(p.x, q.x);
+    const y0 = Math.min(p.y, q.y);
+    const y1 = Math.max(p.y, q.y);
+    return self.foreign.some(
+      (box) =>
+        x1 > box.x - m &&
+        x0 < box.x + box.w + m &&
+        y1 > box.y - m &&
+        y0 < box.y + box.h + m
+    );
+  };
+
   routes.forEach((route) => {
     const { pts } = route;
     let changed = false;
@@ -1476,6 +1606,15 @@ function separateParallelRuns(root: ElkNode): void {
         const a = { ...p, [axis]: to };
         const b = { ...q, [axis]: to };
         if (crowded(route, a, b)) continue;
+        // the moved run and the two runs that now reach it must stay clear of
+        // boxes the edge has nothing to do with
+        if (
+          blocked(route, pts[i - 1], a) ||
+          blocked(route, a, b) ||
+          blocked(route, b, pts[i + 2])
+        ) {
+          continue;
+        }
         pts[i] = a;
         pts[i + 1] = b;
         changed = true;

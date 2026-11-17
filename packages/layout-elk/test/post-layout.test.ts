@@ -418,6 +418,97 @@ describe('keeping routes out of unrelated containers', () => {
   });
 });
 
+describe('a container that is trimmed', () => {
+  // a row that arranges one 90px item, left 300px tall by ELK; trimming
+  // shrinks it to 130px
+  const trimmedRow = (maxSize?: { height: number }): ElkNode => ({
+    id: 'root',
+    x: 0,
+    y: 0,
+    width: 600,
+    height: 600,
+    children: [
+      {
+        id: 'row',
+        x: 0,
+        y: 0,
+        width: 400,
+        height: 300,
+        properties: {
+          type: 'container',
+          arrangement: {
+            mainAxis: 'horizontal',
+            align: 'start',
+            padding: { top: 20, right: 20, bottom: 20, left: 20 },
+          },
+          maxSize,
+        } as never,
+        children: [
+          {
+            id: 'a',
+            x: 20,
+            y: 20,
+            width: 52,
+            height: 90,
+            properties: { type: 'service' },
+          },
+        ],
+      },
+      {
+        id: 'b',
+        x: 174,
+        y: 400,
+        width: 52,
+        height: 90,
+        properties: { type: 'service' },
+      },
+    ],
+    edges: [
+      {
+        id: 'e',
+        sources: ['row'],
+        targets: ['b'],
+        sections: [
+          {
+            id: 's',
+            startPoint: { x: 200, y: 300 },
+            endPoint: { x: 200, y: 400 },
+          },
+        ],
+      },
+    ],
+  });
+
+  it('carries the edge leaving its bottom to the new border', () => {
+    const root = trimmedRow();
+    applyLayoutPostProcessing(root);
+    expect(root.children![0].height).toBe(130);
+    const s = root.edges![0].sections![0];
+    const pts = [s.startPoint, ...(s.bendPoints ?? []), s.endPoint];
+    expect(s.startPoint.y).toBe(130);
+    // the other end stays on b
+    expect(s.endPoint.y).toBeGreaterThanOrEqual(400);
+    expect(s.endPoint.y).toBeLessThanOrEqual(400 + 90);
+    pts.slice(1).forEach((p, i) => {
+      const q = pts[i];
+      expect(Math.abs(p.x - q.x) < 0.5 || Math.abs(p.y - q.y) < 0.5).toBe(true);
+    });
+  });
+
+  it('checks maxSize against the trimmed size', () => {
+    // 300px before trimming, 130px after: within a 200px maximum
+    const root = trimmedRow({ height: 200 });
+    expect(applyLayoutPostProcessing(root)).toEqual([]);
+  });
+
+  it('still warns when the trimmed size exceeds maxSize', () => {
+    const root = trimmedRow({ height: 100 });
+    expect(applyLayoutPostProcessing(root)).toEqual([
+      expect.stringContaining('"row" is 130px tall'),
+    ]);
+  });
+});
+
 describe('a node standing on its own at the top level', () => {
   it('moves the whole way to line up with the node it links to', () => {
     const root: ElkNode = {
@@ -675,7 +766,8 @@ describe('an edge that asks for the top of a node', () => {
 });
 
 describe('edges that share a run', () => {
-  it('moves one of two inner runs on the same line apart', () => {
+  // two Z routes whose vertical runs share the line x=300
+  const sharedRun = (extra: ElkNode[] = []): ElkNode => {
     const edge = (
       id: string,
       from: string,
@@ -706,7 +798,7 @@ describe('edges that share a run', () => {
       height: 90,
       properties: { type: 'service' },
     });
-    const root: ElkNode = {
+    return {
       id: 'root',
       x: 0,
       y: 0,
@@ -725,13 +817,41 @@ describe('edges that share a run', () => {
             node('c', 20, 500),
             node('b', 600, 100),
             node('d', 600, 200),
+            ...extra,
           ],
         },
       ],
       edges: [edge('e1', 'a', 'b', 431, 131), edge('e2', 'c', 'd', 531, 231)],
     };
+  };
+  const runX = (root: ElkNode, i: number) =>
+    root.edges![i].sections![0].bendPoints![0].x;
+
+  it('moves one of two inner runs on the same line apart', () => {
+    const root = sharedRun();
     applyLayoutPostProcessing(root);
-    const x = (i: number) => root.edges![i].sections![0].bendPoints![0].x;
-    expect(Math.abs(x(0) - x(1))).toBeGreaterThanOrEqual(8);
+    expect(Math.abs(runX(root, 0) - runX(root, 1))).toBeGreaterThanOrEqual(8);
+  });
+
+  it('does not move a run into a box the edge has nothing to do with', () => {
+    // `blk` sits just right of the shared line, where the first try (x=316)
+    // would put the moved run
+    const root = sharedRun([
+      {
+        id: 'blk',
+        x: 310,
+        y: 250,
+        width: 20,
+        height: 100,
+        properties: { type: 'container' },
+        children: [],
+      },
+    ]);
+    applyLayoutPostProcessing(root);
+    const xs = [runX(root, 0), runX(root, 1)];
+    expect(Math.abs(xs[0] - xs[1])).toBeGreaterThanOrEqual(8);
+    xs.forEach((x) => {
+      expect(x <= 310 - 8 || x >= 330 + 8).toBe(true);
+    });
   });
 });

@@ -579,6 +579,17 @@ describe('declarative layout', () => {
       expect(r.box('a').h).toBeGreaterThanOrEqual(400);
     });
 
+    it('a minSize smaller than a leaf never shrinks it', async () => {
+      const r = await run(
+        config([
+          { id: 'plain' },
+          { id: 'small', layout: { minSize: { width: 0.1, height: 0.1 } } },
+        ])
+      );
+      expect(r.box('small').w).toBe(r.box('plain').w);
+      expect(r.box('small').h).toBe(r.box('plain').h);
+    });
+
     it('minSize never shrinks a container below its content', async () => {
       const r = await run(
         config([
