@@ -1,4 +1,7 @@
-import type { AdacConfig } from '@mindfiredigital/adac-validator';
+import {
+  VPC_BOUND_TYPES,
+  type AdacConfig,
+} from '@mindfiredigital/adac-validator';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { ElkNode, ElkEdge } from './types.js';
 import {
@@ -7,7 +10,13 @@ import {
   layoutConnection,
   rootElkOptions,
 } from './declarative-layout.js';
-import { normalizeLayoutOptions, type Warn } from './layout-properties.js';
+import {
+  describeAppliedDefaults,
+  normalizeLayoutOptions,
+  resolveLayoutDefaults,
+  type LayoutDefaults,
+  type Warn,
+} from './layout-properties.js';
 
 let fsPromise: Promise<typeof import('fs')> | undefined;
 let pathPromise: Promise<typeof import('path')> | undefined;
@@ -169,6 +178,14 @@ export interface BuildElkGraphOptions {
    * to keep label-wide cards and the shared-infrastructure group.
    */
   declarativeStyle?: boolean;
+  /**
+   * Replaces the default profile (`v1`) for files that do not pick one with
+   * `layoutOptions.defaults`; used to trial profiles. Explicit values, and an
+   * explicit `layoutOptions.defaults`, always win. Ignored off elk.
+   */
+  layoutDefaults?: LayoutDefaults;
+  /** Receives one line naming the defaults applied, when any were. */
+  onDebug?: (message: string) => void;
 }
 
 const DEFAULT_EDGE_ROUTING_MODE: ElkEdgeRoutingMode = 'ORTHOGONAL';
@@ -482,9 +499,28 @@ export async function buildElkGraph(
     azure: AZURE_ICON_MAP,
   } = await initializeIconMaps();
   const warn: Warn = options.onWarning ?? ((m) => console.warn(m));
-  const globalLayout = normalizeLayoutOptions(adac.layoutOptions, warn);
   // icon nodes are as wide as their icon; other engines keep label-wide cards
   const declarativeStyle = options.declarativeStyle ?? true;
+  // the other engines flatten the declarative layout, so defaults are elk-only
+  const layoutDefaults = declarativeStyle
+    ? resolveLayoutDefaults(
+        adac.layoutOptions?.defaults,
+        options.layoutDefaults,
+        warn
+      )
+    : undefined;
+  const globalLayout = normalizeLayoutOptions(
+    adac.layoutOptions,
+    warn,
+    layoutDefaults
+  );
+  const appliedDefaults = describeAppliedDefaults(
+    globalLayout.provenance,
+    layoutDefaults
+  );
+  if (appliedDefaults) {
+    options.onDebug?.(`Layout defaults applied: ${appliedDefaults}`);
+  }
 
   const nodesMap = new Map<string, ElkNode>();
   const edges: ElkEdge[] = [];
@@ -1240,38 +1276,8 @@ export async function buildElkGraph(
         // Assign compute/DB orphans to the VPC with most subnets.
         const defaultVpcId = selectDefaultVpcId(subnetToVpcMap);
 
-        const isVpcBound = [
-          'eks',
-          'ecs',
-          'ec2',
-          'rds',
-          'aurora',
-          'dynamodb',
-          'msk',
-          'kafka',
-          'elasticache',
-          'redis',
-          'memcached',
-          'nlb',
-          'alb',
-          'docdb',
-          'redshift',
-          'emr',
-          'sagemaker',
-          'opensearch',
-          'aks',
-          'virtual-machine',
-          'azure-kubernetes-service',
-          'app-service',
-          'azure-functions',
-          'azure-sql-database',
-          'cosmos-db',
-          'azure-cache-for-redis',
-          'azure-database-for-postgresql',
-          'azure-api-management',
-          'azure-service-bus',
-          'azure-event-hubs',
-        ].includes(type);
+        // shared with the validator, whose container warning relies on it
+        const isVpcBound = VPC_BOUND_TYPES.has(type);
 
         if (isVpcBound && defaultVpcId) {
           const vpcNode = nodesMap.get(defaultVpcId);

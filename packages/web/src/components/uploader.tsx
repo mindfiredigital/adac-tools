@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { Upload, FileText, ArrowRight, Loader } from 'lucide-react';
-import { generateDiagramBrowser } from '../helper/diagram-generator';
-import type { GenerationResult } from '@mindfiredigital/adac-core';
-const USE_BACKEND = import.meta.env.VITE_USE_BACKEND === 'true';
+import { useDiagramGeneration } from '../hooks/use-diagram-generation';
+import { WarningBanner } from './warning-banner';
 
 /**
  * Uploader component for ADAC YAML files.
@@ -14,56 +13,26 @@ interface UploaderProps {
 
 export const Uploader = ({ onBack }: UploaderProps) => {
   const [file, setFile] = useState<File | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [svgContent, setSvgContent] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const {
+    loading,
+    svg: svgContent,
+    error,
+    warnings,
+    generate,
+    reset,
+    dismissWarnings,
+  } = useDiagramGeneration();
 
   const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
+      // a generation still running for the previous file must not show
+      reset();
       setFile(e.target.files[0]);
-      setError(null);
-      setSvgContent(null);
     }
   };
 
-  const handleGenerate = async () => {
-    if (!file) return;
-
-    setLoading(true);
-    setError(null);
-
-    let results: GenerationResult;
-
-    try {
-      const text = await file.text();
-
-      if (USE_BACKEND) {
-        // Assuming the api endpoint is at the root since we are proxying or strictly same origin
-        const response = await fetch('/api/generate', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            content: text,
-            layout: 'elk', // Default to ELK
-          }),
-        });
-
-        if (!response.ok) {
-          const err = await response.json();
-          throw new Error(err.error || 'Failed to generate diagram');
-        }
-
-        results = await response.json();
-      } else {
-        results = await generateDiagramBrowser(text, 'elk');
-      }
-      setSvgContent(results.svg);
-    } catch (e: unknown) {
-      const message = e instanceof Error ? e.message : 'Unknown error';
-      setError(message);
-    } finally {
-      setLoading(false);
-    }
+  const handleGenerate = () => {
+    if (file) void generate(file);
   };
 
   const handleDownload = () => {
@@ -173,6 +142,8 @@ export const Uploader = ({ onBack }: UploaderProps) => {
           )}
         </div>
       </div>
+
+      <WarningBanner messages={warnings} onClose={dismissWarnings} />
     </div>
   );
 };

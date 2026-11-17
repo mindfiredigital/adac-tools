@@ -10,6 +10,14 @@ type AdacService =
   AdacConfig['infrastructure']['clouds'][number]['services'][number];
 
 export { validateAdacConfig };
+export {
+  collectDeclaredLayoutProperties,
+  declaredLayoutEngine,
+  unsupportedLayoutEngineWarning,
+  VPC_BOUND_TYPES,
+  type AdacLayoutEngineName,
+  type DeclaredLayoutProperties,
+} from './layout-support.js';
 
 export type {
   AdacConfig,

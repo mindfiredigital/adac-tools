@@ -75,7 +75,8 @@ function config(
       type: 'api-call',
       ...c,
     })) as AdacConnection[],
-    ...(opts.layoutOptions ? { layoutOptions: opts.layoutOptions } : {}),
+    // these tests exercise the arrangement mechanics, not the default profile
+    layoutOptions: { defaults: 'none', ...opts.layoutOptions },
   };
 }
 
@@ -576,6 +577,17 @@ describe('declarative layout', () => {
       );
       expect(r.box('a').w).toBeGreaterThanOrEqual(600);
       expect(r.box('a').h).toBeGreaterThanOrEqual(400);
+    });
+
+    it('a minSize smaller than a leaf never shrinks it', async () => {
+      const r = await run(
+        config([
+          { id: 'plain' },
+          { id: 'small', layout: { minSize: { width: 0.1, height: 0.1 } } },
+        ])
+      );
+      expect(r.box('small').w).toBe(r.box('plain').w);
+      expect(r.box('small').h).toBe(r.box('plain').h);
     });
 
     it('minSize never shrinks a container below its content', async () => {

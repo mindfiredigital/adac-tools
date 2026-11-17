@@ -286,6 +286,11 @@
           "type": "string",
           "enum": ["elk", "custom", "orthogonal", "tsm"]
         },
+        "defaults": {
+          "type": "string",
+          "enum": ["v1", "none"],
+          "description": "Default profile applied on elk to layout options left undeclared (v1 when omitted); 'none' keeps the engine's own behaviour"
+        },
         "unitSize": {
           "type": "number",
           "exclusiveMinimum": 0,

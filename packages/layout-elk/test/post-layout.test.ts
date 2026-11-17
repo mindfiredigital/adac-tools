@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { applyLayoutPostProcessing } from '../src/post-layout.js';
+import { LAYOUT_LINE_TYPE } from '../src/declarative-layout.js';
 import type { ElkNode } from '../src/types.js';
 
 /**
@@ -92,6 +93,168 @@ describe('straightening links between icon nodes', () => {
     expect(start.x).toBe(72);
     expect(start.y).toBeGreaterThanOrEqual(70 + 5);
     expect(start.y).toBeLessThanOrEqual(70 + 57);
+  });
+});
+
+describe('straightening and a declared align', () => {
+  // a row aligned to its bottom edge: a (80px) and b (120px) joined side to
+  // side; moving one of them to line up the icons would undo the alignment
+  const row = (align?: 'end'): ElkNode => ({
+    id: 'root',
+    x: 0,
+    y: 0,
+    width: 600,
+    height: 400,
+    children: [
+      {
+        id: 'row',
+        x: 0,
+        y: 0,
+        width: 400,
+        height: 300,
+        layoutOptions: { 'elk.padding': '[top=20,left=20,bottom=20,right=20]' },
+        properties: {
+          type: 'container',
+          arrangement: {
+            mainAxis: 'horizontal',
+            align,
+            padding: { top: 20, right: 20, bottom: 20, left: 20 },
+          },
+        } as never,
+        children: [
+          {
+            id: 'a',
+            x: 20,
+            y: 20,
+            width: 52,
+            height: 80,
+            properties: { type: 'service' },
+          },
+          {
+            id: 'b',
+            x: 200,
+            y: 20,
+            width: 52,
+            height: 120,
+            properties: { type: 'service' },
+          },
+        ],
+        edges: [
+          {
+            id: 'e',
+            sources: ['a'],
+            targets: ['b'],
+            container: 'row',
+            sections: [
+              {
+                id: 's',
+                startPoint: { x: 72, y: 50 },
+                endPoint: { x: 200, y: 50 },
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  });
+  const bottoms = (g: ElkNode) =>
+    g.children![0].children!.map((n) => n.y! + n.height!);
+
+  it('keeps the bottoms aligned for align: end', () => {
+    const g = row('end');
+    applyLayoutPostProcessing(g);
+    expect(bottoms(g)).toEqual([140, 140]);
+  });
+
+  it('keeps the bottoms aligned when wrapping groups the items into lines', () => {
+    const g = row('end');
+    const container = g.children![0];
+    const [a, b] = container.children!;
+    // the same two items, now inside one synthetic layout-line group
+    container.children = [
+      {
+        id: 'line-0',
+        x: 0,
+        y: 0,
+        width: 400,
+        height: 300,
+        properties: { type: LAYOUT_LINE_TYPE },
+        children: [a, b],
+      },
+    ];
+    applyLayoutPostProcessing(g);
+    const line = container.children![0];
+    // arrange() aligned them; straightening must not move either back
+    // a lone line aligns to the container's inner bottom (300 - 20)
+    expect(line.children!.map((n) => n.y! + n.height!)).toEqual([280, 280]);
+  });
+
+  it('keeps the spacing of a vertical stack that declares a justify', () => {
+    // two 50px items spaced to the ends of a 150px column (inner box 20..130):
+    // a sits at y=20 and b at y=80; meeting b's icon would move a down by 60
+    const g: ElkNode = {
+      id: 'root',
+      x: 0,
+      y: 0,
+      width: 600,
+      height: 400,
+      children: [
+        {
+          id: 'col',
+          x: 0,
+          y: 0,
+          width: 400,
+          height: 150,
+          layoutOptions: {
+            'elk.padding': '[top=20,left=20,bottom=20,right=20]',
+          },
+          properties: {
+            type: 'container',
+            arrangement: {
+              mainAxis: 'vertical',
+              justify: 'space-between',
+              padding: { top: 20, right: 20, bottom: 20, left: 20 },
+            },
+          } as never,
+          children: [
+            {
+              id: 'a',
+              x: 20,
+              y: 20,
+              width: 52,
+              height: 50,
+              properties: { type: 'service' },
+            },
+            {
+              id: 'b',
+              x: 200,
+              y: 20,
+              width: 52,
+              height: 50,
+              properties: { type: 'service' },
+            },
+          ],
+          edges: [
+            {
+              id: 'e',
+              sources: ['a'],
+              targets: ['b'],
+              container: 'col',
+              sections: [
+                {
+                  id: 's',
+                  startPoint: { x: 72, y: 45 },
+                  endPoint: { x: 200, y: 45 },
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+    applyLayoutPostProcessing(g);
+    const [a, b] = g.children![0].children!;
+    expect([a.y, b.y]).toEqual([20, 80]);
   });
 });
 
@@ -252,6 +415,97 @@ describe('keeping routes out of unrelated containers', () => {
     wrap.children = wrap.children!.filter((c) => c.id !== 'other');
     applyLayoutPostProcessing(root);
     expect(root.edges![0].sections![0].bendPoints![0].x).toBe(300);
+  });
+});
+
+describe('a container that is trimmed', () => {
+  // a row that arranges one 90px item, left 300px tall by ELK; trimming
+  // shrinks it to 130px
+  const trimmedRow = (maxSize?: { height: number }): ElkNode => ({
+    id: 'root',
+    x: 0,
+    y: 0,
+    width: 600,
+    height: 600,
+    children: [
+      {
+        id: 'row',
+        x: 0,
+        y: 0,
+        width: 400,
+        height: 300,
+        properties: {
+          type: 'container',
+          arrangement: {
+            mainAxis: 'horizontal',
+            align: 'start',
+            padding: { top: 20, right: 20, bottom: 20, left: 20 },
+          },
+          maxSize,
+        } as never,
+        children: [
+          {
+            id: 'a',
+            x: 20,
+            y: 20,
+            width: 52,
+            height: 90,
+            properties: { type: 'service' },
+          },
+        ],
+      },
+      {
+        id: 'b',
+        x: 174,
+        y: 400,
+        width: 52,
+        height: 90,
+        properties: { type: 'service' },
+      },
+    ],
+    edges: [
+      {
+        id: 'e',
+        sources: ['row'],
+        targets: ['b'],
+        sections: [
+          {
+            id: 's',
+            startPoint: { x: 200, y: 300 },
+            endPoint: { x: 200, y: 400 },
+          },
+        ],
+      },
+    ],
+  });
+
+  it('carries the edge leaving its bottom to the new border', () => {
+    const root = trimmedRow();
+    applyLayoutPostProcessing(root);
+    expect(root.children![0].height).toBe(130);
+    const s = root.edges![0].sections![0];
+    const pts = [s.startPoint, ...(s.bendPoints ?? []), s.endPoint];
+    expect(s.startPoint.y).toBe(130);
+    // the other end stays on b
+    expect(s.endPoint.y).toBeGreaterThanOrEqual(400);
+    expect(s.endPoint.y).toBeLessThanOrEqual(400 + 90);
+    pts.slice(1).forEach((p, i) => {
+      const q = pts[i];
+      expect(Math.abs(p.x - q.x) < 0.5 || Math.abs(p.y - q.y) < 0.5).toBe(true);
+    });
+  });
+
+  it('checks maxSize against the trimmed size', () => {
+    // 300px before trimming, 130px after: within a 200px maximum
+    const root = trimmedRow({ height: 200 });
+    expect(applyLayoutPostProcessing(root)).toEqual([]);
+  });
+
+  it('still warns when the trimmed size exceeds maxSize', () => {
+    const root = trimmedRow({ height: 100 });
+    expect(applyLayoutPostProcessing(root)).toEqual([
+      expect.stringContaining('"row" is 130px tall'),
+    ]);
   });
 });
 
@@ -512,7 +766,8 @@ describe('an edge that asks for the top of a node', () => {
 });
 
 describe('edges that share a run', () => {
-  it('moves one of two inner runs on the same line apart', () => {
+  // two Z routes whose vertical runs share the line x=300
+  const sharedRun = (extra: ElkNode[] = []): ElkNode => {
     const edge = (
       id: string,
       from: string,
@@ -543,7 +798,7 @@ describe('edges that share a run', () => {
       height: 90,
       properties: { type: 'service' },
     });
-    const root: ElkNode = {
+    return {
       id: 'root',
       x: 0,
       y: 0,
@@ -562,13 +817,41 @@ describe('edges that share a run', () => {
             node('c', 20, 500),
             node('b', 600, 100),
             node('d', 600, 200),
+            ...extra,
           ],
         },
       ],
       edges: [edge('e1', 'a', 'b', 431, 131), edge('e2', 'c', 'd', 531, 231)],
     };
+  };
+  const runX = (root: ElkNode, i: number) =>
+    root.edges![i].sections![0].bendPoints![0].x;
+
+  it('moves one of two inner runs on the same line apart', () => {
+    const root = sharedRun();
     applyLayoutPostProcessing(root);
-    const x = (i: number) => root.edges![i].sections![0].bendPoints![0].x;
-    expect(Math.abs(x(0) - x(1))).toBeGreaterThanOrEqual(8);
+    expect(Math.abs(runX(root, 0) - runX(root, 1))).toBeGreaterThanOrEqual(8);
+  });
+
+  it('does not move a run into a box the edge has nothing to do with', () => {
+    // `blk` sits just right of the shared line, where the first try (x=316)
+    // would put the moved run
+    const root = sharedRun([
+      {
+        id: 'blk',
+        x: 310,
+        y: 250,
+        width: 20,
+        height: 100,
+        properties: { type: 'container' },
+        children: [],
+      },
+    ]);
+    applyLayoutPostProcessing(root);
+    const xs = [runX(root, 0), runX(root, 1)];
+    expect(Math.abs(xs[0] - xs[1])).toBeGreaterThanOrEqual(8);
+    xs.forEach((x) => {
+      expect(x <= 310 - 8 || x >= 330 + 8).toBe(true);
+    });
   });
 });

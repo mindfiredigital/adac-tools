@@ -2,6 +2,11 @@ import Ajv from 'ajv/dist/2020.js';
 import addFormats from 'ajv-formats';
 import schema from './adac.schema.json' with { type: 'json' };
 import type { AdacConfig, AdacElementLayout, AdacSize } from './types.js';
+import {
+  declaredLayoutEngine,
+  unsupportedLayoutEngineWarning,
+  type AdacLayoutEngineName,
+} from './layout-support.js';
 
 type JsonSchema = Record<string, unknown>;
 
@@ -110,6 +115,11 @@ export interface ValidationExtension {
 
 export interface ValidationOptions {
   extensions?: ValidationExtension[];
+  /**
+   * The layout engine in effect, when it differs from the one the file selects
+   * (e.g. a CLI `--layout` override). Used for the unsupported-engine warning.
+   */
+  engine?: AdacLayoutEngineName;
 }
 
 function createAjv() {
@@ -263,6 +273,11 @@ export function validateAdacConfig(
   const warnings: string[] = [];
   if (config && typeof config === 'object') {
     collectLayoutChecks(config as AdacConfig, errors, warnings);
+    const engineWarning = unsupportedLayoutEngineWarning(
+      config,
+      options.engine ?? declaredLayoutEngine(config) ?? 'elk'
+    );
+    if (engineWarning) warnings.push(engineWarning);
   }
 
   for (const extension of options.extensions ?? []) {

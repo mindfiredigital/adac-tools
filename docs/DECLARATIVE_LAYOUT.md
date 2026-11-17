@@ -55,6 +55,7 @@ and pixels.
 | Property           | Values                                                | Notes                                                                                                                       |
 | ------------------ | ----------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
 | `engine`           | `elk`, `custom`, `orthogonal`, `tsm`                  | a CLI/API override still wins; ELK when neither this nor the top-level `layout` is set                                      |
+| `defaults`         | `v1` (default), `none`                                | default profile for options you leave out, on `elk` only (see [Defaults](#defaults-elk))                                    |
 | `unitSize`         | number > 0                                            | pixels per logical unit                                                                                                     |
 | `direction`        | `LR` `RL` `TB` `BT`                                   | flow of the whole diagram, default for nested                                                                               |
 | `gap`              | number \| `{horizontal, vertical}`                    | space between siblings                                                                                                      |
@@ -66,6 +67,63 @@ and pixels.
 | `background`       | boolean (default `false`)                             | default node/card background                                                                                                |
 | `labelMaxChars`    | integer 4–80 (default: fits the caption width)        | most characters on one line of a node label; longer labels wrap, then end in `…`. Per element: `visual.style.labelMaxChars` |
 | `edgeLabels`       | boolean (default `true`)                              | draw each connection `type` on its edge                                                                                     |
+
+## Defaults (elk)
+
+On `elk`, `layoutOptions` you leave out are filled from a small, trialled
+profile so files written before this feature get a consistent baseline without
+being edited. Your own values always win, at the global and the element level,
+and the defaults are never written into the document: validation and the
+non-ELK warning see only what you declared. Set `layoutOptions.defaults: none`
+to keep the engine's own behaviour.
+
+Profile `v1`:
+
+| Option             | Default                                          | Effect                                                                                       |
+| ------------------ | ------------------------------------------------ | -------------------------------------------------------------------------------------------- |
+| `direction`        | `LR`                                             | the flow the builder already used, now stated                                                |
+| `containerPadding` | `{top: 0.6, right: 0.3, bottom: 0.3, left: 0.3}` | at `unitSize: 100`: keeps the 60px title band, trims the sides from 40px to 30px (see below) |
+
+The padding is in logical units, so it follows `unitSize`, while the builder's
+previous padding was a fixed 60px top and 40px sides. The pixel values above
+hold only at the default `unitSize: 100`. A defaulted top padding is never
+below 60px, so container titles keep their band: at `unitSize: 50` the top
+stays 60px and the sides become 15px; at `unitSize: 200` the top is 120px and
+the sides 60px, so the container grows instead of becoming more compact. The
+60px floor applies only to the default; a `containerPadding` you declare is used
+as written. Declare it, or set `defaults: none`, if you use another `unitSize`.
+
+The generation log records one line (`Layout defaults applied: …`) naming the
+defaults that were used.
+
+### What was tried and rejected
+
+Each candidate was rendered over the 18 files in `yamls/` and compared with the
+baseline (canvas area, overlaps, edge length and bends). Two files
+(`aws_enterprise_data_lake`, `data_pipeline`) fail inside ELK itself, with or
+without defaults, and are excluded.
+
+| Candidate                                | Result over the 16 renderable samples                                            | Decision |
+| ---------------------------------------- | -------------------------------------------------------------------------------- | -------- |
+| `direction: LR`                          | identical to the baseline (the builder already sets `RIGHT`)                     | **kept** |
+| `containerPadding` 0.6 / 0.3 / 0.3 / 0.3 | median area −2%, none larger, no overlaps                                        | **kept** |
+| `containerPadding` top 0.5 (sides 0.3)   | median area −3%, but eats into the 60px title band                               | rejected |
+| `direction: TB`                          | rotates every diagram (10 of 16 shrink >10%, 1 more bend); not a neutral default | rejected |
+| `gap` 1.2 / 0.6                          | median area +25%, 10 samples >10% larger, up to +77%                             | rejected |
+| `gap` 0.8 / 0.4                          | mixed: 5 samples >10% larger, 3 smaller, up to +37%                              | rejected |
+| `edgeSpacing` 0.3                        | mixed (−6% to +17%), no consistent gain                                          | rejected |
+| `edgeRouting: orthogonal`                | identical to the baseline; would also override a caller's routing mode           | rejected |
+| `align` + `justify: center`              | 19 new overlaps (they arrange the root and collide free-standing nodes)          | rejected |
+
+Never defaulted, because they invent structure: `order`, `position`, `wrap`,
+`itemsPerLine`, `maxItemsPerLine`, `size`, `minSize`, `maxSize` and a
+connection's `layout` / `bidirectional`. `unitSize`, `background`, `edgeLabels`
+and `labelMaxChars` already have their own defaults and are unchanged.
+
+Effect of `v1` on the renderable samples (all at `unitSize: 100`): mean canvas
+area −2.8% (range −8.3% to 0%), no sample larger, no new overlaps. Other
+`unitSize` values were not measured. The two declarative examples declare
+their own padding and are unchanged.
 
 ## `visual.layout` (per element)
 
@@ -166,6 +224,40 @@ drawn. The `custom`, `orthogonal` and `tsm` engines receive the plain hierarchy 
 ignore arrangement properties and the connection-level `bidirectional` and
 `routing` properties; `background`, `labelMaxChars` and `edgeLabels` still
 apply.
+
+## Engine support
+
+| Property                                                                                                                             | `elk` | `custom` / `orthogonal` / `tsm` |
+| ------------------------------------------------------------------------------------------------------------------------------------ | :---: | :-----------------------------: |
+| `layoutOptions`: `direction`, `gap`, `containerPadding`, `align`, `justify`, `edgeSpacing`, `edgeRouting` (and deprecated `routing`) |  yes  |               no                |
+| `visual.layout`: `direction`, `gap`, `padding`, `align`, `justify`, `wrap`, `itemsPerLine`, `maxItemsPerLine`, `order`, `position`   |  yes  |               no                |
+| `connections[].layout`: `fromSide`, `toSide`, `routing`; `bidirectional`                                                             |  yes  |               no                |
+| `visual.layout`: `size`, `minSize`, `maxSize` on containers (elements that hold others, see below)                                   |  yes  |               no                |
+| `visual.layout`: `size`, `minSize`, `maxSize` on leaf elements                                                                       |  yes  |               yes               |
+| `layoutOptions`: `unitSize`, `background`, `edgeLabels`, `labelMaxChars`                                                             |  yes  |               yes               |
+
+When a file **declares** any property marked "no" and the engine in effect is not
+`elk` (`--layout`, then `layoutOptions.engine`, then the top-level `layout`), the
+generator logs one warning per file. It names the engine and lists the ignored
+groups, for example:
+
+```
+Warning: Layout engine "custom" ignores declarative layout properties:
+layoutOptions (direction, gap); visual.layout (align, order). The diagram will
+not follow the declared arrangement. Use --layout elk or set
+layoutOptions.engine: elk.
+```
+
+The same warning is printed by `adac validate` and by `adac diagram`, and appears in
+the generation log (`--validate`, API consumers). It is a **warning, not an
+error**: the file is still valid and a diagram is still produced, just without
+the declared arrangement. Only properties the author wrote count; files that
+declare none of them, or only the shared properties, never warn.
+
+A **container** here is a service that holds others: another service names it
+as its `vpc`, `vnet`, `subnet` or `subnets` (in `config` or on the service), or
+it `runs` applications. Only for these are `size`, `minSize` and `maxSize`
+counted as ignored; on any other element every engine applies them.
 
 ## Known limitations
 

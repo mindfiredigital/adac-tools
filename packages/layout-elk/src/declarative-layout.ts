@@ -112,7 +112,8 @@ export function rootElkOptions(
   global: NormalizedLayoutOptions
 ): Record<string, string> {
   const o: Record<string, string> = {};
-  if (global.directionDeclared) {
+  // declared or defaulted; otherwise the builder's own direction stays
+  if (global.provenance.direction !== undefined) {
     o['elk.direction'] = directionToElk(global.direction);
   }
 
@@ -274,8 +275,13 @@ function applySizing(
   const ceilH = size.height ?? max.height;
   const isContainer = (node.children?.length ?? 0) > 0;
 
-  if (floorW !== undefined) node.width = floorW;
-  if (floorH !== undefined) node.height = floorH;
+  // An exact size sets the dimension; a minimum only raises it.
+  if (size.width !== undefined) node.width = size.width;
+  else if (min.width !== undefined)
+    node.width = Math.max(node.width ?? 0, min.width);
+  if (size.height !== undefined) node.height = size.height;
+  else if (min.height !== undefined)
+    node.height = Math.max(node.height ?? 0, min.height);
 
   if (isContainer) {
     if (floorW !== undefined || floorH !== undefined) {
