@@ -221,6 +221,61 @@ describe('collectDeclaredLayoutProperties', () => {
       expect(elementLayoutOf(withServices(services))).toEqual([]);
     });
 
+    it('skips a subnet reference that is not a string', () => {
+      const cfg = config({
+        layoutOptions: { engine: 'custom' },
+        infrastructure: {
+          clouds: [
+            {
+              id: 'aws-main',
+              provider: 'aws',
+              region: 'us-east-1',
+              services: [
+                {
+                  id: 'db',
+                  service: 'rds',
+                  config: { subnets: [{ toString: null }, 'missing'] },
+                },
+              ],
+            },
+          ],
+        },
+      });
+      expect(() => collectDeclaredLayoutProperties(cfg)).not.toThrow();
+      const result = validateAdacConfig(cfg);
+      expect(result).toHaveProperty('valid');
+    });
+
+    it('lists them for a subnet an unparented service is placed in', () => {
+      const cfg = withServices((visual) => [
+        { id: 'vpc', service: 'vpc' },
+        { id: 'sn', service: 'subnet', config: { vpc: 'vpc' }, visual },
+        { id: 'db', service: 'rds' },
+      ]);
+      expect(elementLayoutOf(cfg)).toEqual(['maxSize', 'minSize', 'size']);
+    });
+
+    it('leaves them out for a subnet that stays empty', () => {
+      // s3 is not VPC-bound, so the builder leaves it outside the VPC
+      const cfg = withServices((visual) => [
+        { id: 'vpc', service: 'vpc' },
+        { id: 'sn', service: 'subnet', config: { vpc: 'vpc' }, visual },
+        { id: 'bucket', service: 's3' },
+      ]);
+      expect(elementLayoutOf(cfg)).toEqual([]);
+    });
+
+    it('places an unparented service in the subnet with the fewest children', () => {
+      const cfg = withServices((visual) => [
+        { id: 'vpc', service: 'vpc' },
+        { id: 'a', service: 'subnet', config: { vpc: 'vpc' } },
+        { id: 'b', service: 'subnet', config: { vpc: 'vpc' }, visual },
+        { id: 'db1', service: 'rds', subnets: ['a'] },
+        { id: 'db2', service: 'rds' },
+      ]);
+      expect(elementLayoutOf(cfg)).toEqual(['maxSize', 'minSize', 'size']);
+    });
+
     it('credits the vpc of a subnet placed in an availability zone', () => {
       const cfg = withServices((visual) => [
         { id: 'vpc', service: 'vpc', visual },

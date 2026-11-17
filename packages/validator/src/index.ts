@@ -14,6 +14,7 @@ export {
   collectDeclaredLayoutProperties,
   declaredLayoutEngine,
   unsupportedLayoutEngineWarning,
+  VPC_BOUND_TYPES,
   type AdacLayoutEngineName,
   type DeclaredLayoutProperties,
 } from './layout-support.js';

@@ -1,4 +1,7 @@
-import type { AdacConfig } from '@mindfiredigital/adac-validator';
+import {
+  VPC_BOUND_TYPES,
+  type AdacConfig,
+} from '@mindfiredigital/adac-validator';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { ElkNode, ElkEdge } from './types.js';
 import {
@@ -1273,38 +1276,8 @@ export async function buildElkGraph(
         // Assign compute/DB orphans to the VPC with most subnets.
         const defaultVpcId = selectDefaultVpcId(subnetToVpcMap);
 
-        const isVpcBound = [
-          'eks',
-          'ecs',
-          'ec2',
-          'rds',
-          'aurora',
-          'dynamodb',
-          'msk',
-          'kafka',
-          'elasticache',
-          'redis',
-          'memcached',
-          'nlb',
-          'alb',
-          'docdb',
-          'redshift',
-          'emr',
-          'sagemaker',
-          'opensearch',
-          'aks',
-          'virtual-machine',
-          'azure-kubernetes-service',
-          'app-service',
-          'azure-functions',
-          'azure-sql-database',
-          'cosmos-db',
-          'azure-cache-for-redis',
-          'azure-database-for-postgresql',
-          'azure-api-management',
-          'azure-service-bus',
-          'azure-event-hubs',
-        ].includes(type);
+        // shared with the validator, whose container warning relies on it
+        const isVpcBound = VPC_BOUND_TYPES.has(type);
 
         if (isVpcBound && defaultVpcId) {
           const vpcNode = nodesMap.get(defaultVpcId);

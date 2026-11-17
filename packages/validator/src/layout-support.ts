@@ -72,6 +72,43 @@ function pick(source: unknown, names: readonly string[], into: Set<string>) {
   }
 }
 
+/**
+ * Service types the ELK builder puts into the default VPC when unparented.
+ * The builder imports this list, so the warning and the layout stay in step.
+ */
+export const VPC_BOUND_TYPES: ReadonlySet<string> = new Set([
+  'eks',
+  'ecs',
+  'ec2',
+  'rds',
+  'aurora',
+  'dynamodb',
+  'msk',
+  'kafka',
+  'elasticache',
+  'redis',
+  'memcached',
+  'nlb',
+  'alb',
+  'docdb',
+  'redshift',
+  'emr',
+  'sagemaker',
+  'opensearch',
+  'aks',
+  'virtual-machine',
+  'azure-kubernetes-service',
+  'app-service',
+  'azure-functions',
+  'azure-sql-database',
+  'cosmos-db',
+  'azure-cache-for-redis',
+  'azure-database-for-postgresql',
+  'azure-api-management',
+  'azure-service-bus',
+  'azure-event-hubs',
+]);
+
 /** A non-empty string, else `undefined`. */
 function text(value: unknown): string | undefined {
   return typeof value === 'string' && value !== '' ? value : undefined;
@@ -88,6 +125,7 @@ function text(value: unknown): string | undefined {
  *   earlier service claimed it
  * - a parent must exist, must not be the service itself, and a service already
  *   placed is not attached again
+ * - an orphan of a VPC-bound type then fills a subnet of the default VPC
  * The document has no `children` field, so this is what "has children" means.
  */
 function containerIds(
@@ -127,8 +165,15 @@ function containerIds(
     }
   }
 
-  const containers = new Set<string>();
+  /** Children in the order the builder pushes them. */
+  const children = new Map<string, string[]>();
   const placed = new Set<string>();
+  const attach = (parent: string, child: string) => {
+    const list = children.get(parent) ?? [];
+    list.push(child);
+    children.set(parent, list);
+    placed.add(child);
+  };
 
   for (const service of services) {
     const id = text(service.id);
@@ -142,10 +187,7 @@ function containerIds(
       const zoneId = `${vpc}-${zone}`;
       if (!nodes.has(zoneId)) {
         nodes.add(zoneId);
-        if (nodes.has(vpc)) {
-          containers.add(vpc);
-          placed.add(zoneId);
-        }
+        if (nodes.has(vpc)) attach(vpc, zoneId);
       }
       if (typeOf(service) === 'subnet') parent = zoneId;
     } else if (vpc) {
@@ -159,7 +201,9 @@ function containerIds(
     } else if (Array.isArray(subnets) && subnets.length > 1) {
       const vpcs = new Set<string>();
       for (const subnet of subnets) {
-        const owner = vpcOfSubnet.get(String(subnet));
+        // like the builder's Map lookup, a non-string never matches
+        if (typeof subnet !== 'string') continue;
+        const owner = vpcOfSubnet.get(subnet);
         if (owner) vpcs.add(owner);
       }
       if (vpcs.size === 1) parent = [...vpcs][0];
@@ -171,20 +215,71 @@ function containerIds(
       for (const app of service.runs) {
         const appId = text(app);
         if (appId && !placed.has(appId) && nodes.has(appId)) {
-          containers.add(id);
-          placed.add(appId);
+          attach(id, appId);
         }
       }
     }
 
-    if (parent && nodes.has(parent) && !placed.has(id)) {
-      containers.add(parent);
-      placed.add(id);
-    }
+    if (parent && nodes.has(parent) && !placed.has(id)) attach(parent, id);
     // an unplaced service joins its logical group, which also places it
     if (group(service)) placed.add(id);
   }
-  return containers;
+
+  // Orphans: a VPC-bound service still unplaced goes into the least-filled
+  // subnet of the VPC with the most subnets, or into that VPC when it has none.
+  // The other orphans go to the root or the utility group, outside any element.
+  const subnetIds = new Set(
+    services
+      .filter((s) => ['subnet', 'subnetwork'].includes(String(typeOf(s))))
+      .map((s) => text(s.id))
+      .filter((id): id is string => id !== undefined)
+  );
+  const subnetsUnder = (root: string) => {
+    const found: string[] = [];
+    const seen = new Set<string>();
+    const walk = (id: string) => {
+      if (seen.has(id)) return;
+      seen.add(id);
+      if (subnetIds.has(id)) found.push(id);
+      (children.get(id) ?? []).forEach(walk);
+    };
+    walk(root);
+    return found;
+  };
+  const defaultVpc = defaultVpcId(vpcOfSubnet);
+  for (const service of services) {
+    const id = text(service.id);
+    if (!id || placed.has(id)) continue;
+    placed.add(id);
+    if (!VPC_BOUND_TYPES.has(String(typeOf(service)))) continue;
+    if (!defaultVpc || !nodes.has(defaultVpc)) continue;
+    const subnets = subnetsUnder(defaultVpc);
+    // a stable pick of the first subnet with the fewest children
+    const target = subnets.reduce<string | undefined>(
+      (best, sn) =>
+        best === undefined ||
+        (children.get(sn)?.length ?? 0) < (children.get(best)?.length ?? 0)
+          ? sn
+          : best,
+      undefined
+    );
+    attach(target ?? defaultVpc, id);
+  }
+
+  return new Set(
+    [...children].filter(([, list]) => list.length > 0).map(([id]) => id)
+  );
+}
+
+/** The VPC with the most subnets, ties broken by id, as the builder picks it. */
+function defaultVpcId(vpcOfSubnet: Map<string, string>): string | undefined {
+  const counts = new Map<string, number>();
+  for (const vpc of vpcOfSubnet.values()) {
+    counts.set(vpc, (counts.get(vpc) ?? 0) + 1);
+  }
+  return [...counts].sort(
+    ([a, aCount], [b, bCount]) => bCount - aCount || a.localeCompare(b)
+  )[0]?.[0];
 }
 
 /**
