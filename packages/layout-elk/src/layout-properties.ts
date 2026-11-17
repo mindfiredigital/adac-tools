@@ -150,10 +150,18 @@ export const LAYOUT_DEFAULT_PROFILES: Record<
   none: {},
   v1: {
     direction: 'LR',
-    // same 60px title band as the builder, slightly tighter sides
+    // logical units: at unitSize 100, the builder's 60px title band and
+    // slightly tighter sides (30px, was 40px); see MIN_DEFAULT_TOP_PADDING
     containerPadding: { top: 0.6, right: 0.3, bottom: 0.3, left: 0.3 },
   },
 };
+
+/**
+ * Container titles sit in the top padding band, so a *defaulted* top padding
+ * never resolves below the builder's 60px, whatever the `unitSize`. A declared
+ * `containerPadding` is the author's own and is used as written.
+ */
+export const MIN_DEFAULT_TOP_PADDING = 60;
 
 /**
  * The profile for a build: the file's own `layoutOptions.defaults` first, then
@@ -273,13 +281,24 @@ export function normalizeLayoutOptions(
   const unitSize = o.unitSize ?? o.unit ?? DEFAULT_UNIT_SIZE;
   const edgeRouting = o.edgeRouting ?? o.routing;
 
+  let containerPadding = resolvePadding(o.containerPadding, unitSize);
+  if (
+    provenance.containerPadding === 'default' &&
+    containerPadding?.top !== undefined
+  ) {
+    containerPadding = {
+      ...containerPadding,
+      top: Math.max(containerPadding.top, MIN_DEFAULT_TOP_PADDING),
+    };
+  }
+
   return {
     engine: o.engine,
     unitSize,
     direction: o.direction ?? 'LR',
     provenance,
     gap: resolveGap(o.gap, unitSize),
-    containerPadding: resolvePadding(o.containerPadding, unitSize),
+    containerPadding,
     align: o.align,
     justify: o.justify,
     edgeSpacing:

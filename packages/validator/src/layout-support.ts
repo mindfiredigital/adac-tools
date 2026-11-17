@@ -37,10 +37,13 @@ export const ELK_ONLY_ELEMENT_LAYOUT = [
   'order',
   'position',
 ] as const;
-// `size`, `minSize` and `maxSize` are deliberately absent: every engine applies
-// them to a leaf element, and the raw document cannot tell a leaf from a
-// container (only ELK applies them to containers), so listing them would warn
-// about sizing that is in fact honoured.
+
+/**
+ * Every engine applies these to a leaf element, but only ELK applies them to a
+ * container. They are therefore ELK-only for containers and are listed for an
+ * element only when it has children (see `containerIds`).
+ */
+export const ELK_ONLY_CONTAINER_SIZE = ['size', 'minSize', 'maxSize'] as const;
 
 export const ELK_ONLY_CONNECTION_LAYOUT = [
   'fromSide',
@@ -69,9 +72,40 @@ function pick(source: unknown, names: readonly string[], into: Set<string>) {
   }
 }
 
+function strings(value: unknown): string[] {
+  if (typeof value === 'string') return [value];
+  return Array.isArray(value)
+    ? value.filter((v): v is string => typeof v === 'string')
+    : [];
+}
+
+/**
+ * Ids of the services that hold other elements, found the way the ELK builder
+ * nests them: another service names it as its `vpc` / `vnet` / `subnet` /
+ * `subnets`, or it `runs` applications. The document has no `children` field,
+ * so this is what "has nested children" means here.
+ */
+function containerIds(services: Record<string, unknown>[]): Set<string> {
+  const ids = new Set<string>();
+  for (const service of services) {
+    const cfg = service.config ?? service.configuration;
+    if (isObject(cfg)) {
+      [cfg.vpc, cfg.vnet, cfg.subnet, cfg.subnets].forEach((ref) =>
+        strings(ref).forEach((id) => ids.add(id))
+      );
+    }
+    strings(service.subnets).forEach((id) => ids.add(id));
+    if (Array.isArray(service.runs) && service.runs.length > 0) {
+      if (typeof service.id === 'string') ids.add(service.id);
+    }
+  }
+  return ids;
+}
+
 /**
  * Finds the ELK-only layout properties the author wrote in the document.
  * It reads the raw config, so values filled in from defaults are never seen.
+ * `size`, `minSize` and `maxSize` count only on containers.
  */
 export function collectDeclaredLayoutProperties(
   config: unknown
@@ -83,22 +117,29 @@ export function collectDeclaredLayoutProperties(
   if (isObject(config)) {
     pick(config.layoutOptions, ELK_ONLY_LAYOUT_OPTIONS, layoutOptions);
 
-    const visit = (item: unknown) => {
-      if (isObject(item) && isObject(item.visual)) {
-        pick(item.visual.layout, ELK_ONLY_ELEMENT_LAYOUT, elementLayout);
-      }
-    };
-    if (Array.isArray(config.applications)) config.applications.forEach(visit);
     const clouds = isObject(config.infrastructure)
       ? config.infrastructure.clouds
       : undefined;
+    const services: Record<string, unknown>[] = [];
     if (Array.isArray(clouds)) {
       for (const cloud of clouds) {
         if (isObject(cloud) && Array.isArray(cloud.services)) {
-          cloud.services.forEach(visit);
+          services.push(...cloud.services.filter(isObject));
         }
       }
     }
+    const containers = containerIds(services);
+
+    const visit = (item: unknown) => {
+      if (isObject(item) && isObject(item.visual)) {
+        pick(item.visual.layout, ELK_ONLY_ELEMENT_LAYOUT, elementLayout);
+        if (typeof item.id === 'string' && containers.has(item.id)) {
+          pick(item.visual.layout, ELK_ONLY_CONTAINER_SIZE, elementLayout);
+        }
+      }
+    };
+    if (Array.isArray(config.applications)) config.applications.forEach(visit);
+    services.forEach(visit);
     if (Array.isArray(config.connections)) {
       for (const conn of config.connections) {
         if (isObject(conn)) {

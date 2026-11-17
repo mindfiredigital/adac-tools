@@ -147,6 +147,7 @@ Declarative layout support by engine:
     wrap, itemsPerLine, maxItemsPerLine, order, position     yes  no      no          no
   connection: layout (fromSide, toSide, routing),
     bidirectional                                            yes  no      no          no
+  visual.layout: size, minSize, maxSize (containers)         yes  no      no          no
   visual.layout: size, minSize, maxSize (leaf elements)      yes  yes     yes         yes
   background, edgeLabels, labelMaxChars, unitSize            yes  yes     yes         yes
 A file that declares an "elk"-only property but uses another engine gets one

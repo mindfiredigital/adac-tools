@@ -69,14 +69,35 @@ describe('applyLayoutDefaults', () => {
 
 describe('normalizeLayoutOptions with defaults', () => {
   it('resolves default lengths through unitSize like declared ones', () => {
-    const o = normalizeLayoutOptions({ unitSize: 50 }, undefined, V1);
+    const o = normalizeLayoutOptions({ unitSize: 200 }, undefined, V1);
     expect(o.containerPadding).toEqual({
-      top: 30,
+      top: 120,
+      right: 60,
+      bottom: 60,
+      left: 60,
+    });
+    expect(o.provenance.containerPadding).toBe('default');
+  });
+
+  it('keeps the default top padding at 60px when unitSize is small', () => {
+    const o = normalizeLayoutOptions({ unitSize: 50 }, undefined, V1);
+    // the sides still scale (0.3 × 50); only the title band has a floor
+    expect(o.containerPadding).toEqual({
+      top: 60,
       right: 15,
       bottom: 15,
       left: 15,
     });
-    expect(o.provenance.containerPadding).toBe('default');
+  });
+
+  it('leaves a declared containerPadding as written at a small unitSize', () => {
+    const o = normalizeLayoutOptions(
+      { unitSize: 50, containerPadding: { top: 0.3, left: 0.3 } },
+      undefined,
+      V1
+    );
+    expect(o.containerPadding).toEqual({ top: 15, left: 15 });
+    expect(o.provenance.containerPadding).toBe('declared');
   });
 
   it('reports no provenance when nothing is set or defaulted', () => {

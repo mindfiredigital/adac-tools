@@ -147,9 +147,10 @@ describe('layout-properties', () => {
         undefined,
         LAYOUT_DEFAULT_PROFILES.v1
       );
-      // 0.6 / 0.3 logical units at 40px per unit, not at the default 100
+      // 0.3 logical units at 40px per unit, not at the default 100; the top
+      // (0.6 × 40 = 24px) is raised to the 60px title band
       expect(o.containerPadding).toEqual({
-        top: 24,
+        top: 60,
         right: 12,
         bottom: 12,
         left: 12,

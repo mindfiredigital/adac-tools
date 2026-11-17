@@ -100,7 +100,7 @@ describe('collectDeclaredLayoutProperties', () => {
     });
   });
 
-  it('ignores size, minSize and maxSize, which every engine applies to leaves', () => {
+  it('ignores size, minSize and maxSize on a leaf, which every engine applies', () => {
     const declared = collectDeclaredLayoutProperties(
       config(
         {},
@@ -114,6 +114,91 @@ describe('collectDeclaredLayoutProperties', () => {
       )
     );
     expect(declared.elementLayout).toEqual([]);
+  });
+
+  describe('size, minSize and maxSize on containers', () => {
+    const sizes = {
+      layout: {
+        size: { width: 2 },
+        minSize: { width: 1 },
+        maxSize: { width: 3 },
+      },
+    };
+    /** `vpc` (with `visual`) and `other`, built by `make`; `db` is a plain leaf. */
+    const withServices = (make: (visual: Json) => Json[]) =>
+      config({
+        infrastructure: {
+          clouds: [
+            {
+              id: 'aws-main',
+              provider: 'aws',
+              region: 'us-east-1',
+              services: make(sizes),
+            },
+          ],
+        },
+      });
+    const elementLayoutOf = (cfg: Json) =>
+      collectDeclaredLayoutProperties(cfg).elementLayout;
+
+    it('lists them for a container that others name as their vpc', () => {
+      const cfg = withServices((visual) => [
+        { id: 'vpc', service: 'vpc', visual },
+        { id: 'db', service: 'rds', config: { vpc: 'vpc' } },
+      ]);
+      expect(elementLayoutOf(cfg)).toEqual(['maxSize', 'minSize', 'size']);
+    });
+
+    it('lists them for a subnet that others name in `subnets`', () => {
+      const cfg = withServices((visual) => [
+        { id: 'sn', service: 'subnet', visual },
+        { id: 'db', service: 'rds', subnets: ['sn'] },
+      ]);
+      expect(elementLayoutOf(cfg)).toEqual(['maxSize', 'minSize', 'size']);
+    });
+
+    it('lists them for a service that runs applications', () => {
+      const cfg = withServices((visual) => [
+        { id: 'svc', service: 'ecs', runs: ['app'], visual },
+      ]);
+      expect(elementLayoutOf(cfg)).toEqual(['maxSize', 'minSize', 'size']);
+    });
+
+    it('still leaves them out for a leaf next to a container', () => {
+      const cfg = withServices((visual) => [
+        { id: 'vpc', service: 'vpc' },
+        { id: 'db', service: 'rds', config: { vpc: 'vpc' }, visual },
+      ]);
+      expect(elementLayoutOf(cfg)).toEqual([]);
+    });
+
+    it('keeps the other properties of a leaf and a container alike', () => {
+      const cfg = withServices(() => [
+        {
+          id: 'vpc',
+          service: 'vpc',
+          visual: { layout: { align: 'center', ...sizes.layout } },
+        },
+        { id: 'db', service: 'rds', config: { vpc: 'vpc' } },
+      ]);
+      expect(elementLayoutOf(cfg)).toEqual([
+        'align',
+        'maxSize',
+        'minSize',
+        'size',
+      ]);
+    });
+
+    it('warns on a non-elk engine, and not on elk', () => {
+      const cfg = withServices((visual) => [
+        { id: 'vpc', service: 'vpc', visual },
+        { id: 'db', service: 'rds', config: { vpc: 'vpc' } },
+      ]);
+      expect(unsupportedLayoutEngineWarning(cfg, 'custom')).toContain(
+        'visual.layout (maxSize, minSize, size)'
+      );
+      expect(unsupportedLayoutEngineWarning(cfg, 'elk')).toBeUndefined();
+    });
   });
 
   it('tolerates a malformed document', () => {

@@ -196,8 +196,8 @@ describe('Uploader', () => {
     it('does not show the diagram or warnings of the previous file', async () => {
       // The first file's generation succeeds with a warning: the backend
       // answers so, and the browser generator warns on the custom engine.
-      // Its external I/O is held (the backend request, or in the browser the
-      // file read, as the browser generator does no I/O of its own here).
+      // Its external I/O is held: the backend request, or in the browser the
+      // file read and the icon fetches. `release` opens all of it.
       const { fetchMock, release: releaseFetch } = deferFetch(
         {
           svg: '<svg id="stale-svg">stale</svg>',
@@ -212,7 +212,13 @@ describe('Uploader', () => {
         ? { file: yamlFile(CUSTOM_ENGINE_YAML), release: releaseFetch }
         : (() => {
             const d = deferredFile(CUSTOM_ENGINE_YAML);
-            return { file: d.file, release: () => d.settle().resolve() };
+            return {
+              file: d.file,
+              release: () => {
+                d.settle().resolve();
+                releaseFetch();
+              },
+            };
           })();
 
       render(<Uploader onBack={vi.fn()} />);
@@ -237,7 +243,8 @@ describe('Uploader', () => {
           expect(reference.logs.join(' ')).toMatch(
             /ignores declarative layout properties/
           );
-          await new Promise((r) => setTimeout(r, 0));
+          // and let every icon fetch it made settle
+          await drain(fetchMock);
         }
       });
 
