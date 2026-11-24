@@ -112,7 +112,8 @@ export function rootElkOptions(
   global: NormalizedLayoutOptions
 ): Record<string, string> {
   const o: Record<string, string> = {};
-  if (global.directionDeclared) {
+  // declared or defaulted; otherwise the builder's own direction stays
+  if (global.provenance.direction !== undefined) {
     o['elk.direction'] = directionToElk(global.direction);
   }
 

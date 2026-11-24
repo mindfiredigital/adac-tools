@@ -75,7 +75,8 @@ function config(
       type: 'api-call',
       ...c,
     })) as AdacConnection[],
-    ...(opts.layoutOptions ? { layoutOptions: opts.layoutOptions } : {}),
+    // these tests exercise the arrangement mechanics, not the default profile
+    layoutOptions: { defaults: 'none', ...opts.layoutOptions },
   };
 }
 

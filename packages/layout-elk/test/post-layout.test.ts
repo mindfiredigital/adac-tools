@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { applyLayoutPostProcessing } from '../src/post-layout.js';
+import { LAYOUT_LINE_TYPE } from '../src/declarative-layout.js';
 import type { ElkNode } from '../src/types.js';
 
 /**
@@ -92,6 +93,168 @@ describe('straightening links between icon nodes', () => {
     expect(start.x).toBe(72);
     expect(start.y).toBeGreaterThanOrEqual(70 + 5);
     expect(start.y).toBeLessThanOrEqual(70 + 57);
+  });
+});
+
+describe('straightening and a declared align', () => {
+  // a row aligned to its bottom edge: a (80px) and b (120px) joined side to
+  // side; moving one of them to line up the icons would undo the alignment
+  const row = (align?: 'end'): ElkNode => ({
+    id: 'root',
+    x: 0,
+    y: 0,
+    width: 600,
+    height: 400,
+    children: [
+      {
+        id: 'row',
+        x: 0,
+        y: 0,
+        width: 400,
+        height: 300,
+        layoutOptions: { 'elk.padding': '[top=20,left=20,bottom=20,right=20]' },
+        properties: {
+          type: 'container',
+          arrangement: {
+            mainAxis: 'horizontal',
+            align,
+            padding: { top: 20, right: 20, bottom: 20, left: 20 },
+          },
+        } as never,
+        children: [
+          {
+            id: 'a',
+            x: 20,
+            y: 20,
+            width: 52,
+            height: 80,
+            properties: { type: 'service' },
+          },
+          {
+            id: 'b',
+            x: 200,
+            y: 20,
+            width: 52,
+            height: 120,
+            properties: { type: 'service' },
+          },
+        ],
+        edges: [
+          {
+            id: 'e',
+            sources: ['a'],
+            targets: ['b'],
+            container: 'row',
+            sections: [
+              {
+                id: 's',
+                startPoint: { x: 72, y: 50 },
+                endPoint: { x: 200, y: 50 },
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  });
+  const bottoms = (g: ElkNode) =>
+    g.children![0].children!.map((n) => n.y! + n.height!);
+
+  it('keeps the bottoms aligned for align: end', () => {
+    const g = row('end');
+    applyLayoutPostProcessing(g);
+    expect(bottoms(g)).toEqual([140, 140]);
+  });
+
+  it('keeps the bottoms aligned when wrapping groups the items into lines', () => {
+    const g = row('end');
+    const container = g.children![0];
+    const [a, b] = container.children!;
+    // the same two items, now inside one synthetic layout-line group
+    container.children = [
+      {
+        id: 'line-0',
+        x: 0,
+        y: 0,
+        width: 400,
+        height: 300,
+        properties: { type: LAYOUT_LINE_TYPE },
+        children: [a, b],
+      },
+    ];
+    applyLayoutPostProcessing(g);
+    const line = container.children![0];
+    // arrange() aligned them; straightening must not move either back
+    // a lone line aligns to the container's inner bottom (300 - 20)
+    expect(line.children!.map((n) => n.y! + n.height!)).toEqual([280, 280]);
+  });
+
+  it('keeps the spacing of a vertical stack that declares a justify', () => {
+    // two 50px items spaced to the ends of a 150px column (inner box 20..130):
+    // a sits at y=20 and b at y=80; meeting b's icon would move a down by 60
+    const g: ElkNode = {
+      id: 'root',
+      x: 0,
+      y: 0,
+      width: 600,
+      height: 400,
+      children: [
+        {
+          id: 'col',
+          x: 0,
+          y: 0,
+          width: 400,
+          height: 150,
+          layoutOptions: {
+            'elk.padding': '[top=20,left=20,bottom=20,right=20]',
+          },
+          properties: {
+            type: 'container',
+            arrangement: {
+              mainAxis: 'vertical',
+              justify: 'space-between',
+              padding: { top: 20, right: 20, bottom: 20, left: 20 },
+            },
+          } as never,
+          children: [
+            {
+              id: 'a',
+              x: 20,
+              y: 20,
+              width: 52,
+              height: 50,
+              properties: { type: 'service' },
+            },
+            {
+              id: 'b',
+              x: 200,
+              y: 20,
+              width: 52,
+              height: 50,
+              properties: { type: 'service' },
+            },
+          ],
+          edges: [
+            {
+              id: 'e',
+              sources: ['a'],
+              targets: ['b'],
+              container: 'col',
+              sections: [
+                {
+                  id: 's',
+                  startPoint: { x: 72, y: 45 },
+                  endPoint: { x: 200, y: 45 },
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+    applyLayoutPostProcessing(g);
+    const [a, b] = g.children![0].children!;
+    expect([a.y, b.y]).toEqual([20, 80]);
   });
 });
 

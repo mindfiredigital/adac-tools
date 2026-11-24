@@ -791,6 +791,15 @@ function straightenLeafLinks(
         Math.min(ICON_BAND_HEIGHT, b.h - ICON_BAND_TOP) / 2
       : b.y + b.h / 2;
 
+  /** The container whose arrangement governs `node`, past wrapped-line groups. */
+  const arrangedAncestor = (node: ElkNode): ElkNode | undefined => {
+    let current: ElkNode | undefined = node;
+    while (current?.properties?.type === LAYOUT_LINE_TYPE) {
+      current = info.get(current.id)?.parent;
+    }
+    return current;
+  };
+
   let moved = false;
   // a link is straightened once, by moving one of its two ends
   const straightened = new Set<Poly>();
@@ -798,6 +807,22 @@ function straightenLeafLinks(
     if (straightened.has(e.poly)) continue;
     const me = info.get(e.nodeId);
     if (!me?.parent || !isIconNode(me.node)) continue;
+    // an explicit align places the item on the cross axis, and a justify on a
+    // vertical stack spaces the items along y; moving the item to meet its
+    // partner would undo either
+    // (the root's own arrangement comes from the global defaults, and its
+    // top-level items are meant to meet their partners)
+    const owner = arrangedAncestor(me.parent);
+    const arrangement =
+      owner && owner !== root ? owner.properties?.arrangement : undefined;
+    if (arrangement?.align) continue;
+    if (
+      arrangement?.mainAxis === 'vertical' &&
+      arrangement.justify &&
+      arrangement.justify !== 'start'
+    ) {
+      continue;
+    }
     if (e.side !== 'W' && e.side !== 'E') continue;
     if (perNode.get(e.nodeId) !== 1) continue;
     const other = ends.find((o) => o.poly === e.poly && o !== e);

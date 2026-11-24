@@ -707,3 +707,104 @@ describe('renderer: opposing connections', () => {
     ]);
   });
 });
+
+describe('renderer: legend placement (elk)', () => {
+  const container = (
+    id: string,
+    x: number,
+    y: number,
+    w: number,
+    h: number,
+    children: ElkNode[]
+  ): ElkNode => ({
+    id,
+    x,
+    y,
+    width: w,
+    height: h,
+    labels: [{ text: id }],
+    properties: { type: 'container' },
+    children,
+  });
+  const at = (id: string, x: number, y: number): ElkNode => ({
+    ...leaf(id),
+    x,
+    y,
+  });
+
+  const legendRect = (svg: string): Rect => {
+    const m =
+      /<g id="legend"><rect x="([\d.-]+)" y="([\d.-]+)" width="([\d.-]+)" height="([\d.-]+)"/.exec(
+        svg
+      );
+    if (!m) throw new Error('no legend');
+    return { x: +m[1], y: +m[2], w: +m[3], h: +m[4] };
+  };
+  const svgHeight = (svg: string) =>
+    +/<svg width="[\d.]+" height="([\d.]+)"/.exec(svg)![1];
+  const hits = (a: Rect, b: Rect) =>
+    a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+
+  // AWS -> VPC -> subnet, each filling nearly the whole canvas
+  const nested = (leaves: ElkNode[]): ElkNode => ({
+    id: 'root',
+    width: 1000,
+    height: 800,
+    children: [
+      container('aws', 20, 20, 960, 760, [
+        container('vpc', 20, 40, 920, 700, [
+          container('subnet', 20, 40, 880, 640, leaves),
+        ]),
+      ]),
+    ],
+  });
+
+  it('is not pushed over the AWS/VPC borders by full-canvas containers', async () => {
+    // a wide node beside a tall one leaves free space under the wide one
+    const wide: ElkNode = { ...at('a', 40, 60), width: 400 };
+    const tall: ElkNode = { ...at('b', 700, 60), height: 500 };
+    const svg = await renderSvg(nested([wide, tall]));
+    const l = legendRect(svg);
+    const aws = nodeRect(svg, 'aws');
+    // a clear spot existed, so the legend sits inside the canvas as drawn
+    expect(l.y + l.h).toBeLessThanOrEqual(svgHeight(svg));
+    expect(l.y).toBeLessThan(aws.y + aws.h);
+    for (const f of [aws, nodeRect(svg, 'vpc'), nodeRect(svg, 'subnet')]) {
+      const inside =
+        l.x > f.x &&
+        l.y > f.y &&
+        l.x + l.w < f.x + f.w &&
+        l.y + l.h < f.y + f.h;
+      const outside = !hits(l, f);
+      expect(inside || outside).toBe(true);
+    }
+    expect(hits(l, nodeRect(svg, 'a'))).toBe(false);
+    expect(hits(l, nodeRect(svg, 'b'))).toBe(false);
+  });
+
+  it('keeps the legend on the canvas when the diagram is narrower than it', async () => {
+    const svg = await renderSvg({ id: 'root', children: [leaf('a')] });
+    const l = legendRect(svg);
+    const w = +/<svg width="([\d.]+)"/.exec(svg)![1];
+    expect(l.x).toBeGreaterThanOrEqual(0);
+    expect(l.x + l.w).toBeLessThanOrEqual(w);
+    expect(l.y + l.h).toBeLessThanOrEqual(svgHeight(svg));
+    expect(hits(l, nodeRect(svg, 'a'))).toBe(false);
+  });
+
+  it('grows the canvas instead of covering the diagram when nothing is clear', async () => {
+    // a wall of leaves across the whole subnet leaves no free 160x80 spot
+    const wall: ElkNode[] = [];
+    for (let x = 0; x < 8; x++) {
+      for (let y = 0; y < 5; y++) {
+        wall.push(at(`n${x}-${y}`, 10 + x * 108, 10 + y * 120));
+      }
+    }
+    const svg = await renderSvg(nested(wall));
+    const l = legendRect(svg);
+    const aws = nodeRect(svg, 'aws');
+    expect(l.y).toBeGreaterThanOrEqual(aws.y + aws.h); // below the diagram
+    expect(l.y + l.h).toBeLessThanOrEqual(svgHeight(svg));
+    for (const n of wall) expect(hits(l, nodeRect(svg, n.id))).toBe(false);
+  });
+});
