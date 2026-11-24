@@ -22,17 +22,6 @@ vi.mock('lucide-react', () => ({
   Download: () => <div data-testid="download-icon" />,
 }));
 
-// A spy, not a replacement: the real helper still runs. It only lets a test
-// await the promise of a generation that is already in flight.
-vi.mock('../helper/diagram-generator', async (importActual) => {
-  const actual =
-    await importActual<typeof import('../helper/diagram-generator')>();
-  return {
-    ...actual,
-    generateDiagramBrowser: vi.fn(actual.generateDiagramBrowser),
-  };
-});
-
 // The browser path runs the real helper and generator. Only external I/O is
 // stubbed: `fetch`, which serves the backend and the icon files.
 const notFound = { ok: false, status: 404, text: () => Promise.resolve('') };
@@ -73,10 +62,15 @@ function stubBackend(body: object, ok = true) {
   );
 }
 
+/** The file input, found through its label. */
+const fileInput = () => screen.getByLabelText(/Supports ADAC YAML format/);
+
+const pick = (file: File) =>
+  fireEvent.change(fileInput(), { target: { files: [file] } });
+
 describe('Uploader', () => {
   beforeEach(() => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(notFound));
-    vi.mocked(generateDiagramBrowser).mockClear();
   });
 
   it('renders correctly', () => {
@@ -94,9 +88,8 @@ describe('Uploader', () => {
       stubBackend({ svg: '<svg id="test-svg">test</svg>' });
     }
 
-    const { container } = render(<Uploader onBack={onBack} />);
-    const input = container.querySelector('input[type="file"]')!;
-    fireEvent.change(input, { target: { files: [yamlFile(PLAIN_YAML)] } });
+    render(<Uploader onBack={onBack} />);
+    pick(yamlFile(PLAIN_YAML));
 
     expect(screen.getByText('test.yaml')).toBeInTheDocument();
 
@@ -127,10 +120,7 @@ describe('Uploader', () => {
     }
 
     render(<Uploader onBack={vi.fn()} />);
-    const input = document.querySelector('input[type="file"]')!;
-    fireEvent.change(input, {
-      target: { files: [yamlFile(USE_BACKEND ? PLAIN_YAML : INVALID_YAML)] },
-    });
+    pick(yamlFile(USE_BACKEND ? PLAIN_YAML : INVALID_YAML));
 
     fireEvent.click(screen.getByText('Generate Diagram'));
 
@@ -157,10 +147,35 @@ describe('Uploader', () => {
       return { file, settle: () => settle };
     }
 
-    const pick = (file: File) =>
-      fireEvent.change(document.querySelector('input[type="file"]')!, {
-        target: { files: [file] },
+    /**
+     * Holds every `fetch` (the backend request, or the icon files the browser
+     * generator loads) until `release`. Backend mode answers the first request
+     * with `stale` and later ones with `fresh`.
+     */
+    function deferFetch(stale: object, fresh: object) {
+      let open!: () => void;
+      const gate = new Promise<void>((resolve) => (open = resolve));
+      let calls = 0;
+      const fetchMock = vi.fn(async () => {
+        const body = calls++ === 0 ? stale : fresh;
+        await gate;
+        return USE_BACKEND
+          ? { ok: true, json: () => Promise.resolve(body) }
+          : notFound;
       });
+      vi.stubGlobal('fetch', fetchMock);
+      return { fetchMock, release: () => open() };
+    }
+
+    /** Waits until every fetch made so far, and any it led to, has settled. */
+    async function drain(fetchMock: ReturnType<typeof vi.fn>) {
+      let seen = -1;
+      while (seen !== fetchMock.mock.calls.length) {
+        seen = fetchMock.mock.calls.length;
+        await Promise.allSettled(fetchMock.mock.results.map((r) => r.value));
+        await new Promise((r) => setTimeout(r, 0));
+      }
+    }
 
     it('ignores an error from the previous file', async () => {
       const first = deferredFile(PLAIN_YAML);
@@ -179,49 +194,63 @@ describe('Uploader', () => {
     });
 
     it('does not show the diagram or warnings of the previous file', async () => {
-      // the backend answers with a diagram and a warning; the browser path
-      // produces both from the real generator
-      if (USE_BACKEND) {
-        stubBackend({
+      // The first file's generation succeeds with a warning: the backend
+      // answers so, and the browser generator warns on the custom engine.
+      // Its external I/O is held: the backend request, or in the browser the
+      // file read and the icon fetches. `release` opens all of it.
+      const { fetchMock, release: releaseFetch } = deferFetch(
+        {
           svg: '<svg id="stale-svg">stale</svg>',
           logs: [
             '[2026-01-01T00:00:00.000Z] Warning: Layout engine "custom" ignores declarative layout properties: layoutOptions (gap).',
           ],
           duration: 0,
-        });
-      }
-      const first = deferredFile(CUSTOM_ENGINE_YAML);
+        },
+        { svg: '<svg id="fresh-svg">fresh</svg>', logs: [], duration: 0 }
+      );
+      const first = USE_BACKEND
+        ? { file: yamlFile(CUSTOM_ENGINE_YAML), release: releaseFetch }
+        : (() => {
+            const d = deferredFile(CUSTOM_ENGINE_YAML);
+            return {
+              file: d.file,
+              release: () => {
+                d.settle().resolve();
+                releaseFetch();
+              },
+            };
+          })();
+
       render(<Uploader onBack={vi.fn()} />);
       pick(first.file);
       fireEvent.click(screen.getByText('Generate Diagram'));
+      if (USE_BACKEND) {
+        await waitFor(() => expect(fetchMock).toHaveBeenCalled());
+      } else {
+        await waitFor(() => expect(first.file.text).toHaveBeenCalled());
+      }
 
       pick(yamlFile(PLAIN_YAML));
       await act(async () => {
-        first.settle().resolve();
+        first.release();
+        if (USE_BACKEND) {
+          await drain(fetchMock);
+        } else {
+          // the same real generation, started after the held one, finishes
+          // after it; it also shows that generation succeeds with a warning
+          const reference = await generateDiagramBrowser(CUSTOM_ENGINE_YAML);
+          expect(reference.svg).toContain('<svg');
+          expect(reference.logs.join(' ')).toMatch(
+            /ignores declarative layout properties/
+          );
+          // and let every icon fetch it made settle
+          await drain(fetchMock);
+        }
       });
-      // the request the first file started, awaited until it has finished
-      const started = USE_BACKEND
-        ? vi.mocked(fetch)
-        : vi.mocked(generateDiagramBrowser);
-      await waitFor(() => expect(started).toHaveBeenCalledTimes(1));
-      await act(async () => {
-        const request = USE_BACKEND
-          ? vi
-              .mocked(fetch)
-              .mock.results[0].value.then((r: Response) => r.json())
-          : vi.mocked(generateDiagramBrowser).mock.results[0].value;
-        const result = await request;
-        // it really was a successful, warning-carrying response
-        expect(result.svg).toContain('<svg');
-        expect((result.logs as string[]).join(' ')).toMatch(
-          /ignores declarative layout properties/
-        );
-      });
-      // let the component's continuation of that request run
-      await act(async () => {});
 
       expect(screen.queryByText('Generated Diagram')).not.toBeInTheDocument();
       expect(screen.queryByRole('status')).not.toBeInTheDocument();
+      expect(screen.getByText('Generate Diagram')).toBeEnabled();
     }, 30000);
   });
 
@@ -244,8 +273,7 @@ describe('Uploader', () => {
         });
       }
       render(<Uploader onBack={vi.fn()} />);
-      const input = document.querySelector('input[type="file"]')!;
-      fireEvent.change(input, { target: { files: [yamlFile(content)] } });
+      pick(yamlFile(content));
       fireEvent.click(screen.getByText('Generate Diagram'));
       await waitFor(
         () => {
@@ -273,6 +301,16 @@ describe('Uploader', () => {
     it('lets the file choose its engine instead of forcing elk', async () => {
       await generate(CUSTOM_ENGINE_YAML);
       expect(screen.getByRole('status')).toBeInTheDocument();
+      if (USE_BACKEND) {
+        // the request carries the file as written and no layout override
+        const [, init] = vi.mocked(fetch).mock.calls[0] as [
+          string,
+          RequestInit,
+        ];
+        const body = JSON.parse(String(init.body));
+        expect(body.content).toBe(CUSTOM_ENGINE_YAML);
+        expect(body).not.toHaveProperty('layout');
+      }
     }, 30000);
 
     it('shows no banner without a warning', async () => {

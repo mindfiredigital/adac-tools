@@ -100,7 +100,7 @@ describe('collectDeclaredLayoutProperties', () => {
     });
   });
 
-  it('ignores size, minSize and maxSize, which every engine applies to leaves', () => {
+  it('ignores size, minSize and maxSize on a leaf, which every engine applies', () => {
     const declared = collectDeclaredLayoutProperties(
       config(
         {},
@@ -114,6 +114,227 @@ describe('collectDeclaredLayoutProperties', () => {
       )
     );
     expect(declared.elementLayout).toEqual([]);
+  });
+
+  describe('size, minSize and maxSize on containers', () => {
+    const sizes = {
+      layout: {
+        size: { width: 2 },
+        minSize: { width: 1 },
+        maxSize: { width: 3 },
+      },
+    };
+    /** `vpc` (with `visual`) and `other`, built by `make`; `db` is a plain leaf. */
+    const withServices = (
+      make: (visual: Json) => Json[],
+      applications: Json[] = []
+    ) =>
+      config({
+        applications,
+        infrastructure: {
+          clouds: [
+            {
+              id: 'aws-main',
+              provider: 'aws',
+              region: 'us-east-1',
+              services: make(sizes),
+            },
+          ],
+        },
+      });
+    const elementLayoutOf = (cfg: Json) =>
+      collectDeclaredLayoutProperties(cfg).elementLayout;
+
+    it('lists them for a container that others name as their vpc', () => {
+      const cfg = withServices((visual) => [
+        { id: 'vpc', service: 'vpc', visual },
+        { id: 'db', service: 'rds', config: { vpc: 'vpc' } },
+      ]);
+      expect(elementLayoutOf(cfg)).toEqual(['maxSize', 'minSize', 'size']);
+    });
+
+    it('lists them for a subnet that others name in `subnets`', () => {
+      const cfg = withServices((visual) => [
+        { id: 'sn', service: 'subnet', visual },
+        { id: 'db', service: 'rds', subnets: ['sn'] },
+      ]);
+      expect(elementLayoutOf(cfg)).toEqual(['maxSize', 'minSize', 'size']);
+    });
+
+    it('lists them for a service that runs an application', () => {
+      const cfg = withServices(
+        (visual) => [{ id: 'svc', service: 'ecs', runs: ['app'], visual }],
+        [{ id: 'app', type: 'service' }]
+      );
+      expect(elementLayoutOf(cfg)).toEqual(['maxSize', 'minSize', 'size']);
+    });
+
+    it('leaves them out when the application it runs does not exist', () => {
+      const cfg = withServices((visual) => [
+        { id: 'svc', service: 'ecs', runs: ['missing'], visual },
+      ]);
+      expect(elementLayoutOf(cfg)).toEqual([]);
+    });
+
+    it('leaves them out for an application another service already runs', () => {
+      const cfg = withServices(
+        (visual) => [
+          { id: 'first', service: 'ecs', runs: ['app'] },
+          { id: 'second', service: 'ecs', runs: ['app'], visual },
+        ],
+        [{ id: 'app', type: 'service' }]
+      );
+      expect(elementLayoutOf(cfg)).toEqual([]);
+    });
+
+    it('leaves them out for a parent that does not exist', () => {
+      const cfg = withServices((visual) => [
+        { id: 'vpc', service: 'vpc', visual },
+        { id: 'db', service: 'rds', config: { vpc: 'other' } },
+      ]);
+      expect(elementLayoutOf(cfg)).toEqual([]);
+    });
+
+    it('leaves them out for a service that names itself', () => {
+      const cfg = withServices((visual) => [
+        { id: 'sn', service: 'subnet', config: { vpc: 'sn' }, visual },
+      ]);
+      expect(elementLayoutOf(cfg)).toEqual([]);
+    });
+
+    it('credits the subnet, not the vpc, when a service names both', () => {
+      const services = (visual: Json) => [
+        { id: 'vpc', service: 'vpc', visual },
+        { id: 'sn', service: 'subnet' },
+        { id: 'db', service: 'rds', config: { vpc: 'vpc' }, subnets: ['sn'] },
+      ];
+      expect(elementLayoutOf(withServices(services))).toEqual([]);
+    });
+
+    it('credits the vpc, not a subnet, when several subnets are named', () => {
+      const services = (visual: Json) => [
+        { id: 'vpc', service: 'vpc' },
+        { id: 'a', service: 'subnet', config: { vpc: 'vpc' }, visual },
+        { id: 'b', service: 'subnet', config: { vpc: 'vpc' } },
+        { id: 'db', service: 'rds', subnets: ['a', 'b'] },
+      ];
+      expect(elementLayoutOf(withServices(services))).toEqual([]);
+    });
+
+    it('skips a subnet reference that is not a string', () => {
+      const cfg = config({
+        layoutOptions: { engine: 'custom' },
+        infrastructure: {
+          clouds: [
+            {
+              id: 'aws-main',
+              provider: 'aws',
+              region: 'us-east-1',
+              services: [
+                {
+                  id: 'db',
+                  service: 'rds',
+                  config: { subnets: [{ toString: null }, 'missing'] },
+                },
+              ],
+            },
+          ],
+        },
+      });
+      expect(() => collectDeclaredLayoutProperties(cfg)).not.toThrow();
+      const result = validateAdacConfig(cfg);
+      expect(result).toHaveProperty('valid');
+    });
+
+    it('lists them for a subnet an unparented service is placed in', () => {
+      const cfg = withServices((visual) => [
+        { id: 'vpc', service: 'vpc' },
+        { id: 'sn', service: 'subnet', config: { vpc: 'vpc' }, visual },
+        { id: 'db', service: 'rds' },
+      ]);
+      expect(elementLayoutOf(cfg)).toEqual(['maxSize', 'minSize', 'size']);
+    });
+
+    it('leaves them out for a subnet that stays empty', () => {
+      // s3 is not VPC-bound, so the builder leaves it outside the VPC
+      const cfg = withServices((visual) => [
+        { id: 'vpc', service: 'vpc' },
+        { id: 'sn', service: 'subnet', config: { vpc: 'vpc' }, visual },
+        { id: 'bucket', service: 's3' },
+      ]);
+      expect(elementLayoutOf(cfg)).toEqual([]);
+    });
+
+    it('places an unparented service in the subnet with the fewest children', () => {
+      const cfg = withServices((visual) => [
+        { id: 'vpc', service: 'vpc' },
+        { id: 'a', service: 'subnet', config: { vpc: 'vpc' } },
+        { id: 'b', service: 'subnet', config: { vpc: 'vpc' }, visual },
+        { id: 'db1', service: 'rds', subnets: ['a'] },
+        { id: 'db2', service: 'rds' },
+      ]);
+      expect(elementLayoutOf(cfg)).toEqual(['maxSize', 'minSize', 'size']);
+    });
+
+    it('skips a service whose type is not a string', () => {
+      const cfg = withServices((visual) => [
+        { id: 'vpc', service: 'vpc' },
+        { id: 'sn', service: 'subnet', config: { vpc: 'vpc' }, visual },
+        { id: 'odd', service: { toString: null } },
+        { id: 'db', service: 'rds' },
+      ]);
+      expect(() => collectDeclaredLayoutProperties(cfg)).not.toThrow();
+      // the valid subnet still takes the unparented rds
+      expect(elementLayoutOf(cfg)).toEqual(['maxSize', 'minSize', 'size']);
+    });
+
+    it('credits the vpc of a subnet placed in an availability zone', () => {
+      const cfg = withServices((visual) => [
+        { id: 'vpc', service: 'vpc', visual },
+        {
+          id: 'sn',
+          service: 'subnet',
+          config: { vpc: 'vpc', availability_zone: 'a' },
+        },
+      ]);
+      expect(elementLayoutOf(cfg)).toEqual(['maxSize', 'minSize', 'size']);
+    });
+
+    it('still leaves them out for a leaf next to a container', () => {
+      const cfg = withServices((visual) => [
+        { id: 'vpc', service: 'vpc' },
+        { id: 'db', service: 'rds', config: { vpc: 'vpc' }, visual },
+      ]);
+      expect(elementLayoutOf(cfg)).toEqual([]);
+    });
+
+    it('keeps the other properties of a leaf and a container alike', () => {
+      const cfg = withServices(() => [
+        {
+          id: 'vpc',
+          service: 'vpc',
+          visual: { layout: { align: 'center', ...sizes.layout } },
+        },
+        { id: 'db', service: 'rds', config: { vpc: 'vpc' } },
+      ]);
+      expect(elementLayoutOf(cfg)).toEqual([
+        'align',
+        'maxSize',
+        'minSize',
+        'size',
+      ]);
+    });
+
+    it('warns on a non-elk engine, and not on elk', () => {
+      const cfg = withServices((visual) => [
+        { id: 'vpc', service: 'vpc', visual },
+        { id: 'db', service: 'rds', config: { vpc: 'vpc' } },
+      ]);
+      expect(unsupportedLayoutEngineWarning(cfg, 'custom')).toContain(
+        'visual.layout (maxSize, minSize, size)'
+      );
+      expect(unsupportedLayoutEngineWarning(cfg, 'elk')).toBeUndefined();
+    });
   });
 
   it('tolerates a malformed document', () => {

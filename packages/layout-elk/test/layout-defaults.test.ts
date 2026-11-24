@@ -69,14 +69,35 @@ describe('applyLayoutDefaults', () => {
 
 describe('normalizeLayoutOptions with defaults', () => {
   it('resolves default lengths through unitSize like declared ones', () => {
-    const o = normalizeLayoutOptions({ unitSize: 50 }, undefined, V1);
+    const o = normalizeLayoutOptions({ unitSize: 200 }, undefined, V1);
     expect(o.containerPadding).toEqual({
-      top: 30,
+      top: 120,
+      right: 60,
+      bottom: 60,
+      left: 60,
+    });
+    expect(o.provenance.containerPadding).toBe('default');
+  });
+
+  it('keeps the default top padding at 60px when unitSize is small', () => {
+    const o = normalizeLayoutOptions({ unitSize: 50 }, undefined, V1);
+    // the sides still scale (0.3 × 50); only the title band has a floor
+    expect(o.containerPadding).toEqual({
+      top: 60,
       right: 15,
       bottom: 15,
       left: 15,
     });
-    expect(o.provenance.containerPadding).toBe('default');
+  });
+
+  it('leaves a declared containerPadding as written at a small unitSize', () => {
+    const o = normalizeLayoutOptions(
+      { unitSize: 50, containerPadding: { top: 0.3, left: 0.3 } },
+      undefined,
+      V1
+    );
+    expect(o.containerPadding).toEqual({ top: 15, left: 15 });
+    expect(o.provenance.containerPadding).toBe('declared');
   });
 
   it('reports no provenance when nothing is set or defaulted', () => {
@@ -285,25 +306,102 @@ describe('default profile in the graph', () => {
 
 // ── End to end: a legacy sample and both declarative examples ──────────────
 
-function overlapCount(node: ElkNode): number {
-  const kids = (node.children ?? []).filter(
-    (k) =>
-      (k.properties as { type?: string } | undefined)?.type !== 'layout-line'
+const isLayoutLine = (n: ElkNode) =>
+  (n.properties as { type?: string } | undefined)?.type === 'layout-line';
+
+/**
+ * The real boxes laid out in `node`'s frame. Layout-line wrappers are not boxes
+ * of their own: their children are lifted into the parent's frame instead.
+ */
+function framedBoxes(
+  node: ElkNode,
+  ox = 0,
+  oy = 0
+): { node: ElkNode; x: number; y: number; w: number; h: number }[] {
+  return (node.children ?? []).flatMap((k) =>
+    isLayoutLine(k)
+      ? framedBoxes(k, ox + (k.x ?? 0), oy + (k.y ?? 0))
+      : [
+          {
+            node: k,
+            x: ox + (k.x ?? 0),
+            y: oy + (k.y ?? 0),
+            w: k.width ?? 0,
+            h: k.height ?? 0,
+          },
+        ]
   );
+}
+
+function overlapCount(node: ElkNode): number {
+  const kids = framedBoxes(node);
   let count = 0;
   for (let i = 0; i < kids.length; i++) {
     for (let j = i + 1; j < kids.length; j++) {
       const a = kids[i];
       const b = kids[j];
-      const ix =
-        Math.min(a.x! + a.width!, b.x! + b.width!) - Math.max(a.x!, b.x!);
-      const iy =
-        Math.min(a.y! + a.height!, b.y! + b.height!) - Math.max(a.y!, b.y!);
+      const ix = Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x);
+      const iy = Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y);
       if (ix > 1 && iy > 1) count++;
     }
   }
-  return count + kids.reduce((n, k) => n + overlapCount(k), 0);
+  return count + kids.reduce((n, k) => n + overlapCount(k.node), 0);
 }
+
+describe('overlapCount', () => {
+  it('checks the items inside a layout-line wrapper', () => {
+    const leaf = (id: string, x: number): ElkNode => ({
+      id,
+      x,
+      y: 0,
+      width: 50,
+      height: 50,
+    });
+    const graph: ElkNode = {
+      id: 'root',
+      children: [
+        {
+          id: 'box',
+          x: 0,
+          y: 0,
+          width: 300,
+          height: 200,
+          children: [
+            {
+              id: 'box__line0',
+              x: 10,
+              y: 10,
+              width: 200,
+              height: 60,
+              properties: { type: 'layout-line' },
+              children: [leaf('a', 0), leaf('b', 20)],
+            },
+          ],
+        },
+      ],
+    };
+    expect(overlapCount(graph)).toBe(1);
+  });
+
+  it('compares items of different lines in the container frame', () => {
+    const line = (id: string, y: number, x: number): ElkNode => ({
+      id,
+      x: 0,
+      y,
+      width: 100,
+      height: 50,
+      properties: { type: 'layout-line' },
+      children: [{ id: `${id}-leaf`, x, y: 0, width: 50, height: 50 }],
+    });
+    const graph: ElkNode = {
+      id: 'root',
+      children: [line('l0', 0, 0), line('l1', 60, 0)],
+    };
+    expect(overlapCount(graph)).toBe(0);
+    graph.children![1].y = 20;
+    expect(overlapCount(graph)).toBe(1);
+  });
+});
 
 describe.each([
   'aws.adac.yaml',

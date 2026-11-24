@@ -537,23 +537,34 @@ describe('renderer: edge labels', () => {
     // the icon is centred 31px below the top of a 52px wide node box
     const iconCentre = (b: Rect) => ({ x: b.x + b.w / 2, y: b.y + 31 });
 
-    it('links Users to Edge Layer and Edge Layer to the ALB with straight lines', async () => {
+    // The file declares `align: center`, so items stay centred where they are
+    // and straightening must not move them to meet their link partner.
+    it('keeps the declared alignment of Users, the Edge Layer and the ALB', async () => {
       const svg = await render();
       const users = nodeRect(svg, 'users');
       const alb = nodeRect(svg, 'alb');
-      // Users is moved so its icon centre is level with the Edge Layer's middle
       const edgeLayer = nodeRect(svg, 'edge-layer');
-      expect(users.y + 31).toBeCloseTo(edgeLayer.y + edgeLayer.h / 2, 0);
+      // Users is centred on the Edge Layer's middle, so their link is flat
+      expect(
+        Math.abs(users.y + users.h / 2 - (edgeLayer.y + edgeLayer.h / 2))
+      ).toBeLessThanOrEqual(1);
       const fromUsers = paths(svg).find(
         (p) => Math.abs(p[0].x - (users.x + users.w)) < 1
       )!;
+      expect(fromUsers).toHaveLength(2);
+      expect(fromUsers[0].y).toBeCloseTo(fromUsers[1].y, 1);
+
+      // the ALB sits at its own centre, off the Edge Layer's middle, so the
+      // link into it steps with square corners instead of one flat line
       const intoAlb = paths(svg).find(
         (p) => Math.abs(p[p.length - 1].x - alb.x) < 1
       )!;
-      for (const line of [fromUsers, intoAlb]) {
-        expect(line).toHaveLength(2);
-        expect(line[0].y).toBeCloseTo(line[1].y, 1);
-      }
+      intoAlb.slice(1).forEach((p, i) => {
+        const q = intoAlb[i];
+        expect(Math.abs(p.x - q.x) < 0.5 || Math.abs(p.y - q.y) < 0.5).toBe(
+          true
+        );
+      });
     });
 
     it('attaches the CloudWatch and Secrets Manager arrows at the icon centre', async () => {

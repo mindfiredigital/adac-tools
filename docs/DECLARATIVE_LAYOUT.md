@@ -79,10 +79,19 @@ to keep the engine's own behaviour.
 
 Profile `v1`:
 
-| Option             | Default                                          | Effect                                                       |
-| ------------------ | ------------------------------------------------ | ------------------------------------------------------------ |
-| `direction`        | `LR`                                             | the flow the builder already used, now stated                |
-| `containerPadding` | `{top: 0.6, right: 0.3, bottom: 0.3, left: 0.3}` | keeps the 60px title band, trims the sides from 40px to 30px |
+| Option             | Default                                          | Effect                                                                                       |
+| ------------------ | ------------------------------------------------ | -------------------------------------------------------------------------------------------- |
+| `direction`        | `LR`                                             | the flow the builder already used, now stated                                                |
+| `containerPadding` | `{top: 0.6, right: 0.3, bottom: 0.3, left: 0.3}` | at `unitSize: 100`: keeps the 60px title band, trims the sides from 40px to 30px (see below) |
+
+The padding is in logical units, so it follows `unitSize`, while the builder's
+previous padding was a fixed 60px top and 40px sides. The pixel values above
+hold only at the default `unitSize: 100`. A defaulted top padding is never
+below 60px, so container titles keep their band: at `unitSize: 50` the top
+stays 60px and the sides become 15px; at `unitSize: 200` the top is 120px and
+the sides 60px, so the container grows instead of becoming more compact. The
+60px floor applies only to the default; a `containerPadding` you declare is used
+as written. Declare it, or set `defaults: none`, if you use another `unitSize`.
 
 The generation log records one line (`Layout defaults applied: …`) naming the
 defaults that were used.
@@ -111,8 +120,9 @@ Never defaulted, because they invent structure: `order`, `position`, `wrap`,
 connection's `layout` / `bidirectional`. `unitSize`, `background`, `edgeLabels`
 and `labelMaxChars` already have their own defaults and are unchanged.
 
-Effect of `v1` on the renderable samples: mean canvas area −2.8% (range −8.3%
-to 0%), no sample larger, no new overlaps. The two declarative examples declare
+Effect of `v1` on the renderable samples (all at `unitSize: 100`): mean canvas
+area −2.8% (range −8.3% to 0%), no sample larger, no new overlaps. Other
+`unitSize` values were not measured. The two declarative examples declare
 their own padding and are unchanged.
 
 ## `visual.layout` (per element)
@@ -222,7 +232,8 @@ apply.
 | `layoutOptions`: `direction`, `gap`, `containerPadding`, `align`, `justify`, `edgeSpacing`, `edgeRouting` (and deprecated `routing`) |  yes  |               no                |
 | `visual.layout`: `direction`, `gap`, `padding`, `align`, `justify`, `wrap`, `itemsPerLine`, `maxItemsPerLine`, `order`, `position`   |  yes  |               no                |
 | `connections[].layout`: `fromSide`, `toSide`, `routing`; `bidirectional`                                                             |  yes  |               no                |
-| `visual.layout`: `size`, `minSize`, `maxSize` (on leaf elements; containers are sized by `elk` only, silently)                       |  yes  |               yes               |
+| `visual.layout`: `size`, `minSize`, `maxSize` on containers (elements that hold others, see below)                                   |  yes  |               no                |
+| `visual.layout`: `size`, `minSize`, `maxSize` on leaf elements                                                                       |  yes  |               yes               |
 | `layoutOptions`: `unitSize`, `background`, `edgeLabels`, `labelMaxChars`                                                             |  yes  |               yes               |
 
 When a file **declares** any property marked "no" and the engine in effect is not
@@ -242,6 +253,11 @@ the generation log (`--validate`, API consumers). It is a **warning, not an
 error**: the file is still valid and a diagram is still produced, just without
 the declared arrangement. Only properties the author wrote count; files that
 declare none of them, or only the shared properties, never warn.
+
+A **container** here is a service that holds others: another service names it
+as its `vpc`, `vnet`, `subnet` or `subnets` (in `config` or on the service), or
+it `runs` applications. Only for these are `size`, `minSize` and `maxSize`
+counted as ignored; on any other element every engine applies them.
 
 ## Known limitations
 

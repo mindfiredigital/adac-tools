@@ -24,6 +24,12 @@ layoutOptions:
   edgeRouting: orthogonal
   background: false # no card behind icons unless an element asks for one
 
+applications:
+  - id: users
+    name: Users
+    type: user
+    technology: Human
+
 infrastructure:
   clouds:
     - id: 'aws-main'

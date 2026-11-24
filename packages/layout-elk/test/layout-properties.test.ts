@@ -147,9 +147,10 @@ describe('layout-properties', () => {
         undefined,
         LAYOUT_DEFAULT_PROFILES.v1
       );
-      // 0.6 / 0.3 logical units at 40px per unit, not at the default 100
+      // 0.3 logical units at 40px per unit, not at the default 100; the top
+      // (0.6 × 40 = 24px) is raised to the 60px title band
       expect(o.containerPadding).toEqual({
-        top: 24,
+        top: 60,
         right: 12,
         bottom: 12,
         left: 12,
@@ -339,6 +340,18 @@ describe('layout-properties', () => {
       expect(chunkIntoLines(nums(2), { kind: 'max', count: 4 })).toEqual([
         [0, 1],
       ]);
+      // lengths differ by at most one
+      expect(
+        chunkIntoLines(nums(10), { kind: 'max', count: 4 }).map((l) => l.length)
+      ).toEqual([4, 3, 3]);
+    });
+
+    it('keeps fixed-size chunks for exact lines', () => {
+      expect(
+        chunkIntoLines(nums(10), { kind: 'exact', count: 4 }).map(
+          (l) => l.length
+        )
+      ).toEqual([4, 4, 2]);
     });
 
     it('puts everything on one line without a limit and nothing for no items', () => {
