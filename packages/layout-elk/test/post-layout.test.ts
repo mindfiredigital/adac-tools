@@ -166,6 +166,71 @@ describe('straightening and a declared align', () => {
     expect(bottoms(g)).toEqual([140, 140]);
   });
 
+  // the same two items placed directly on the root, which declares the align
+  const onRoot = (align?: 'end'): ElkNode => ({
+    id: 'root',
+    x: 0,
+    y: 0,
+    width: 600,
+    height: 400,
+    properties: {
+      type: 'container',
+      arrangement: {
+        mainAxis: 'horizontal',
+        align,
+        padding: { top: 20, right: 20, bottom: 20, left: 20 },
+      },
+    } as never,
+    children: [
+      {
+        id: 'a',
+        x: 20,
+        y: 60,
+        width: 52,
+        height: 80,
+        properties: { type: 'service' },
+      },
+      {
+        id: 'b',
+        x: 200,
+        y: 20,
+        width: 52,
+        height: 120,
+        properties: { type: 'service' },
+      },
+    ],
+    edges: [
+      {
+        id: 'e',
+        sources: ['a'],
+        targets: ['b'],
+        container: 'root',
+        sections: [
+          {
+            id: 's',
+            startPoint: { x: 72, y: 91 },
+            endPoint: { x: 200, y: 51 },
+          },
+        ],
+      },
+    ],
+  });
+
+  it('keeps the align declared on the root', () => {
+    const g = onRoot('end');
+    applyLayoutPostProcessing(g);
+    // both sit on the root's inner bottom (400 - 20 padding)
+    expect(g.children!.map((n) => n.y! + n.height!)).toEqual([380, 380]);
+  });
+
+  it('still lets top-level items meet their partners when the root declares no align', () => {
+    const g = onRoot();
+    applyLayoutPostProcessing(g);
+    // the icons (31px below each box top) now line up, so the link is flat
+    const [a, b] = g.children!;
+    expect(a.y! + 31).toBeCloseTo(b.y! + 31, 1);
+  });
+
   it('keeps the bottoms aligned when wrapping groups the items into lines', () => {
     const g = row('end');
     const container = g.children![0];
