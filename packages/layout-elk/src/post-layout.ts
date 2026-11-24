@@ -890,12 +890,10 @@ function straightenLeafLinks(
     if (!me?.parent || !isIconNode(me.node)) continue;
     // an explicit align places the item on the cross axis, and a justify on a
     // vertical stack spaces the items along y; moving the item to meet its
-    // partner would undo either
-    // (the root's own arrangement comes from the global defaults, and its
-    // top-level items are meant to meet their partners)
-    const owner = arrangedAncestor(me.parent);
-    const arrangement =
-      owner && owner !== root ? owner.properties?.arrangement : undefined;
+    // partner would undo either; this holds for the root too, whose align is
+    // only set when the file declares layoutOptions.align (the default
+    // profiles leave align out)
+    const arrangement = arrangedAncestor(me.parent)?.properties?.arrangement;
     if (arrangement?.align) continue;
     if (
       arrangement?.mainAxis === 'vertical' &&
