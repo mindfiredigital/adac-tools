@@ -1,12 +1,16 @@
+import path from 'node:path';
 import { defineConfig } from 'tsup';
 
 export default defineConfig({
   entry: ['src/index.ts', 'src/cli.ts'],
   format: ['cjs', 'esm'],
-  dts: true,
+  // the published types must not import any workspace package, none of which
+  // is published with them; the second pattern lets the bundler follow the
+  // relative imports inside those packages' declaration files
+  dts: { resolve: [/^@mindfiredigital\//, /^\.\.?\//] },
   clean: true,
   splitting: false,
-  sourcemap: true,
+  sourcemap: false,
   minify: false,
   // Bundle internal workspace packages and all key dependencies
   noExternal: [
@@ -28,11 +32,24 @@ export default defineConfig({
     'js-yaml',
   ],
   external: ['web-worker'],
+  // Bundle core from its source. Core's own build keeps the validator
+  // external (it is a dependency of core), so core's dist leaves a plain
+  // require("@mindfiredigital/adac-validator") that this bundle cannot see;
+  // from source, the validator is bundled like every other workspace package,
+  // and diagram needs no dependency on it.
+  esbuildOptions(options) {
+    options.alias = {
+      ...options.alias,
+      '@mindfiredigital/adac-core': path.resolve(
+        process.cwd(),
+        '../core/src/index.ts'
+      ),
+    };
+  },
   // Fix for __dirname in bundled code
   shims: true,
   async onSuccess() {
     const fs = await import('fs-extra');
-    const path = await import('path');
     const root = process.cwd();
     await fs.copy(
       path.resolve(root, 'src/mappings'),

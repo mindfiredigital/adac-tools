@@ -268,6 +268,13 @@ importers:
 
   packages/diagram:
     dependencies:
+      elkjs:
+        specifier: ^0.11.1
+        version: 0.11.1
+      fs-extra:
+        specifier: ^11.3.3
+        version: 11.3.5
+    devDependencies:
       '@mindfiredigital/adac-cli':
         specifier: workspace:*
         version: link:../cli
@@ -310,13 +317,6 @@ importers:
       '@mindfiredigital/adac-validator':
         specifier: workspace:*
         version: link:../validator
-      elkjs:
-        specifier: ^0.11.1
-        version: 0.11.1
-      fs-extra:
-        specifier: ^11.3.3
-        version: 11.3.5
-    devDependencies:
       '@types/fs-extra':
         specifier: ^11.0.4
         version: 11.0.4
