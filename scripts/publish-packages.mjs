@@ -1,8 +1,14 @@
 /**
  * publish-packages.mjs
  *
- * Iterates over every workspace package that is NOT private and
- * publishes it to the GitHub Packages npm registry.
+ * Publishes the four listed packages to https://registry.npmjs.org/, in the
+ * order of PUBLISH_ORDER (a package is published after the packages it
+ * depends on). No other workspace package is published.
+ *
+ * Before anything is published, the script exits with code 1 if a listed
+ * package is missing from packages/ or is private. It stops at the first
+ * publish failure and does not try the packages after it. Versions that are
+ * already on npm are skipped, so a re-run after a failure is safe.
  *
  * Usage:
  *   node scripts/publish-packages.mjs            # actual publish
@@ -21,37 +27,48 @@ const packagesDir = path.resolve(root, 'packages');
 
 const dryRun = process.argv.includes('--dry-run');
 
+// The repository's .npmrc may map the @mindfiredigital scope to another
+// registry, and a scope mapping wins over --registry; name the scope too, so
+// both the "already published?" check and the publish go to npmjs.org.
+const REGISTRY_FLAGS =
+  '--registry=https://registry.npmjs.org/ --@mindfiredigital:registry=https://registry.npmjs.org/';
+
+/** The packages that are published, in publish order. */
+const PUBLISH_ORDER = [
+  '@mindfiredigital/adac-validator',
+  '@mindfiredigital/adac-icons-aws',
+  '@mindfiredigital/adac-core',
+  '@mindfiredigital/adac-diagram',
+];
+
 // ─── Helpers ───────────────────────────────────────────────
 function readJson(filePath) {
   return JSON.parse(fs.readFileSync(filePath, 'utf-8'));
 }
 
-function isPublishable(pkgJson) {
-  // Skip private packages
-  if (pkgJson.private) return false;
-  // Must have a name under @mindfiredigital scope
-  if (!pkgJson.name?.startsWith('@mindfiredigital/')) return false;
-  // ONLY publish core and diagram packages
-  const allowedPackages = [
-    '@mindfiredigital/adac-core',
-    '@mindfiredigital/adac-diagram',
-  ];
-  if (!allowedPackages.includes(pkgJson.name)) return false;
-  return true;
-}
-
 function isAlreadyPublished(name, version) {
   try {
-    execSync(
-      `npm view ${name}@${version} version --registry=https://registry.npmjs.org/`,
-      {
-        stdio: 'pipe',
-      }
-    );
+    execSync(`npm view ${name}@${version} version ${REGISTRY_FLAGS}`, {
+      stdio: 'pipe',
+    });
     return true; // version already exists
   } catch {
     return false; // not yet published
   }
+}
+
+/** Every workspace package that has a package.json, in folder-name order. */
+function readWorkspacePackages() {
+  return fs
+    .readdirSync(packagesDir, { withFileTypes: true })
+    .filter((d) => d.isDirectory())
+    .map((d) => d.name)
+    .sort()
+    .filter((dir) => fs.existsSync(path.join(packagesDir, dir, 'package.json')))
+    .map((dir) => ({
+      dir,
+      pkgJson: readJson(path.join(packagesDir, dir, 'package.json')),
+    }));
 }
 
 // ─── Main ──────────────────────────────────────────────────
@@ -59,31 +76,36 @@ async function main() {
   console.log(`\n🚀 ADAC Monorepo Publisher ${dryRun ? '(DRY RUN)' : ''}\n`);
   console.log('─'.repeat(60));
 
-  const dirs = fs
-    .readdirSync(packagesDir, { withFileTypes: true })
-    .filter((d) => d.isDirectory())
-    .map((d) => d.name)
-    .sort();
+  const workspace = readWorkspacePackages();
+  const byName = new Map(workspace.map((p) => [p.pkgJson.name, p]));
+
+  // Check the whole release set before publishing anything
+  const problems = [];
+  for (const name of PUBLISH_ORDER) {
+    const entry = byName.get(name);
+    if (!entry) problems.push(`${name} is missing from packages/`);
+    else if (entry.pkgJson.private) problems.push(`${name} is private`);
+  }
+  if (problems.length > 0) {
+    problems.forEach((p) => console.error(`❌ ${p}`));
+    console.error('Nothing was published.');
+    process.exit(1);
+  }
 
   const results = { published: [], skipped: [], failed: [] };
 
-  for (const dir of dirs) {
-    const pkgJsonPath = path.join(packagesDir, dir, 'package.json');
-    if (!fs.existsSync(pkgJsonPath)) {
-      continue;
-    }
+  // Every workspace package that is not in the list is skipped
+  for (const { dir, pkgJson } of workspace) {
+    if (PUBLISH_ORDER.includes(pkgJson.name)) continue;
+    console.log(
+      `⏭️  ${pkgJson.name || dir} — not in the release set, skipping`
+    );
+    results.skipped.push(pkgJson.name || dir);
+  }
 
-    const pkgJson = readJson(pkgJsonPath);
-
-    if (!isPublishable(pkgJson)) {
-      console.log(
-        `⏭️  ${pkgJson.name || dir} — private or not scoped, skipping`
-      );
-      results.skipped.push(pkgJson.name || dir);
-      continue;
-    }
-
-    const { name, version } = pkgJson;
+  for (const name of PUBLISH_ORDER) {
+    const { dir } = byName.get(name);
+    const { version } = byName.get(name).pkgJson;
 
     // Check if this version is already published
     if (isAlreadyPublished(name, version)) {
@@ -103,7 +125,7 @@ async function main() {
         );
       } else {
         execSync(
-          'pnpm publish --access public --no-git-checks --registry=https://registry.npmjs.org/',
+          `pnpm publish --access public --no-git-checks ${REGISTRY_FLAGS}`,
           {
             cwd: pkgDir,
             stdio: 'inherit',
@@ -118,6 +140,11 @@ async function main() {
         `   ❌ Failed to publish ${name}@${version}: ${err.message}`
       );
       results.failed.push(`${name}@${version}`);
+      // the packages after this one may depend on it: do not try them
+      console.error(
+        '   Stopping: the packages after this one are not published.'
+      );
+      break;
     }
   }
 
