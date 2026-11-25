@@ -812,7 +812,7 @@ const alongAxis = (side: Side): 'x' | 'y' =>
  * to their other end as the minimum gap allows, so links between aligned boxes
  * remain straight; when the side is too short for that, they are spread evenly.
  */
-function spreadAlongSide(wanted: number[], len: number): number[] {
+export function spreadAlongSide(wanted: number[], len: number): number[] {
   const n = wanted.length;
   if (n === 1) return [len / 2];
   const margin = Math.min(MIN_EDGE_GAP, len / 4);
@@ -975,7 +975,8 @@ function innerPadding(
 /**
  * Attaches every edge at the middle of the side of the node it meets. When
  * several edges meet the same side they are spread evenly across it, ordered
- * by where their other end lies, and never closer than `MIN_EDGE_GAP`.
+ * by where their other end lies, and no closer than `MIN_EDGE_GAP` unless the
+ * side is too short for that, in which case they are spread evenly.
  *
  * Only the end points and the run of corners behind each end move, so the route
  * between them (and its orthogonality) is kept; a straight edge gets one Z

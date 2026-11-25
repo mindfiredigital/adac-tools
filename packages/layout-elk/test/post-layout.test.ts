@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { applyLayoutPostProcessing } from '../src/post-layout.js';
+import {
+  applyLayoutPostProcessing,
+  spreadAlongSide,
+} from '../src/post-layout.js';
 import { LAYOUT_LINE_TYPE } from '../src/declarative-layout.js';
 import type { ElkNode } from '../src/types.js';
 
@@ -977,5 +980,50 @@ describe('edges that share a run', () => {
     xs.forEach((x) => {
       expect(x <= 310 - 8 || x >= 330 + 8).toBe(true);
     });
+  });
+});
+
+describe('spreadAlongSide on a short side', () => {
+  // 52 is the height of the icon band: too short to keep the minimum gap
+  // between three or more edge ends, so they are spread evenly instead
+  const SIDE = 52;
+  const expectPositions = (actual: number[], expected: number[]) => {
+    expect(actual).toHaveLength(expected.length);
+    expected.forEach((e, i) => expect(actual[i]).toBeCloseTo(e, 5));
+  };
+
+  it.each([[[0, 0, 0]], [[5, 26, 50]], [[100, 200, 300]]])(
+    'spreads three ends evenly wherever they are wanted (%j)',
+    (wanted) => {
+      expectPositions(spreadAlongSide(wanted, SIDE), [13, 26, 39]);
+    }
+  );
+
+  it.each([[[0, 1, 2, 3]], [[10, 20, 30, 40]], [[52, 52, 52, 52]]])(
+    'spreads four ends evenly wherever they are wanted (%j)',
+    (wanted) => {
+      expectPositions(spreadAlongSide(wanted, SIDE), [10.4, 20.8, 31.2, 41.6]);
+    }
+  );
+
+  it.each([[[0, 0, 0, 0, 0]], [[3, 12, 26, 40, 49]]])(
+    'spreads five ends evenly wherever they are wanted (%j)',
+    (wanted) => {
+      expectPositions(spreadAlongSide(wanted, SIDE), [
+        52 / 6,
+        104 / 6,
+        156 / 6,
+        208 / 6,
+        260 / 6,
+      ]);
+    }
+  );
+
+  it('keeps two ends 13 from the ends of the side', () => {
+    expectPositions(spreadAlongSide([10, 40], SIDE), [13, 39]);
+  });
+
+  it('centres a single end', () => {
+    expectPositions(spreadAlongSide([7], SIDE), [26]);
   });
 });

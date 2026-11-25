@@ -10,6 +10,7 @@ allowBuilds:
 # GHSA-fc5q-39xc-vjpf (ReDoS via repeated extglobs) has no published fix, and
 # picomatch only reaches us through build and test tooling that matches our own
 # globs, never patterns from untrusted input.
+# Tracked in https://github.com/mindfiredigital/adac-tools/issues/98
 auditConfig:
   ignoreGhsas:
     - GHSA-fc5q-39xc-vjpf

@@ -306,6 +306,7 @@ describe('Flow', () => {
       vi.mocked(generateDiagramBrowser).mockResolvedValue({
         svg: '<svg>test</svg>',
         logs: [],
+        warnings: [],
         duration: 0,
       });
     }

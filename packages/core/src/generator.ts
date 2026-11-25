@@ -32,6 +32,12 @@ export type IconResolver = (iconName: string) => Promise<string | null>;
 export interface GenerationResult {
   svg: string;
   logs: string[];
+  /**
+   * Non-fatal problems found while generating (an unsupported layout engine,
+   * deprecated options, missing icons, ...), without the `Warning: ` prefix
+   * that their entry in `logs` carries.
+   */
+  warnings: string[];
   duration: number;
   optimizationResult?: OptimizationResult;
 }
@@ -49,9 +55,14 @@ export async function generateDiagramSvg(
   iconResolver?: IconResolver
 ): Promise<GenerationResult> {
   const logs: string[] = [];
+  const warnings: string[] = [];
   const start = Date.now();
   const log = (msg: string) =>
     logs.push(`[${new Date().toISOString()}] ${msg}`);
+  const warn = (message: string) => {
+    warnings.push(message);
+    log(`Warning: ${message}`);
+  };
 
   try {
     log('Starting diagram generation.');
@@ -67,7 +78,7 @@ export async function generateDiagramSvg(
           `Schema validation failed:\n${validation.errors?.join('\n')}`
         );
       }
-      validation.warnings?.forEach((w) => log(`Warning: ${w}`));
+      validation.warnings?.forEach(warn);
       log('Schema validation passed.');
     }
 
@@ -100,7 +111,7 @@ export async function generateDiagramSvg(
     // validation has already reported this when it ran
     if (!validate) {
       const unsupported = unsupportedLayoutEngineWarning(adac, engine);
-      if (unsupported) log(`Warning: ${unsupported}`);
+      if (unsupported) warn(unsupported);
     }
     const graph = await buildElkGraph(adac, {
       // icon-sized nodes and the declarative container rules are the ELK look
@@ -110,7 +121,7 @@ export async function generateDiagramSvg(
       // validation has already reported deprecated aliases
       onWarning: (message) => {
         if (validate && /is deprecated/.test(message)) return;
-        log(`Warning: ${message}`);
+        warn(message);
       },
     });
 
@@ -160,7 +171,7 @@ export async function generateDiagramSvg(
     const duration = Date.now() - start;
     log(`Generation complete in ${duration}ms`);
 
-    return { svg, logs, duration, optimizationResult };
+    return { svg, logs, warnings, duration, optimizationResult };
   } catch (e: unknown) {
     const error = e instanceof Error ? e : new Error(String(e));
     log(`Error: ${error.message}`);
@@ -183,7 +194,7 @@ export async function generateDiagram(
 ): Promise<void> {
   const fs = await getFs();
   const raw = await fs.readFile(input, 'utf8');
-  const { svg, logs } = await generateDiagramSvg(
+  const { svg, warnings } = await generateDiagramSvg(
     raw,
     layoutOverride,
     validate,
@@ -194,10 +205,7 @@ export async function generateDiagram(
     iconResolver
   );
   // surface generation warnings (unsupported engine, deprecated options, ...)
-  for (const line of logs) {
-    const warning = /^\[[^\]]*\] (Warning: .*)$/s.exec(line);
-    if (warning) console.warn(warning[1]);
-  }
+  for (const message of warnings) console.warn(`Warning: ${message}`);
   await fs.outputFile(output, svg);
   console.log(`Diagram generated: ${output}`);
 }

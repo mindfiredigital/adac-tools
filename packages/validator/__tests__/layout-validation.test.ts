@@ -113,6 +113,15 @@ describe('layout schema validation', () => {
         true
       );
     });
+
+    it.each(['v1', 'none'])(
+      'accepts layoutOptions.defaults: %s',
+      (defaults) => {
+        const result = validateAdacConfig(withOptions({ defaults }));
+        expect(result.errors).toBeUndefined();
+        expect(result.valid).toBe(true);
+      }
+    );
   });
 
   describe('invalid declarations', () => {
@@ -170,6 +179,21 @@ describe('layout schema validation', () => {
       ['bidirectional', { bidirectional: 'yes' }],
     ])('rejects invalid connection layout: %s', (_name, extra) => {
       expect(validateAdacConfig(withConnection(extra)).valid).toBe(false);
+    });
+  });
+
+  describe('invalid layoutOptions.defaults', () => {
+    it.each(['v2', 'V1', '', 'default'])(
+      'rejects layoutOptions.defaults: %j',
+      (defaults) => {
+        expect(validateAdacConfig(withOptions({ defaults })).valid).toBe(false);
+      }
+    );
+
+    it('rejects a defaults value that is not a string', () => {
+      expect(validateAdacConfig(withOptions({ defaults: true })).valid).toBe(
+        false
+      );
     });
   });
 

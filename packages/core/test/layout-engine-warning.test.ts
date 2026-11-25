@@ -87,6 +87,47 @@ describe('unsupported layout engine warning', () => {
     expect(warnings(logs)).toHaveLength(1);
   });
 
+  it('returns the warnings in result.warnings, without the log prefix', async () => {
+    const result = await generateDiagramSvg(
+      yaml(DECLARATIVE),
+      'custom',
+      false,
+      undefined,
+      'monthly',
+      true
+    );
+    expect(result.warnings).toHaveLength(1);
+    expect(result.warnings[0]).toMatch(/^Layout engine "custom" ignores/);
+    // the same warning is in the log trail, with the prefix and a timestamp
+    expect(
+      result.logs.some((l) => l.endsWith(`Warning: ${result.warnings[0]}`))
+    ).toBe(true);
+  });
+
+  it('returns no warnings when there is nothing to warn about', async () => {
+    const result = await generateDiagramSvg(
+      yaml(DECLARATIVE),
+      'elk',
+      false,
+      undefined,
+      'monthly',
+      true
+    );
+    expect(result.warnings).toEqual([]);
+  });
+
+  it('keeps validation warnings in result.warnings', async () => {
+    const result = await generateDiagramSvg(
+      yaml(`layoutOptions:\n  unit: 100`),
+      'elk',
+      true,
+      undefined,
+      'monthly',
+      true
+    );
+    expect(result.warnings.some((w) => /deprecated/.test(w))).toBe(true);
+  });
+
   it('is silent on elk', async () => {
     const { logs } = await generateDiagramSvg(
       yaml(DECLARATIVE),
