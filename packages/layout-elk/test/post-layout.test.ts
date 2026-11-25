@@ -323,6 +323,65 @@ describe('straightening and a declared align', () => {
   });
 });
 
+describe('top-level nodes under a global align', () => {
+  it('keeps the bottoms aligned instead of moving a node to meet its partner', () => {
+    // the root declares layoutOptions.align: end; a (80px) and b (120px) are
+    // joined side to side, and moving a up to meet b's icon would undo the align
+    const g: ElkNode = {
+      id: 'root',
+      x: 0,
+      y: 0,
+      width: 600,
+      height: 400,
+      properties: {
+        type: 'container',
+        arrangement: {
+          mainAxis: 'horizontal',
+          align: 'end',
+          padding: { top: 0, right: 0, bottom: 0, left: 0 },
+          fitToItems: true,
+        },
+      } as never,
+      children: [
+        {
+          id: 'a',
+          x: 20,
+          y: 60,
+          width: 52,
+          height: 80,
+          properties: { type: 'service' },
+        },
+        {
+          id: 'b',
+          x: 200,
+          y: 20,
+          width: 52,
+          height: 120,
+          properties: { type: 'service' },
+        },
+      ],
+      edges: [
+        {
+          id: 'e',
+          sources: ['a'],
+          targets: ['b'],
+          container: 'root',
+          sections: [
+            {
+              id: 's',
+              startPoint: { x: 72, y: 100 },
+              endPoint: { x: 200, y: 80 },
+            },
+          ],
+        },
+      ],
+    };
+    applyLayoutPostProcessing(g);
+    const [a, b] = g.children!;
+    expect(a.y! + a.height!).toBe(b.y! + b.height!);
+  });
+});
+
 describe('re-attaching edge ends to the icon', () => {
   // ELK leaves a collinear point at the end of each run; moving only the end
   // and the corner beside it used to leave a diagonal segment behind

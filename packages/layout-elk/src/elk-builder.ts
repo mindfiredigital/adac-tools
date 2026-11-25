@@ -17,15 +17,12 @@ import {
   type LayoutDefaults,
   type Warn,
 } from './layout-properties.js';
-
-let fsPromise: Promise<typeof import('fs')> | undefined;
-let pathPromise: Promise<typeof import('path')> | undefined;
-
-const getFs = () => (fsPromise ??= import('fs'));
-const getPath = () => (pathPromise ??= import('path'));
-
-const isBrowser =
-  typeof window !== 'undefined' && typeof document !== 'undefined';
+import {
+  loadIconSets,
+  neededIconProviders,
+  normalizeKey,
+  resolveProviderAssetPath,
+} from './icon-packages.js';
 
 type AdacService =
   AdacConfig['infrastructure']['clouds'][number]['services'][number];
@@ -34,118 +31,6 @@ type AdacCloud = AdacConfig['infrastructure']['clouds'][number];
 
 /** An icon node's box is as wide as its icon pill (42px icon + 5px padding each side). */
 const LEAF_WIDTH = 52;
-
-type IconProvider = 'aws' | 'gcp' | 'azure';
-
-const PROVIDER_FOLDERS: Record<IconProvider, string> = {
-  aws: 'icons-aws',
-  gcp: 'icons-gcp',
-  azure: 'icons-azure',
-};
-
-async function iconMapCandidates(provider: IconProvider): Promise<string[]> {
-  const folder = PROVIDER_FOLDERS[provider];
-  const path = await getPath();
-  return [
-    path.resolve(__dirname, '..', '..', folder, 'mappings', 'icon-map.json'),
-    path.resolve(
-      __dirname,
-      '..',
-      '..',
-      '..',
-      '@mindfiredigital',
-      `adac-${folder}`,
-      'mappings',
-      'icon-map.json'
-    ),
-    path.resolve(
-      process.cwd(),
-      'packages',
-      folder,
-      'mappings',
-      'icon-map.json'
-    ),
-    path.resolve(process.cwd(), folder, 'mappings', 'icon-map.json'),
-  ];
-}
-
-async function loadIconMap(
-  provider: IconProvider
-): Promise<Record<string, string>> {
-  try {
-    if (isBrowser) {
-      const resp = await fetch(`/mappings/${provider}-icons.json`);
-      if (!resp.ok) return {};
-      // a dev server answers a missing file with index.html (status 200);
-      // await the parse so that is handled below instead of rejecting later
-      return (await resp.json()) as Record<string, string>;
-    }
-
-    const fs = await getFs();
-    for (const p of await iconMapCandidates(provider)) {
-      if (fs.existsSync(p)) {
-        return JSON.parse(fs.readFileSync(p, 'utf8'));
-      }
-    }
-    console.warn(
-      `Warning: Could not find ${provider.toUpperCase()} icon-map.json. ` +
-        `Run: pnpm --filter @mindfiredigital/adac-${PROVIDER_FOLDERS[provider]} setup-icons`
-    );
-  } catch (e) {
-    console.error(`Failed to load ${provider.toUpperCase()} icon-map.json`, e);
-  }
-  return {};
-}
-
-async function assetCandidates(
-  provider: IconProvider,
-  relativePath: string
-): Promise<string[]> {
-  const path = await getPath();
-  const folder = PROVIDER_FOLDERS[provider];
-  return [
-    // dist/assets — only AWS historically shipped icons inside the package
-    path.resolve(__dirname, 'assets', relativePath),
-    path.resolve(__dirname, '..', '..', folder, 'assets', relativePath),
-    path.resolve(
-      __dirname,
-      '..',
-      '..',
-      '..',
-      '@mindfiredigital',
-      `adac-${folder}`,
-      'assets',
-      relativePath
-    ),
-    path.resolve(process.cwd(), 'packages', folder, 'assets', relativePath),
-    path.resolve(process.cwd(), folder, 'assets', relativePath),
-    path.resolve(process.cwd(), 'assets', relativePath),
-  ];
-}
-
-async function resolveProviderAssetPath(
-  provider: IconProvider,
-  relativePath?: string
-): Promise<string | undefined> {
-  if (!relativePath) return undefined;
-  if (isBrowser) return relativePath;
-
-  const fs = await getFs();
-  for (const p of await assetCandidates(provider, relativePath)) {
-    if (fs.existsSync(p)) return p;
-  }
-  console.warn(
-    `Could not resolve ${provider.toUpperCase()} icon path:`,
-    relativePath
-  );
-  return undefined;
-}
-
-const ICON_MAP_PROMISE: Promise<Record<string, string>> = loadIconMap('aws');
-const GCP_ICON_MAP_PROMISE: Promise<Record<string, string>> =
-  loadIconMap('gcp');
-const AZURE_ICON_MAP_PROMISE: Promise<Record<string, string>> =
-  loadIconMap('azure');
 
 // ── Shared ELK layout option presets ────────────────────────────────────────
 // Increased and symmetric so labels at the top of containers have breathing
@@ -329,10 +214,6 @@ const AZURE_STYLES = {
   app: { type: 'node', style: 'app' },
 };
 
-function normalizeKey(key: string): string {
-  return key.toLowerCase().replace(/[^a-z0-9]/g, '');
-}
-
 // Manual aliases for common short codes to full AWS names (if not auto-resolved)
 const ALIASES: Record<string, string> = {
   ec2: 'Amazon Elastic Compute Cloud (Amazon EC2)',
@@ -451,54 +332,24 @@ const GCP_ALIASES: Record<string, string> = {
   storage: 'Cloud Storage',
 };
 
-// Pre-compute normalized map for fuzzy lookup (AWS)
-const NORMALIZED_MAP = new Map<string, string>();
-
-// Pre-compute normalized map for fuzzy lookup (GCP)
-const GCP_NORMALIZED_MAP = new Map<string, string>();
-
-let initializePromise:
-  | Promise<{
-      aws: Record<string, string>;
-      gcp: Record<string, string>;
-      azure: Record<string, string>;
-    }>
-  | undefined;
-
-function initializeIconMaps() {
-  if (!initializePromise) {
-    initializePromise = (async () => {
-      const [aws, gcp, azure] = await Promise.all([
-        ICON_MAP_PROMISE,
-        GCP_ICON_MAP_PROMISE,
-        AZURE_ICON_MAP_PROMISE,
-      ]);
-
-      for (const key of Object.keys(aws)) {
-        NORMALIZED_MAP.set(normalizeKey(key), key);
-      }
-
-      for (const key of Object.keys(gcp)) {
-        GCP_NORMALIZED_MAP.set(normalizeKey(key), key);
-      }
-
-      return { aws, gcp, azure };
-    })();
-  }
-
-  return initializePromise;
-}
-
 export async function buildElkGraph(
   adac: AdacConfig,
   options: BuildElkGraphOptions = {}
 ): Promise<ElkNode> {
-  const {
-    aws: ICON_MAP,
-    gcp: GCP_ICON_MAP,
-    azure: AZURE_ICON_MAP,
-  } = await initializeIconMaps();
   const warn: Warn = options.onWarning ?? ((m) => console.warn(m));
+  // only the providers this file uses are looked up; a missing icon package is
+  // reported once here, and its services are drawn without icons
+  const iconSets = await loadIconSets(neededIconProviders(adac), warn);
+  const { map: ICON_MAP, normalized: NORMALIZED_MAP } = iconSets.aws;
+  const { map: GCP_ICON_MAP, normalized: GCP_NORMALIZED_MAP } = iconSets.gcp;
+  const { map: AZURE_ICON_MAP } = iconSets.azure;
+  // an icon file that cannot be found is reported once, however many services use it
+  const reportedMessages = new Set<string>();
+  const warnOnce: Warn = (message) => {
+    if (reportedMessages.has(message)) return;
+    reportedMessages.add(message);
+    warn(message);
+  };
   // icon nodes are as wide as their icon; other engines keep label-wide cards
   const declarativeStyle = options.declarativeStyle ?? true;
   // the other engines flatten the declarative layout, so defaults are elk-only
@@ -669,11 +520,11 @@ export async function buildElkGraph(
   };
 
   const resolveAwsAssetPath = async (relativePath?: string) =>
-    await resolveProviderAssetPath('aws', relativePath);
+    await resolveProviderAssetPath('aws', relativePath, warnOnce);
   const resolveGcpAssetPath = async (relativePath?: string) =>
-    await resolveProviderAssetPath('gcp', relativePath);
+    await resolveProviderAssetPath('gcp', relativePath, warnOnce);
   const resolveAzureAssetPath = async (relativePath?: string) =>
-    await resolveProviderAssetPath('azure', relativePath);
+    await resolveProviderAssetPath('azure', relativePath, warnOnce);
 
   const getServiceType = (service: AdacService): string => {
     return service.service || service.subtype || service.type || 'unknown';
