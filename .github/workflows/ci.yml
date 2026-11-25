@@ -50,6 +50,9 @@ jobs:
       - name: Build all packages
         run: pnpm run build
 
+      - name: Verify the release artifacts
+        run: node scripts/verify-release.cjs
+
       - name: Run tests
         run: pnpm run test:coverage
 
@@ -65,3 +68,40 @@ jobs:
 
       - name: Validate frozen lockfile
         run: git diff --exit-code pnpm-lock.yaml
+
+  # The packages are built and packed on Node 22 (pnpm 11 needs it), then
+  # installed and run on Node 20, the oldest version they declare.
+  smoke-node-20:
+    name: Smoke test on Node 20
+    needs: build-and-test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build all packages
+        run: pnpm run build
+
+      - name: Pack the release packages
+        run: node scripts/verify-release.cjs --pack ${{ runner.temp }}/tarballs
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v6
+        with:
+          node-version: 20
+
+      - name: Smoke test the tarballs on Node 20
+        run: node scripts/verify-release.cjs --smoke ${{ runner.temp }}/tarballs
