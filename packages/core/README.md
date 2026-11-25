@@ -7,10 +7,10 @@ Core integration package for ADAC — brings together parsing, validation, graph
 ## Features
 
 - 🎯 Unified orchestration of parsing, validation, and rendering
-- 🎨 Multiple layout engine support (ELK and Custom)
+- 🎨 Layout engines: elk (default), custom, orthogonal, tsm
 - ✅ Accepts precomputed compliance tooltip metadata from higher-level packages
 - 🔍 **Architecture optimizer** — runs automatically, produces prioritised recommendations
-- 📦 Zero external runtime dependencies (bundled)
+- 📦 Runtime dependencies: elkjs and @mindfiredigital/adac-validator
 - 🔄 Async/await support
 
 ## Installation
@@ -20,6 +20,16 @@ npm install @mindfiredigital/adac-core
 # or
 pnpm add @mindfiredigital/adac-core
 ```
+
+AWS icons are in a separate package. Install it in the same project to get
+them; without it, diagrams are drawn without icons and one warning is logged:
+
+```bash
+npm install @mindfiredigital/adac-icons-aws
+```
+
+`@mindfiredigital/adac-diagram` (the `adac` CLI) does not require
+`@mindfiredigital/adac-core`.
 
 ## Usage
 
@@ -96,7 +106,7 @@ Generates an SVG diagram from YAML content. Runs the architecture optimizer auto
 | Parameter            | Type                                                              | Default     | Description                                   |
 | -------------------- | ----------------------------------------------------------------- | ----------- | --------------------------------------------- |
 | `yaml`               | `string`                                                          | —           | ADAC YAML configuration content               |
-| `layoutEngine`       | `'elk' \| 'custom'`                                               | `'elk'`     | Graph layout algorithm                        |
+| `layoutEngine`       | `'elk' \| 'custom' \| 'orthogonal' \| 'tsm'`                      | `'elk'`     | Graph layout algorithm                        |
 | `validate`           | `boolean`                                                         | `false`     | Run schema validation before layout           |
 | `costData`           | `Record<string, number>`                                          | —           | Per-service cost overrides (optional)         |
 | `period`             | `'hourly' \| 'daily' \| 'monthly' \| 'yearly'`                    | `'monthly'` | Cost display period                           |

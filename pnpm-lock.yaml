@@ -213,7 +213,7 @@ importers:
   packages/core:
     dependencies:
       '@mindfiredigital/adac-validator':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../validator
       elkjs:
         specifier: ^0.11.1
