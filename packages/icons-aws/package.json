@@ -19,6 +19,9 @@
     "mappings",
     "assets"
   ],
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "build": "tsc",
     "test": "vitest run",
@@ -36,6 +39,5 @@
   "publishConfig": {
     "access": "public",
     "registry": "https://registry.npmjs.org/"
-  },
-  "private": true
+  }
 }
