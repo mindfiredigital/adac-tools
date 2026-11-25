@@ -30,9 +30,11 @@
     "commander": "^12.0.0",
     "@mindfiredigital/adac-layout-core": "workspace:*",
     "@mindfiredigital/adac-validator": "workspace:*",
-    "@mindfiredigital/adac-icons-aws": "workspace:*",
     "@mindfiredigital/adac-icons-gcp": "workspace:*",
     "@mindfiredigital/adac-icons-azure": "workspace:*"
+  },
+  "devDependencies": {
+    "@mindfiredigital/adac-icons-aws": "workspace:*"
   },
   "repository": {
     "type": "git",
