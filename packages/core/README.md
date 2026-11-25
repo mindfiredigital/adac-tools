@@ -120,6 +120,7 @@ Generates an SVG diagram from YAML content. Runs the architecture optimizer auto
 interface GenerationResult {
   svg: string; // SVG XML string
   logs: string[]; // Timestamped generation log entries
+  warnings: string[]; // Non-fatal problems, without the "Warning: " log prefix
   duration: number; // Total time in milliseconds
   optimizationResult?: OptimizationResult; // Undefined if skipOptimizer=true
 }

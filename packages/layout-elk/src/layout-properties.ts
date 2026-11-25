@@ -1,3 +1,4 @@
+import { deprecatedLayoutOptionWarning } from '@mindfiredigital/adac-validator';
 import type {
   AdacElementLayout,
   AdacGap,
@@ -272,10 +273,10 @@ export function normalizeLayoutOptions(
   const { merged: o, provenance } = applyLayoutDefaults(declared, defaults);
 
   if (o.unit !== undefined) {
-    warn('layoutOptions.unit is deprecated; use layoutOptions.unitSize');
+    warn(deprecatedLayoutOptionWarning('unit'));
   }
   if (o.routing !== undefined) {
-    warn('layoutOptions.routing is deprecated; use layoutOptions.edgeRouting');
+    warn(deprecatedLayoutOptionWarning('routing'));
   }
 
   const unitSize = o.unitSize ?? o.unit ?? DEFAULT_UNIT_SIZE;

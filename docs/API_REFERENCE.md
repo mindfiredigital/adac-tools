@@ -32,7 +32,7 @@ Generates an SVG diagram from YAML content. Runs compliance checks and the archi
 | Parameter       | Type                                         | Default     | Description                   |
 | --------------- | -------------------------------------------- | ----------- | ----------------------------- |
 | `yaml`          | `string`                                     | —           | ADAC YAML content             |
-| `layoutEngine`  | `'elk' \| 'custom' \| 'orthogonal' \| 'tsm'` | `'custom'`  | Graph layout algorithm        |
+| `layoutEngine`  | `'elk' \| 'custom' \| 'orthogonal' \| 'tsm'` | `'elk'`     | Graph layout algorithm        |
 | `validate`      | `boolean`                                    | `false`     | Validate schema before layout |
 | `costData`      | `Record<string, number>`                     | —           | Per-service cost overrides    |
 | `period`        | `string`                                     | `'monthly'` | Cost display period           |
@@ -44,6 +44,7 @@ Generates an SVG diagram from YAML content. Runs compliance checks and the archi
 interface GenerationResult {
   svg: string;
   logs: string[];
+  warnings: string[]; // non-fatal problems, without the "Warning: " log prefix
   duration: number;
   optimizationResult?: OptimizationResult; // undefined if skipOptimizer=true
 }
@@ -66,7 +67,7 @@ File-based wrapper. Reads YAML from `input` and writes SVG to `output`.
 
 ```
 adac diagram <file>   Generate SVG diagram
-  -l, --layout <type>     elk | custom | orthogonal | tsm (default: custom)
+  -l, --layout <type>     elk | custom | orthogonal | tsm (default: layoutOptions.engine, then the top-level layout, then elk)
   -o, --output <path>     Output SVG path
   --validate              Run schema validation
   --cost                  Print cost breakdown

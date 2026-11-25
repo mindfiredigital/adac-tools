@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { validateAdacConfig } from '../src/validator.js';
+import {
+  deprecatedLayoutOptionWarning,
+  validateAdacConfig,
+} from '../src/validator.js';
 
 type Json = Record<string, unknown>;
 
@@ -269,6 +272,24 @@ describe('layout schema validation', () => {
   });
 
   describe('deprecated aliases', () => {
+    it('words each alias warning through deprecatedLayoutOptionWarning', () => {
+      expect(deprecatedLayoutOptionWarning('unit')).toBe(
+        '/layoutOptions/unit is deprecated; use unitSize'
+      );
+      expect(deprecatedLayoutOptionWarning('routing')).toBe(
+        '/layoutOptions/routing is deprecated; use edgeRouting'
+      );
+      const result = validateAdacConfig(
+        withOptions({ unit: 80, routing: 'orthogonal' })
+      );
+      expect(result.warnings).toEqual(
+        expect.arrayContaining([
+          deprecatedLayoutOptionWarning('unit'),
+          deprecatedLayoutOptionWarning('routing'),
+        ])
+      );
+    });
+
     it('accepts unit and routing but warns', () => {
       const result = validateAdacConfig(
         withOptions({ unit: 80, routing: 'orthogonal' })

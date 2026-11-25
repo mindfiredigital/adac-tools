@@ -19,7 +19,7 @@ describe('layoutEngineWarnings', () => {
   it('ignores other warnings', () => {
     expect(
       layoutEngineWarnings([
-        '[2026-01-01T00:00:00.000Z] Warning: layoutOptions.unit is deprecated; use layoutOptions.unitSize',
+        '[2026-01-01T00:00:00.000Z] Warning: /layoutOptions/unit is deprecated; use unitSize',
       ])
     ).toEqual([]);
   });

@@ -36,6 +36,8 @@ VPC                    ← its layout places the subnets
     └── DB
 ```
 
+The builder also creates two containers you do not declare: a service whose config has both `availability_zone` and `vpc` is placed in an implicit container named `<vpc>-<availability_zone>` inside that VPC, and a service of a VPC-bound type that names no VPC or subnet is placed in a subnet of the default VPC.
+
 Properties are resolved in this order:
 
 ```text

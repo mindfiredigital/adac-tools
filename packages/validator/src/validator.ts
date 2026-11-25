@@ -30,6 +30,16 @@ export const DEPRECATED_LAYOUT_OPTION_ALIASES = {
   routing: 'edgeRouting',
 } as const;
 
+/**
+ * The warning for a deprecated `layoutOptions` alias. The layout builder emits
+ * the same text, so a file gets one wording whether it is validated or drawn.
+ */
+export function deprecatedLayoutOptionWarning(
+  alias: keyof typeof DEPRECATED_LAYOUT_OPTION_ALIASES
+): string {
+  return `/layoutOptions/${alias} is deprecated; use ${DEPRECATED_LAYOUT_OPTION_ALIASES[alias]}`;
+}
+
 function checkSizeOrder(
   layout: AdacElementLayout,
   path: string,
@@ -69,7 +79,9 @@ function collectLayoutChecks(
     )) {
       if (alias in options) {
         warnings.push(
-          `/layoutOptions/${alias} is deprecated; use ${replacement}`
+          deprecatedLayoutOptionWarning(
+            alias as keyof typeof DEPRECATED_LAYOUT_OPTION_ALIASES
+          )
         );
         if (replacement in options) {
           warnings.push(
