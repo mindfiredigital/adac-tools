@@ -425,7 +425,7 @@ reviews:
         ## Root package.json Review Checklist
         - Changes to `workspaces` configuration require cross-package stability verification.
         - New root-level scripts must align with the monorepo conventions in `04_CODING_STANDARDS.md`.
-        - The `license` field must be `Apache-2.0`; flag any other value.
+        - The `license` field must be `MIT`; flag any other value.
         - Do not add production `dependencies` to the root — it is a workspace root, not a published package.
 
     - path: '.github/workflows/**'
