@@ -10,5 +10,5 @@
     }
   },
   "include": ["src/**/*"],
-  "references": [{ "path": "../parser" }, { "path": "../validator" }]
+  "references": [{ "path": "../parser" }]
 }

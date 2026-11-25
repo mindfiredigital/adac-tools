@@ -5,15 +5,19 @@
   "author": "Mindfire Digital",
   "license": "MIT",
   "type": "module",
-  "main": "dist/index.js",
-  "module": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.js",
-      "default": "./dist/index.js"
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
     }
   },
   "keywords": [
@@ -25,8 +29,11 @@
   "files": [
     "dist"
   ],
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
-    "build": "tsc",
+    "build": "tsup",
     "test": "vitest run"
   },
   "dependencies": {
@@ -34,6 +41,8 @@
     "ajv-formats": "^3.0.1"
   },
   "devDependencies": {
+    "tsup": "^8.3.5",
+    "typescript": "^5.9.3",
     "vitest": "^4.0.18"
   },
   "repository": {
