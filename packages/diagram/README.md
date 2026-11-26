@@ -133,9 +133,9 @@ if (optimizationResult) {
 
 ## See Also
 
-- [@mindfiredigital/adac-core](../core) — Core generation engine
-- [@mindfiredigital/adac-cli](../cli) — CLI argument parsing
-- [@mindfiredigital/adac-compliance](../compliance) — Compliance checking
+- [@mindfiredigital/adac-core](https://www.npmjs.com/package/@mindfiredigital/adac-core) — Core generation engine
+- [@mindfiredigital/adac-cli](https://github.com/mindfiredigital/adac-tools/tree/main/packages/cli) — CLI argument parsing (bundled into this package)
+- [@mindfiredigital/adac-compliance](https://github.com/mindfiredigital/adac-tools/tree/main/packages/compliance) — Compliance checking (bundled into this package)
 
 ## License
 

@@ -157,9 +157,9 @@ YAML input
 
 ## See Also
 
-- [@mindfiredigital/adac-parser](../parser) — YAML parsing
-- [@mindfiredigital/adac-validator](../validator) — Validation
-- [@mindfiredigital/adac-diagram](../diagram) — Distribution package & CLI
+- [@mindfiredigital/adac-parser](https://github.com/mindfiredigital/adac-tools/tree/main/packages/parser) — YAML parsing (bundled into this package)
+- [@mindfiredigital/adac-validator](https://www.npmjs.com/package/@mindfiredigital/adac-validator) — Validation
+- [@mindfiredigital/adac-diagram](https://www.npmjs.com/package/@mindfiredigital/adac-diagram) — Distribution package & CLI
 
 ## License
 

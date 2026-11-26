@@ -35,8 +35,8 @@ https://aws.amazon.com/architecture/icons/
 
 ## See Also
 
-- [@mindfiredigital/adac-diagram](../diagram) - the `adac` CLI and API that uses these icons
-- [@mindfiredigital/adac-core](../core) - the generation library that uses these icons
+- [@mindfiredigital/adac-diagram](https://www.npmjs.com/package/@mindfiredigital/adac-diagram) - the `adac` CLI and API that uses these icons
+- [@mindfiredigital/adac-core](https://www.npmjs.com/package/@mindfiredigital/adac-core) - the generation library that uses these icons
 
 ## License
 
