@@ -58,6 +58,10 @@ export function normalizeKey(key: string): string {
   return key.toLowerCase().replace(/[^a-z0-9]/g, '');
 }
 
+/**
+ * The Node search context. Only the Node paths may call this: a browser has
+ * neither `__dirname` nor `process`.
+ */
 function defaultContext(): IconSearchContext {
   return { baseDir: __dirname, cwd: process.cwd() };
 }
@@ -172,10 +176,13 @@ async function assetCandidates(
 const isMap = (value: unknown): value is Record<string, string> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
 
-/** The icon map of a provider, or undefined when no usable one is found. */
+/**
+ * The icon map of a provider, or undefined when no usable one is found. `ctx`
+ * is given on the Node path only.
+ */
 async function readIconMap(
   provider: IconProvider,
-  ctx: IconSearchContext
+  ctx: IconSearchContext | undefined
 ): Promise<Record<string, string> | undefined> {
   if (isBrowser) {
     try {
@@ -191,7 +198,8 @@ async function readIconMap(
   }
 
   const fs = await getFs();
-  for (const p of await iconMapCandidates(provider, ctx)) {
+  const search = ctx ?? defaultContext();
+  for (const p of await iconMapCandidates(provider, search)) {
     try {
       if (!fs.existsSync(p)) continue;
       const body: unknown = JSON.parse(fs.readFileSync(p, 'utf8'));
@@ -206,13 +214,15 @@ async function readIconMap(
 async function loadIconSet(
   provider: IconProvider,
   warn: Warn,
-  ctx: IconSearchContext
+  ctx: IconSearchContext | undefined
 ): Promise<IconSet> {
-  const key = cacheKey(provider, ctx);
+  // the search context exists on the Node path only
+  const search = isBrowser ? undefined : (ctx ?? defaultContext());
+  const key = search ? cacheKey(provider, search) : `${provider}|browser`;
   const cached = iconSets.get(key);
   if (cached) return cached;
 
-  const map = await readIconMap(provider, ctx);
+  const map = await readIconMap(provider, search);
   if (!map) {
     // the browser has no package to install, so it has nothing to advise
     if (!isBrowser) warn(MISSING_PACKAGE_MESSAGE[provider]);
@@ -233,7 +243,7 @@ async function loadIconSet(
 export async function loadIconSets(
   providers: readonly IconProvider[],
   warn: Warn,
-  ctx: IconSearchContext = defaultContext()
+  ctx?: IconSearchContext
 ): Promise<IconSets> {
   const sets: IconSets = {
     aws: emptySet(),
@@ -258,13 +268,14 @@ export async function resolveProviderAssetPath(
   provider: IconProvider,
   relativePath: string | undefined,
   warn: Warn,
-  ctx: IconSearchContext = defaultContext()
+  ctx?: IconSearchContext
 ): Promise<string | undefined> {
   if (!relativePath) return undefined;
   if (isBrowser) return relativePath;
 
   const fs = await getFs();
-  for (const p of await assetCandidates(provider, relativePath, ctx)) {
+  const search = ctx ?? defaultContext();
+  for (const p of await assetCandidates(provider, relativePath, search)) {
     if (fs.existsSync(p)) return p;
   }
   warn(
