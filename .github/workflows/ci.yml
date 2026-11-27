@@ -50,8 +50,25 @@ jobs:
       - name: Build all packages
         run: pnpm run build
 
-      - name: Verify the release artifacts
-        run: node scripts/verify-release.cjs
+      # the same three stages as "node scripts/verify-release.cjs" without an
+      # argument, with the tarballs kept so that the Node 20 job tests these
+      # exact files instead of building them again
+      - name: Check the release set
+        run: node scripts/verify-release.cjs --static
+
+      - name: Pack and check the release tarballs
+        run: node scripts/verify-release.cjs --pack ${{ runner.temp }}/tarballs
+
+      - name: Smoke test the tarballs
+        run: node scripts/verify-release.cjs --smoke ${{ runner.temp }}/tarballs
+
+      - name: Upload the release tarballs
+        uses: actions/upload-artifact@v7
+        with:
+          name: release-tarballs
+          path: ${{ runner.temp }}/tarballs/*.tgz
+          if-no-files-found: error
+          retention-days: 7
 
       - name: Run tests
         run: pnpm run test:coverage
@@ -69,8 +86,10 @@ jobs:
       - name: Validate frozen lockfile
         run: git diff --exit-code pnpm-lock.yaml
 
-  # The packages are built and packed on Node 22 (pnpm 11 needs it), then
-  # installed and run on Node 20, the oldest version they declare.
+  # The packages are built and packed once, on Node 22 (pnpm 11 needs it), in
+  # build-and-test. This job installs those same tarballs and runs them on
+  # Node 20, the oldest version they declare. It builds nothing; the install
+  # is only for the script's own helpers (js-yaml, typescript).
   smoke-node-20:
     name: Smoke test on Node 20
     needs: build-and-test
@@ -92,11 +111,11 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build all packages
-        run: pnpm run build
-
-      - name: Pack the release packages
-        run: node scripts/verify-release.cjs --pack ${{ runner.temp }}/tarballs
+      - name: Download the release tarballs
+        uses: actions/download-artifact@v7
+        with:
+          name: release-tarballs
+          path: ${{ runner.temp }}/tarballs
 
       - name: Setup Node.js 20
         uses: actions/setup-node@v6
