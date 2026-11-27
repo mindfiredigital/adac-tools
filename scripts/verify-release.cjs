@@ -919,7 +919,20 @@ function runSmoke(dir) {
             "console.log('ICONS=' + (r.svg.match(/data:image\\//g) || []).length);",
           ].join('\n')
         );
-        for (const script of ['s6.cjs', 's6.mjs']) {
+        // Node resolves the package name to "main" (dist/index.js, CommonJS), so
+        // the two scripts above never load the ES module bundle; bundlers take
+        // it from "module". Load the installed dist/index.mjs itself, so a
+        // failure in the emitted ESM bundle is found here too.
+        fs.writeFileSync(
+          path.join(folder, 's6-esm-entry.mjs'),
+          [
+            "import fs from 'fs';",
+            "import * as core from '@mindfiredigital/adac-core/dist/index.mjs';",
+            "const r = await core.generateDiagramSvg(fs.readFileSync('yamls/aws.adac.yaml', 'utf8'), 'elk');",
+            "console.log('ICONS=' + (r.svg.match(/data:image\\//g) || []).length);",
+          ].join('\n')
+        );
+        for (const script of ['s6.cjs', 's6.mjs', 's6-esm-entry.mjs']) {
           const r = node([script], folder);
           expect(r.code === 0, `${script} exited ${r.code}:\n${r.out}`);
           const m = /ICONS=(\d+)/.exec(r.out);
