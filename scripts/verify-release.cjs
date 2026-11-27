@@ -758,6 +758,34 @@ function runSmoke(dir) {
     };
   };
 
+  /**
+   * The same command, started through the installed `adac` shim (the file a
+   * user's shell runs: bin/adac, or adac.cmd on Windows), not through cli.js.
+   * The shim starts `node` from PATH, so the Node that runs this script goes
+   * first there, as for every other smoke test.
+   */
+  const drawInstalled = (shim, cwd, sample, out) => {
+    const pathKey =
+      Object.keys(process.env).find((k) => k.toLowerCase() === 'path') ||
+      'PATH';
+    const r = run(
+      quote(shim),
+      ['diagram', `yamls/${sample}`, '-o', out, '--no-open'],
+      {
+        cwd,
+        shell: true,
+        env: {
+          [pathKey]: `${path.dirname(process.execPath)}${path.delimiter}${process.env[pathKey] || ''}`,
+        },
+      }
+    );
+    const svgFile = path.join(cwd, out);
+    return {
+      ...r,
+      svg: fs.existsSync(svgFile) ? fs.readFileSync(svgFile, 'utf8') : '',
+    };
+  };
+
   const step = (label, text, fn) => check(label, text, fn);
 
   {
@@ -834,8 +862,15 @@ function runSmoke(dir) {
           `no adac command at ${globalShim(prefix)}`
         );
         const folder = freshProject();
-        const r = draw(globalCli(prefix), folder, 'aws.adac.yaml', 'out.svg');
+        // the installed `adac` command itself, as a user runs it
+        const r = drawInstalled(
+          globalShim(prefix),
+          folder,
+          'aws.adac.yaml',
+          'out.svg'
+        );
         expect(r.code === 0, `adac exited ${r.code}:\n${r.out}`);
+        expect(r.svg.length > 0, 'out.svg was not written');
         expect(
           countIcons(r.svg) >= 10,
           `the SVG has ${countIcons(r.svg)} icons, expected at least 10`
