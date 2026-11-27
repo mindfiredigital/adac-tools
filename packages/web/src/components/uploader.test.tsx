@@ -204,9 +204,17 @@ describe('Uploader', () => {
           logs: [
             '[2026-01-01T00:00:00.000Z] Warning: Layout engine "custom" ignores declarative layout properties: layoutOptions (gap).',
           ],
+          warnings: [
+            'Layout engine "custom" ignores declarative layout properties: layoutOptions (gap).',
+          ],
           duration: 0,
         },
-        { svg: '<svg id="fresh-svg">fresh</svg>', logs: [], duration: 0 }
+        {
+          svg: '<svg id="fresh-svg">fresh</svg>',
+          logs: [],
+          warnings: [],
+          duration: 0,
+        }
       );
       const first = USE_BACKEND
         ? { file: yamlFile(CUSTOM_ENGINE_YAML), release: releaseFetch }
@@ -269,6 +277,9 @@ describe('Uploader', () => {
                 `[2026-01-01T00:00:00.000Z] Warning: ${SHOWN} Use --layout elk or set layoutOptions.engine: elk.`,
               ]
             : ['[2026-01-01T00:00:00.000Z] Generation complete in 5ms'],
+          warnings: warned
+            ? [`${SHOWN} Use --layout elk or set layoutOptions.engine: elk.`]
+            : [],
           duration: 0,
         });
       }

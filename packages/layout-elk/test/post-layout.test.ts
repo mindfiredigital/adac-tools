@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { applyLayoutPostProcessing } from '../src/post-layout.js';
+import {
+  applyLayoutPostProcessing,
+  spreadAlongSide,
+} from '../src/post-layout.js';
 import { LAYOUT_LINE_TYPE } from '../src/declarative-layout.js';
 import type { ElkNode } from '../src/types.js';
 
@@ -320,6 +323,65 @@ describe('straightening and a declared align', () => {
     applyLayoutPostProcessing(g);
     const [a, b] = g.children![0].children!;
     expect([a.y, b.y]).toEqual([20, 80]);
+  });
+});
+
+describe('top-level nodes under a global align', () => {
+  it('keeps the bottoms aligned instead of moving a node to meet its partner', () => {
+    // the root declares layoutOptions.align: end; a (80px) and b (120px) are
+    // joined side to side, and moving a up to meet b's icon would undo the align
+    const g: ElkNode = {
+      id: 'root',
+      x: 0,
+      y: 0,
+      width: 600,
+      height: 400,
+      properties: {
+        type: 'container',
+        arrangement: {
+          mainAxis: 'horizontal',
+          align: 'end',
+          padding: { top: 0, right: 0, bottom: 0, left: 0 },
+          fitToItems: true,
+        },
+      } as never,
+      children: [
+        {
+          id: 'a',
+          x: 20,
+          y: 60,
+          width: 52,
+          height: 80,
+          properties: { type: 'service' },
+        },
+        {
+          id: 'b',
+          x: 200,
+          y: 20,
+          width: 52,
+          height: 120,
+          properties: { type: 'service' },
+        },
+      ],
+      edges: [
+        {
+          id: 'e',
+          sources: ['a'],
+          targets: ['b'],
+          container: 'root',
+          sections: [
+            {
+              id: 's',
+              startPoint: { x: 72, y: 100 },
+              endPoint: { x: 200, y: 80 },
+            },
+          ],
+        },
+      ],
+    };
+    applyLayoutPostProcessing(g);
+    const [a, b] = g.children!;
+    expect(a.y! + a.height!).toBe(b.y! + b.height!);
   });
 });
 
@@ -918,5 +980,50 @@ describe('edges that share a run', () => {
     xs.forEach((x) => {
       expect(x <= 310 - 8 || x >= 330 + 8).toBe(true);
     });
+  });
+});
+
+describe('spreadAlongSide on a short side', () => {
+  // 52 is the height of the icon band: too short to keep the minimum gap
+  // between three or more edge ends, so they are spread evenly instead
+  const SIDE = 52;
+  const expectPositions = (actual: number[], expected: number[]) => {
+    expect(actual).toHaveLength(expected.length);
+    expected.forEach((e, i) => expect(actual[i]).toBeCloseTo(e, 5));
+  };
+
+  it.each([[[0, 0, 0]], [[5, 26, 50]], [[100, 200, 300]]])(
+    'spreads three ends evenly wherever they are wanted (%j)',
+    (wanted) => {
+      expectPositions(spreadAlongSide(wanted, SIDE), [13, 26, 39]);
+    }
+  );
+
+  it.each([[[0, 1, 2, 3]], [[10, 20, 30, 40]], [[52, 52, 52, 52]]])(
+    'spreads four ends evenly wherever they are wanted (%j)',
+    (wanted) => {
+      expectPositions(spreadAlongSide(wanted, SIDE), [10.4, 20.8, 31.2, 41.6]);
+    }
+  );
+
+  it.each([[[0, 0, 0, 0, 0]], [[3, 12, 26, 40, 49]]])(
+    'spreads five ends evenly wherever they are wanted (%j)',
+    (wanted) => {
+      expectPositions(spreadAlongSide(wanted, SIDE), [
+        52 / 6,
+        104 / 6,
+        156 / 6,
+        208 / 6,
+        260 / 6,
+      ]);
+    }
+  );
+
+  it('keeps two ends 13 from the ends of the side', () => {
+    expectPositions(spreadAlongSide([10, 40], SIDE), [13, 39]);
+  });
+
+  it('centres a single end', () => {
+    expectPositions(spreadAlongSide([7], SIDE), [26]);
   });
 });

@@ -1,36 +1,63 @@
 # @mindfiredigital/adac-validator
 
-Generic schema validator for ADAC (Architecture Diagram As Code) definitions.
+Validator for ADAC (Architecture Diagram As Code) definitions.
 
-## Features
+## What it validates
 
-- Validates ADAC configuration objects against the shared core schema.
-- Treats extension fields as opaque data unless a wrapper validates them.
-- Supports explicit extension wrappers for domain-specific fields.
-- Returns structured validation results.
-- Supports ESM and TypeScript.
+- ADAC 0.1 and 0.2 files, as plain objects, against the shared schema.
+- The declarative layout and styling properties of 0.2: `layoutOptions`
+  (including `layoutOptions.defaults`), `visual.layout`, `visual.style`, and a
+  connection's `layout` and `bidirectional`.
+- Extension fields are treated as opaque data unless an extension wrapper
+  validates them (see [Extension wrappers](#extension-wrappers)).
+
+The result is a structured object: `valid`, the `errors`, and any `warnings`
+(for example when layout properties are declared for a layout engine that
+ignores them).
+
+## Install
+
+```bash
+npm install @mindfiredigital/adac-validator
+```
+
+Supported Node.js versions: 20 and 22. The package ships CommonJS and ES module
+builds, with TypeScript types for both.
 
 ## Usage
 
-```typescript
-import { validateAdacConfig } from '@mindfiredigital/adac-validator';
+CommonJS:
+
+```js
+const { validateAdacConfig } = require('@mindfiredigital/adac-validator');
 
 const result = validateAdacConfig(config);
-
 if (!result.valid) {
   console.error(result.errors);
 }
 ```
 
+ES modules / TypeScript:
+
+```ts
+import { validateAdacConfig } from '@mindfiredigital/adac-validator';
+
+const result = validateAdacConfig(config);
+if (!result.valid) {
+  console.error(result.errors);
+}
+```
+
+`config` is the parsed document, for example the result of reading an
+`.adac.yaml` file with a YAML parser.
+
 ## Extension wrappers
 
-The validator package intentionally does not own domain-specific validation such
-as cost. Extension fields can be present in ADAC documents, but the generic
-validator treats them as opaque data. Packages that add optional ADAC fields
-should provide a wrapper using the extension API when those fields need schema
-checks.
+The validator does not own domain-specific validation such as cost. Packages
+that add optional ADAC fields can pass an extension so those fields are
+checked:
 
-```typescript
+```ts
 import { validateAdacConfig } from '@mindfiredigital/adac-validator';
 
 const result = validateAdacConfig(config, {
@@ -45,5 +72,6 @@ const result = validateAdacConfig(config, {
 });
 ```
 
-For cost-aware validation, use `validateAdacCostConfig` from
-`@mindfiredigital/adac-cost`.
+## License
+
+MIT

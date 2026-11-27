@@ -1,5 +1,6 @@
 import { AdacConfig } from './types.js';
 import {
+  deprecatedLayoutOptionWarning,
   validateAdacConfig,
   ValidationExtension,
   ValidationOptions,
@@ -9,7 +10,7 @@ import {
 type AdacService =
   AdacConfig['infrastructure']['clouds'][number]['services'][number];
 
-export { validateAdacConfig };
+export { validateAdacConfig, deprecatedLayoutOptionWarning };
 export {
   collectDeclaredLayoutProperties,
   declaredLayoutEngine,

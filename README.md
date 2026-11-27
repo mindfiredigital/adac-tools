@@ -7,6 +7,14 @@
 
 ADAC is a comprehensive ecosystem for generating high-quality multi-cloud architecture diagrams (currently supporting AWS and GCP). It provides a powerful command-line interface (CLI), a developer-friendly core engine, and a modern Web UI for both programmatic and visual diagram creation.
 
+## Install
+
+```bash
+npm install -g @mindfiredigital/adac-diagram @mindfiredigital/adac-icons-aws
+```
+
+AWS icons come from `@mindfiredigital/adac-icons-aws`. Install both packages in the same command (or in the same project). Without it, diagrams are drawn without icons. GCP and Azure icons are not available from npm yet.
+
 ## 📂 Project Overview & Structure
 
 The project is managed as a **pnpm monorepo**, ensuring modularity and clean separation of concerns.
@@ -17,28 +25,29 @@ While this monorepo contains many packages, **only the following are officially 
 
 - `@mindfiredigital/adac-core` (Published as an npm module)
 - `@mindfiredigital/adac-diagram` (Published as an npm module)
+- `@mindfiredigital/adac-validator` (Published as an npm module)
+- `@mindfiredigital/adac-icons-aws` (Published as an npm module; optional AWS icons)
 - `adac-vscode` (Published as a VS Code Extension)
 
 Other packages (like parsers, layouts, and web interfaces) are either bundled into the above releases or used internally for development and testing.
 
 **Full Monorepo Package Inventory:**
 
-| Package                                | Description                     | Key Responsibilities                                                            |
-| :------------------------------------- | :------------------------------ | :------------------------------------------------------------------------------ |
-| **`@mindfiredigital/adac-core`**       | The brain of the system.        | Orchestrates parsing, validation, compliance, **optimization**, and rendering.  |
-| **`@mindfiredigital/adac-diagram`**    | Distribution package for users. | Provides the `adac` CLI and a public API for web applications.                  |
-| **`@mindfiredigital/adac-cli`**        | CLI Engine.                     | Handles command-line arguments and help text. Separated from the diagram logic. |
-| **`@mindfiredigital/adac-parser`**     | YAML Logic.                     | Robust parsing of ADAC-formatted YAML files into structured data.               |
-| **`@mindfiredigital/adac-validator`**  | Validation Layer.               | Formally defines the ADAC specification using JSON Schema.                      |
-| **`@mindfiredigital/adac-layout-elk`** | Professional Layout.            | Advanced graph positioning using `elkjs` algorithms.                            |
-
-| **`@mindfiredigital/adac-icons-aws`** | AWS Assets. | Repository of over 1,600 AWS icons and tools to manage them. |
-| **`@mindfiredigital/adac-icons-gcp`** | GCP Assets. | Repository of GCP icons mapping to Google Cloud services. |
-| **`@mindfiredigital/adac-compliance`** | Validation & Security. | Evaluates architecture against security frameworks (PCI-DSS, SOC2, HIPAA, etc). |
-| **`@mindfiredigital/adac-cost`** | Analysis Tool. | Evaluates cloud architecture to provide structural cost breakdowns. |
-| **`@mindfiredigital/adac-web`** | Frontend. | React-based visual editor with drag-and-drop and real-time preview. |
-| **`@mindfiredigital/adac-web-server`** | API. | Express server exposing diagram generation, optimization & compliance as a service. |
-| **`adac-vscode`** | VS Code Extension. | IDE support for `.adac.yaml` files, syntax highlighting, IntelliSense & previews. |
+| Package                                | Description                     | Key Responsibilities                                                                |
+| :------------------------------------- | :------------------------------ | :---------------------------------------------------------------------------------- |
+| **`@mindfiredigital/adac-core`**       | The brain of the system.        | Orchestrates parsing, validation, compliance, **optimization**, and rendering.      |
+| **`@mindfiredigital/adac-diagram`**    | Distribution package for users. | Provides the `adac` CLI and a public API for web applications.                      |
+| **`@mindfiredigital/adac-cli`**        | CLI Engine.                     | Handles command-line arguments and help text. Separated from the diagram logic.     |
+| **`@mindfiredigital/adac-parser`**     | YAML Logic.                     | Robust parsing of ADAC-formatted YAML files into structured data.                   |
+| **`@mindfiredigital/adac-validator`**  | Validation Layer.               | Formally defines the ADAC specification using JSON Schema.                          |
+| **`@mindfiredigital/adac-layout-elk`** | Professional Layout.            | Advanced graph positioning using `elkjs` algorithms.                                |
+| **`@mindfiredigital/adac-icons-aws`**  | AWS Assets.                     | Optional package with the AWS icons used by diagram and core. Published to npm.     |
+| **`@mindfiredigital/adac-icons-gcp`**  | GCP Assets.                     | Repository of GCP icons mapping to Google Cloud services.                           |
+| **`@mindfiredigital/adac-compliance`** | Validation & Security.          | Evaluates architecture against security frameworks (PCI-DSS, SOC2, HIPAA, etc).     |
+| **`@mindfiredigital/adac-cost`**       | Analysis Tool.                  | Evaluates cloud architecture to provide structural cost breakdowns.                 |
+| **`@mindfiredigital/adac-web`**        | Frontend.                       | React-based visual editor with drag-and-drop and real-time preview.                 |
+| **`@mindfiredigital/adac-web-server`** | API.                            | Express server exposing diagram generation, optimization & compliance as a service. |
+| **`adac-vscode`**                      | VS Code Extension.              | IDE support for `.adac.yaml` files, syntax highlighting, IntelliSense & previews.   |
 
 ---
 
@@ -148,7 +157,7 @@ ADAC diagrams are not just static images. The generated SVGs include interactive
 
 ### Critical Patterns
 
-- **Zero-Dependency Releases**: When `core` or `diagram` are built, they bundle all internal workspace dependencies (like `parser` and `layout`). This ensures that users installing via npm don't need to worry about internal mono-repo layout.
+- **Zero-Dependency Releases**: diagram bundles every internal workspace package. core bundles every internal workspace package except @mindfiredigital/adac-validator, which is an npm dependency. AWS icons are in the separate package @mindfiredigital/adac-icons-aws.
 - **Embedded Assets**: Diagrams generated by ADAC embed icons directly as **Base64 URI** data. This makes the output SVG files fully portable—they will render correctly anywhere without needing access to an external image folder.
 
 ### Key Third Party Libs
@@ -249,7 +258,7 @@ This project adheres to a [Code of Conduct](CODE_OF_CONDUCT.md) that we expect a
 
 ## 📄 License
 
-This project is licensed under the MIT License - see [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see [LICENSE](LICENSE) file for details. The ADAC specification repository (adac-specification) is licensed under Apache-2.0.
 
 ---
 

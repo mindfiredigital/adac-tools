@@ -793,14 +793,87 @@ describe('renderer: legend placement (elk)', () => {
     expect(hits(l, nodeRect(svg, 'b'))).toBe(false);
   });
 
-  it('keeps the legend on the canvas when the diagram is narrower than it', async () => {
-    const svg = await renderSvg({ id: 'root', children: [leaf('a')] });
+  const svgWidth = (svg: string) => +/<svg width="([\d.]+)"/.exec(svg)![1];
+
+  /** The text of the SVG elements with this class, as boxes around their anchor. */
+  const textBoxes = (svg: string, className: string): Rect[] => {
+    const boxes: Rect[] = [];
+    const pattern = new RegExp(
+      `<text\\s+x="([\\d.-]+)"\\s+y="([\\d.-]+)"\\s+class="[^"]*${className}[^"]*"[^>]*>([^<]*)</text>`,
+      'g'
+    );
+    for (const m of svg.matchAll(pattern)) {
+      // generous: wider than the 9-11px fonts, centred on the anchor
+      const w = m[3].length * 7 + 4;
+      boxes.push({ x: +m[1] - w / 2, y: +m[2] - 12, w, h: 16 });
+    }
+    return boxes;
+  };
+
+  /** Every drawn edge, as thin boxes along its segments. */
+  const edgeBoxes = (svg: string): Rect[] => {
+    const boxes: Rect[] = [];
+    for (const m of svg.matchAll(/<path d="([^"]+)"[^>]*marker-end=/g)) {
+      const nums = (m[1].match(/-?\d+(?:\.\d+)?/g) ?? []).map(Number);
+      const points: { x: number; y: number }[] = [];
+      for (let i = 0; i + 1 < nums.length; i += 2) {
+        points.push({ x: nums[i], y: nums[i + 1] });
+      }
+      for (let i = 0; i + 1 < points.length; i++) {
+        const [a, b] = [points[i], points[i + 1]];
+        boxes.push({
+          x: Math.min(a.x, b.x) - 1,
+          y: Math.min(a.y, b.y) - 1,
+          w: Math.abs(a.x - b.x) + 2,
+          h: Math.abs(a.y - b.y) + 2,
+        });
+      }
+    }
+    return boxes;
+  };
+
+  it('keeps the legend on the canvas, and clear of everything, when the diagram is narrower than it', async () => {
+    // two nodes in one column joined by a labelled edge: 180px of diagram
+    // against a legend that needs 200px
+    const svg = await renderSvg({
+      id: 'root',
+      layoutOptions: { 'elk.algorithm': 'layered', 'elk.direction': 'DOWN' },
+      children: [leaf('a'), leaf('b')],
+      edges: [
+        {
+          id: 'e',
+          sources: ['a'],
+          targets: ['b'],
+          labels: [{ text: 'calls' }],
+        },
+      ],
+    });
     const l = legendRect(svg);
-    const w = +/<svg width="([\d.]+)"/.exec(svg)![1];
+    const w = svgWidth(svg);
+
+    // this really is the narrow case: the diagram fits in less than the
+    // legend needs, and the canvas was sized from it, not the 800x600 fallback
+    const a = nodeRect(svg, 'a');
+    expect(a.x + a.w + 40).toBeLessThan(l.w + 40);
+    expect(w).toBeLessThan(800);
+    expect(svgHeight(svg)).toBeLessThan(600);
+
+    // the legend is on the canvas ...
     expect(l.x).toBeGreaterThanOrEqual(0);
     expect(l.x + l.w).toBeLessThanOrEqual(w);
     expect(l.y + l.h).toBeLessThanOrEqual(svgHeight(svg));
-    expect(hits(l, nodeRect(svg, 'a'))).toBe(false);
+
+    // ... and covers no node, edge, edge label or caption
+    for (const id of ['a', 'b']) expect(hits(l, nodeRect(svg, id))).toBe(false);
+    const edges = edgeBoxes(svg);
+    const edgeLabels = textBoxes(svg, 'edge-label');
+    const captions = textBoxes(svg, 'node-label');
+    expect(edges.length).toBeGreaterThan(0);
+    expect(edgeLabels.length).toBe(1);
+    expect(captions.length).toBeGreaterThanOrEqual(2);
+    for (const box of [...edges, ...edgeLabels, ...captions]) {
+      expect(hits(l, box)).toBe(false);
+    }
   });
 
   it('grows the canvas instead of covering the diagram when nothing is clear', async () => {

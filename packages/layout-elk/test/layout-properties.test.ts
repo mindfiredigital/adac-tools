@@ -1,4 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
+import { validateAdacConfig } from '@mindfiredigital/adac-validator';
 import {
   DEFAULT_UNIT_SIZE,
   LAYOUT_DEFAULT_PROFILES,
@@ -116,6 +117,20 @@ describe('layout-properties', () => {
       expect(o.unitSize).toBe(10);
       expect(o.edgeRouting).toBe('splines');
       expect(warn).toHaveBeenCalledTimes(2);
+    });
+
+    it('words the alias warnings exactly like the validator', () => {
+      const options = { unit: 10, routing: 'splines' } as const;
+      const warn = vi.fn();
+      normalizeLayoutOptions(options, warn);
+      const reported = validateAdacConfig({
+        version: '0.2',
+        metadata: { name: 'Aliases', created: '2026-01-01' },
+        infrastructure: { clouds: [] },
+        layoutOptions: options,
+      } as never).warnings?.filter((w) => /is deprecated/.test(w));
+      expect(reported).toHaveLength(2);
+      expect(warn.mock.calls.map((c) => c[0])).toEqual(reported);
     });
 
     it('prefers the new names over the aliases', () => {

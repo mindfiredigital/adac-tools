@@ -63,4 +63,40 @@ describe('browser icon maps', () => {
     );
     await expect(buildElkGraph(config as never)).resolves.toBeDefined();
   });
+
+  it('never reads the working folder or the running file, which a browser does not have', async () => {
+    // the Node search context is __dirname and process.cwd(); in a browser
+    // neither exists, so the browser path must not build it at all
+    const cwd = vi.spyOn(process, 'cwd');
+    try {
+      const fetchMock = vi.fn(
+        async () =>
+          new Response(JSON.stringify({ lambda: 'lambda.png' }), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          })
+      );
+      const icons = (await (async () => {
+        vi.resetModules();
+        vi.stubGlobal('window', {});
+        vi.stubGlobal('document', {});
+        vi.stubGlobal('fetch', fetchMock as unknown as typeof fetch);
+        return import('../src/icon-packages.js');
+      })()) as typeof import('../src/icon-packages.js');
+
+      const warnings: string[] = [];
+      const sets = await icons.loadIconSets(['aws'], (m) => warnings.push(m));
+      expect(sets.aws.map).toEqual({ lambda: 'lambda.png' });
+      // in the browser the path is the mapping's own, as is
+      await expect(
+        icons.resolveProviderAssetPath('aws', 'lambda.png', (m) =>
+          warnings.push(m)
+        )
+      ).resolves.toBe('lambda.png');
+      expect(warnings).toEqual([]);
+      expect(cwd).not.toHaveBeenCalled();
+    } finally {
+      cwd.mockRestore();
+    }
+  });
 });

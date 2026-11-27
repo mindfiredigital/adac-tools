@@ -1,55 +1,42 @@
 # @mindfiredigital/adac-icons-aws
 
-AWS service icons and mappings for ADAC diagrams. Contains 1600+ AWS service icons.
+AWS icons for ADAC diagrams.
 
-## Features
+The package contains AWS icon files (PNG and SVG, and one EMF) in `assets/` and
+the service-name-to-file map `mappings/icon-map.json`, which refers to 819 of
+them. It has no JavaScript API: nothing is meant to be imported from it.
 
-- 🎨 1600+ AWS service icons
-- 🗺️ Service-to-icon mappings
-- 📦 SVG icons included
-- 🔄 Dynamic icon loading
+`@mindfiredigital/adac-diagram` and `@mindfiredigital/adac-core` use it
+automatically when it is installed in the same project or the same global
+install. Without it, AWS diagrams are drawn without icons and one warning names
+this package.
 
 ## Installation
 
-> **Note:** This is an internal workspace package and is **not** distributed as a standalone npm module. It is intended to be used within the ADAC monorepo.
-
-To use it in another workspace package, add it to your `package.json`:
-
-```json
-{
-  "dependencies": {
-    "@mindfiredigital/adac-icons-aws": "workspace:*"
-  }
-}
+```bash
+npm install @mindfiredigital/adac-icons-aws
 ```
 
-## Usage
+Install it where `@mindfiredigital/adac-diagram` (or `adac-core`) is installed:
 
-```typescript
-import { getAwsIcon, getAwsServiceIcon } from '@mindfiredigital/adac-icons-aws';
+```bash
+# one global install
+npm install -g @mindfiredigital/adac-diagram @mindfiredigital/adac-icons-aws
 
-// Get icon by service name
-const lambda = getAwsServiceIcon('lambda');
-console.log(lambda.url);
-
-// Get icon by icon code
-const ec2 = getAwsIcon('ec2');
-console.log(ec2.name);
+# or one project
+npm install @mindfiredigital/adac-diagram @mindfiredigital/adac-icons-aws
 ```
 
-## Icon Sets
+## Attribution
 
-- **Compute**: EC2, Lambda, ECS, Batch
-- **Database**: RDS, DynamoDB, Redshift, ElastiCache
-- **Storage**: S3, EBS, EFS, Glacier
-- **Networking**: VPC, EC2, Route 53, CloudFront
-- **And 1500+ more...**
+AWS Architecture Icons are the property of Amazon Web Services, Inc. or its
+affiliates and are provided under the terms published at
+https://aws.amazon.com/architecture/icons/
 
 ## See Also
 
-- [@mindfiredigital/adac-icons-gcp](../icons-gcp) - GCP icons
-- [@mindfiredigital/adac-icons-azure](../icons-azure) - Azure icons
-- [@mindfiredigital/adac-diagram](../diagram) - Diagram generator using these icons
+- [@mindfiredigital/adac-diagram](https://www.npmjs.com/package/@mindfiredigital/adac-diagram) - the `adac` CLI and API that uses these icons
+- [@mindfiredigital/adac-core](https://www.npmjs.com/package/@mindfiredigital/adac-core) - the generation library that uses these icons
 
 ## License
 

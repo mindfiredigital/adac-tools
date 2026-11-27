@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeAll } from 'vitest';
 import ELK from 'elkjs/lib/elk.bundled.js';
 import type {
   AdacConfig,
@@ -29,6 +29,18 @@ type Svc = Partial<AdacService> & {
 };
 
 const elk = new ELK();
+
+/**
+ * The default profile the suite runs under. The whole suite runs twice, once
+ * with the defaults off and once with the `v1` profile, so every arrangement
+ * rule is checked both on its own and together with the defaults.
+ */
+const PROFILES = ['none', 'v1'] as const;
+const SUITE = 'declarative layout (defaults: %s)';
+let profile: (typeof PROFILES)[number] = 'none';
+
+/** Side padding of a container that declares none: 40px, or 30px under `v1`. */
+const sidePadding = () => (profile === 'v1' ? 30 : 40);
 
 function service({
   layout,
@@ -75,8 +87,7 @@ function config(
       type: 'api-call',
       ...c,
     })) as AdacConnection[],
-    // these tests exercise the arrangement mechanics, not the default profile
-    layoutOptions: { defaults: 'none', ...opts.layoutOptions },
+    layoutOptions: { defaults: profile, ...opts.layoutOptions },
   };
 }
 
@@ -154,7 +165,11 @@ const items = (n: number, prefix = 'n'): Svc[] =>
 
 // ── Tests ───────────────────────────────────────────────────────────────────
 
-describe('declarative layout', () => {
+describe.each(PROFILES)(SUITE, (defaults) => {
+  beforeAll(() => {
+    profile = defaults;
+  });
+
   describe('hierarchy: root → containers → nodes', () => {
     it('nests nodes inside their container without overlap', async () => {
       const r = await run(
@@ -722,13 +737,13 @@ describe('declarative layout', () => {
 
     it('justify:start keeps children at the start', async () => {
       const r = await run(config(row({ justify: 'start' })));
-      expect(r.box('small').x - r.box('vpc').x).toBeCloseTo(40, 0);
+      expect(r.box('small').x - r.box('vpc').x).toBeCloseTo(sidePadding(), 0);
     });
 
     it('justify:end pushes children to the far side', async () => {
       const r = await run(config(row({ justify: 'end' })));
       const last = r.box('tall');
-      expect(right(r.box('vpc')) - right(last)).toBeCloseTo(40, 0);
+      expect(right(r.box('vpc')) - right(last)).toBeCloseTo(sidePadding(), 0);
     });
 
     it('justify:center centres the line', async () => {
@@ -742,8 +757,8 @@ describe('declarative layout', () => {
     it('justify:space-between puts the first and last item at the edges', async () => {
       const r = await run(config(row({ justify: 'space-between' })));
       const vpc = r.box('vpc');
-      expect(r.box('small').x - vpc.x).toBeCloseTo(40, 0);
-      expect(right(vpc) - right(r.box('tall'))).toBeCloseTo(40, 0);
+      expect(r.box('small').x - vpc.x).toBeCloseTo(sidePadding(), 0);
+      expect(right(vpc) - right(r.box('tall'))).toBeCloseTo(sidePadding(), 0);
     });
 
     it('justify:space-around leaves equal space around each item', async () => {
@@ -752,9 +767,9 @@ describe('declarative layout', () => {
       const vpc = r.box('vpc');
       const a = r.box('small');
       const b = r.box('tall');
-      const before = a.x - (vpc.x + 40);
+      const before = a.x - (vpc.x + sidePadding());
       const between = b.x - right(a);
-      const after = vpc.x + vpc.w - 40 - right(b);
+      const after = vpc.x + vpc.w - sidePadding() - right(b);
       expect(before).toBeCloseTo(after, 0);
       expect(between).toBeGreaterThan(0);
       // each item gets half a share on both sides, so the space between two

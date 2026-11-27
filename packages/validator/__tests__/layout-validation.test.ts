@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { validateAdacConfig } from '../src/validator.js';
+import {
+  deprecatedLayoutOptionWarning,
+  validateAdacConfig,
+} from '../src/validator.js';
 
 type Json = Record<string, unknown>;
 
@@ -113,6 +116,15 @@ describe('layout schema validation', () => {
         true
       );
     });
+
+    it.each(['v1', 'none'])(
+      'accepts layoutOptions.defaults: %s',
+      (defaults) => {
+        const result = validateAdacConfig(withOptions({ defaults }));
+        expect(result.errors).toBeUndefined();
+        expect(result.valid).toBe(true);
+      }
+    );
   });
 
   describe('invalid declarations', () => {
@@ -170,6 +182,21 @@ describe('layout schema validation', () => {
       ['bidirectional', { bidirectional: 'yes' }],
     ])('rejects invalid connection layout: %s', (_name, extra) => {
       expect(validateAdacConfig(withConnection(extra)).valid).toBe(false);
+    });
+  });
+
+  describe('invalid layoutOptions.defaults', () => {
+    it.each(['v2', 'V1', '', 'default'])(
+      'rejects layoutOptions.defaults: %j',
+      (defaults) => {
+        expect(validateAdacConfig(withOptions({ defaults })).valid).toBe(false);
+      }
+    );
+
+    it('rejects a defaults value that is not a string', () => {
+      expect(validateAdacConfig(withOptions({ defaults: true })).valid).toBe(
+        false
+      );
     });
   });
 
@@ -245,6 +272,24 @@ describe('layout schema validation', () => {
   });
 
   describe('deprecated aliases', () => {
+    it('words each alias warning through deprecatedLayoutOptionWarning', () => {
+      expect(deprecatedLayoutOptionWarning('unit')).toBe(
+        '/layoutOptions/unit is deprecated; use unitSize'
+      );
+      expect(deprecatedLayoutOptionWarning('routing')).toBe(
+        '/layoutOptions/routing is deprecated; use edgeRouting'
+      );
+      const result = validateAdacConfig(
+        withOptions({ unit: 80, routing: 'orthogonal' })
+      );
+      expect(result.warnings).toEqual(
+        expect.arrayContaining([
+          deprecatedLayoutOptionWarning('unit'),
+          deprecatedLayoutOptionWarning('routing'),
+        ])
+      );
+    });
+
     it('accepts unit and routing but warns', () => {
       const result = validateAdacConfig(
         withOptions({ unit: 80, routing: 'orthogonal' })

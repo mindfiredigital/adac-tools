@@ -7,7 +7,7 @@ Core diagram generation logic and CLI for ADAC (Architecture Diagram As Code). I
 ## Features
 
 - **CLI Tool**: The `adac` command-line tool for generating SVG diagrams from YAML
-- **Multiple Layout Engines**: ELK (`elkjs`), and Custom
+- **Layout engines**: `elk` (default; the only engine with declarative layout), `custom`, `orthogonal`, `tsm`
 - **SVG Rendering**: High-quality SVG output with embedded icons and styling
 - **Validation**: Integrated schema validation before generation
 - **Compliance**: Automatically checks declared compliance frameworks and passes tooltip metadata into the core renderer
@@ -24,8 +24,10 @@ ADAC CLI.
 ### Install globally
 
 ```bash
-npm install -g @mindfiredigital/adac-diagram
+npm install -g @mindfiredigital/adac-diagram @mindfiredigital/adac-icons-aws
 ```
+
+AWS icons come from `@mindfiredigital/adac-icons-aws`. Install both packages in the same command (or in the same project). Without it, diagrams are drawn without icons. GCP and Azure icons are not available from npm yet.
 
 ### Generate a diagram
 
@@ -64,15 +66,16 @@ node packages/diagram/dist/cli.js diagram yamls/aws.adac.yaml -o test_aws.svg --
 
 ### All `diagram` options
 
-| Flag                  | Default       | Description                               |
-| --------------------- | ------------- | ----------------------------------------- |
-| `-l, --layout <type>` | `elk`         | Layout engine: `elk` or `custom`          |
-| `-o, --output <path>` | `<input>.svg` | Output SVG file path                      |
-| `--validate`          | —             | Run schema validation before generation   |
-| `--cost`              | —             | Print cost breakdown alongside generation |
-| `--pricing <model>`   | `on_demand`   | `on_demand` or `reserved`                 |
-| `--period <period>`   | `monthly`     | `hourly`, `daily`, `monthly`, `yearly`    |
-| `--no-optimize`       | —             | Skip architecture optimization analysis   |
+| Flag                  | Default                                                         | Description                                           |
+| --------------------- | --------------------------------------------------------------- | ----------------------------------------------------- |
+| `-l, --layout <type>` | `layoutOptions.engine`, then the top-level `layout`, then `elk` | Layout engine: `elk`, `custom`, `orthogonal` or `tsm` |
+| `-o, --output <path>` | `<input>.svg`                                                   | Output SVG file path                                  |
+| `--validate`          | —                                                               | Run schema validation before generation               |
+| `--cost`              | —                                                               | Print cost breakdown alongside generation             |
+| `--pricing <model>`   | `on_demand`                                                     | `on_demand` or `reserved`                             |
+| `--period <period>`   | `monthly`                                                       | `hourly`, `daily`, `monthly`, `yearly`                |
+| `--no-optimize`       | —                                                               | Skip architecture optimization analysis               |
+| `--no-open`           | —                                                               | Skip opening the diagram in the browser               |
 
 ### Other commands
 
@@ -112,11 +115,27 @@ if (optimizationResult) {
 }
 ```
 
+## Declarative layout (ADAC 0.2)
+
+- `layoutOptions` sets diagram-wide defaults: direction, gap, container padding, alignment and edge routing.
+- `visual.layout` arranges one element's children, and `visual.style` styles the element.
+- A connection takes its own `layout` (sides and routing) and `bidirectional`.
+- `layoutOptions.defaults: none` switches off the default layout profile, which fills in the options you leave out.
+- Only the `elk` engine honours these properties; with `custom`, `orthogonal` or `tsm` you get one warning per file. See [docs/DECLARATIVE_LAYOUT.md](https://github.com/mindfiredigital/adac-tools/blob/main/docs/DECLARATIVE_LAYOUT.md).
+
+## Upgrading from 0.1.x
+
+- The `dagre` layout engine is removed: `layout: dagre` and `--layout dagre` fail with `Unsupported layout engine`. Use `elk` (the default) or `custom`.
+- Containers without declared padding are more compact (side and bottom padding 40 px to 30 px, top stays 60 px). `layoutOptions.defaults: none` restores the old padding.
+- `adac diagram` prints every `Warning:` log line to stderr (exit codes are unchanged), and `adac validate` prints all validator warnings.
+- The legend is kept clear of the diagram, so the SVG may grow (height up to 120 px, width up to 200 px) when no clear spot exists.
+- AWS icons moved to the separate package `@mindfiredigital/adac-icons-aws`; install it next to `@mindfiredigital/adac-diagram` to get icons.
+
 ## See Also
 
-- [@mindfiredigital/adac-core](../core) — Core generation engine
-- [@mindfiredigital/adac-cli](../cli) — CLI argument parsing
-- [@mindfiredigital/adac-compliance](../compliance) — Compliance checking
+- [@mindfiredigital/adac-core](https://www.npmjs.com/package/@mindfiredigital/adac-core) — Core generation engine
+- [@mindfiredigital/adac-cli](https://github.com/mindfiredigital/adac-tools/tree/main/packages/cli) — CLI argument parsing (bundled into this package)
+- [@mindfiredigital/adac-compliance](https://github.com/mindfiredigital/adac-tools/tree/main/packages/compliance) — Compliance checking (bundled into this package)
 
 ## License
 

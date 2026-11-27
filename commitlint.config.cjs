@@ -26,6 +26,7 @@ module.exports = {
         'adac-cli',
         'adac-diagram',
         'adac-parser',
+        'adac-validator',
         'adac-layout',
         'adac-layout-core',
         'adac-layout-elk',

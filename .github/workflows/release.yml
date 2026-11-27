@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-  workflow_dispatch:
 
 concurrency: ${{ github.workflow }}-${{ github.ref }}
 
@@ -21,30 +20,51 @@ jobs:
         with:
           fetch-depth: 0
 
+      # the pnpm version comes from "packageManager" in package.json
       - name: Install pnpm
-        uses: pnpm/action-setup@v6
-        with:
-          version: 10
+        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: 20
+          node-version: 22
           cache: 'pnpm'
 
       - name: Install Dependencies
-        run: pnpm install
+        run: pnpm install --frozen-lockfile
 
+      - name: Check the release set
+        run: node scripts/verify-release.cjs --static
+
+      # the AWS icons that are published are the files committed in git;
+      # nothing is downloaded during a release.
+      # Builds the four release packages and what they are built from (15 of the
+      # 21 workspace packages, in dependency order); web, web-server, vscode,
+      # doc, layout and templates are not published and are built in CI.
       - name: Build Packages
-        run: pnpm run prerelease:pack
+        run: >-
+          pnpm
+          --filter "@mindfiredigital/adac-validator..."
+          --filter "@mindfiredigital/adac-icons-aws..."
+          --filter "@mindfiredigital/adac-core..."
+          --filter "@mindfiredigital/adac-diagram..."
+          run build
+
+      # after the build: packages/icons-aws/__tests__/index.test.ts loads dist/index.js
+      - name: Test
+        run: pnpm run test
+
+      # the release set was checked above; these are the pack and smoke stages of
+      # "node scripts/verify-release.cjs", with the tarballs kept: the publish
+      # step uploads exactly these files, not a new pack of each package
+      - name: Pack and check the release tarballs
+        run: node scripts/verify-release.cjs --pack ${{ runner.temp }}/tarballs
+
+      - name: Smoke test the tarballs
+        run: node scripts/verify-release.cjs --smoke ${{ runner.temp }}/tarballs
 
       - name: Authenticate to npmjs
         run: echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > .npmrc
-
-      - name: Generate Changeset
-        run: pnpm changeset:autogenerate
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create Release Pull Request or Publish
         id: changesets
@@ -58,21 +78,5 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-
-      - name: Pack Release Artifacts
-        if: steps.changesets.outputs.published == 'true'
-        run: pnpm release:pack
-
-      - name: Upload Release Artifacts to GitHub Releases
-        if: steps.changesets.outputs.published == 'true'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          echo '${{ steps.changesets.outputs.publishedPackages }}' > published.json
-          cat published.json | jq -c '.[]' | while read i; do
-            PKG_NAME=$(echo $i | jq -r '.name')
-            PKG_VERSION=$(echo $i | jq -r '.version')
-            TAG_NAME="$PKG_NAME@$PKG_VERSION"
-            echo "Uploading artifacts to release: $TAG_NAME"
-            gh release upload "$TAG_NAME" releases/* --clobber || echo "Failed to upload to $TAG_NAME"
-          done
+          # the verified tarballs that "pnpm release:publish" publishes
+          ADAC_TARBALLS: ${{ runner.temp }}/tarballs

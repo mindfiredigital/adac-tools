@@ -1,15 +1,30 @@
-import type {
-  ElkNode as BaseElkNode,
-  ElkExtendedEdge,
-  ElkEdgeSection as BaseElkEdgeSection,
-} from 'elkjs';
+// These types are self-contained on purpose. Extending the types of 'elkjs'
+// would make every published declaration file import 'elkjs', whose own typings
+// do not compile under 'skipLibCheck: false'. They stay assignable to the ELK
+// graph types, so a graph is passed to the layout engine unchanged.
 
-export interface ElkNode extends BaseElkNode {
+export interface ElkPoint {
+  x: number;
+  y: number;
+}
+
+export interface ElkPort {
+  id: string;
+  x?: number;
+  y?: number;
+  width?: number;
+  height?: number;
+  labels?: { text: string }[];
+  layoutOptions?: Record<string, string>;
+}
+
+export interface ElkNode {
   id: string;
   width?: number;
   height?: number;
   labels?: { text: string }[];
   children?: ElkNode[];
+  ports?: ElkPort[];
   edges?: ElkEdge[];
   layoutOptions?: Record<string, string>;
   x?: number;
@@ -58,13 +73,15 @@ export interface ElkArrangement {
   fitToItems?: boolean;
 }
 
-export interface ElkEdge extends ElkExtendedEdge {
+export interface ElkEdge {
   id: string;
   sources: string[];
   targets: string[];
   container?: string;
   labels?: { text: string }[];
   sections?: ElkEdgeSection[];
+  junctionPoints?: ElkPoint[];
+  layoutOptions?: Record<string, string>;
   properties?: {
     /** Invisible edge that only exists to steer the layout; never rendered. */
     layoutOnly?: boolean;
@@ -81,7 +98,7 @@ export interface ElkEdge extends ElkExtendedEdge {
   };
 }
 
-export interface ElkEdgeSection extends BaseElkEdgeSection {
+export interface ElkEdgeSection {
   id: string;
   startPoint: { x: number; y: number };
   endPoint: { x: number; y: number };

@@ -24,6 +24,8 @@
     "release:publish": "node scripts/publish-packages.mjs",
     "release:publish:dry-run": "node scripts/publish-packages.mjs --dry-run",
     "release:setup": "node scripts/setup-publish-config.mjs",
+    "release:verify": "node scripts/verify-release.cjs",
+    "release:verify:static": "node scripts/verify-release.cjs --static",
     "changeset:autogenerate": "node .github/changeset-autogenerate.mjs",
     "changeset:version": "node .github/changeset-version.js"
   },
@@ -33,7 +35,7 @@
     "diagram"
   ],
   "author": "Mindfire Digital",
-  "license": "Apache-2.0",
+  "license": "MIT",
   "dependencies": {
     "adm-zip": "^0.6.0",
     "axios": "^1.18.1",

@@ -24,7 +24,18 @@
   },
   "dependencies": {
     "elkjs": "^0.11.1",
-    "@mindfiredigital/adac-validator": "workspace:*"
+    "@mindfiredigital/adac-validator": "workspace:^"
+  },
+  "peerDependencies": {
+    "@mindfiredigital/adac-icons-aws": "*"
+  },
+  "peerDependenciesMeta": {
+    "@mindfiredigital/adac-icons-aws": {
+      "optional": true
+    }
+  },
+  "engines": {
+    "node": ">=20"
   },
   "devDependencies": {
     "@mindfiredigital/adac-parser": "workspace:*",
