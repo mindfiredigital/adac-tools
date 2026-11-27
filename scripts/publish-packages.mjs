@@ -59,15 +59,45 @@ function readJson(filePath) {
   return JSON.parse(fs.readFileSync(filePath, 'utf-8'));
 }
 
+/** Longest wait for one registry lookup. */
+const LOOKUP_TIMEOUT_MS = 60_000;
+
+/**
+ * True when npm confirms the version is on the registry, false only when npm
+ * confirms it is not (error code E404). Any other outcome (no network, a
+ * server error, a timeout, output that is not understood) throws: the version
+ * is then unknown, and publishing on a guess could publish twice or hide a
+ * broken registry.
+ */
 function isAlreadyPublished(name, version) {
+  const spec = `${name}@${version}`;
+  let output;
   try {
-    execSync(`npm view ${name}@${version} version ${REGISTRY_FLAGS}`, {
+    output = execSync(`npm view ${spec} version --json ${REGISTRY_FLAGS}`, {
       stdio: 'pipe',
+      encoding: 'utf8',
+      timeout: LOOKUP_TIMEOUT_MS,
     });
-    return true; // version already exists
-  } catch {
-    return false; // not yet published
+  } catch (err) {
+    let code;
+    try {
+      code = JSON.parse(String(err.stdout ?? '')).error?.code;
+    } catch {
+      // not JSON: the cause is reported below
+    }
+    if (code === 'E404') return false; // npm says the version is not there
+    const cause = code ?? err.code ?? String(err.message).split('\n')[0];
+    throw new Error(`could not check ${spec} on npm (${cause})`);
   }
+  try {
+    const found = JSON.parse(output);
+    if ([found].flat().includes(version)) return true;
+  } catch {
+    // handled below
+  }
+  throw new Error(
+    `could not check ${spec} on npm (unexpected output: ${output.trim().slice(0, 80)})`
+  );
 }
 
 /** Every workspace package that has a package.json, in folder-name order. */
@@ -195,8 +225,22 @@ async function main() {
   for (const name of PUBLISH_ORDER) {
     const { version } = byName.get(name).pkgJson;
 
-    // Check if this version is already published
-    if (isAlreadyPublished(name, version)) {
+    // Check if this version is already published. When that cannot be told,
+    // stop here: nothing is published for this package or the ones after it.
+    let alreadyPublished;
+    try {
+      alreadyPublished = isAlreadyPublished(name, version);
+    } catch (err) {
+      console.error(`   ❌ ${err.message}`);
+      results.failed.push(
+        `${name}@${version} (not published: npm lookup failed)`
+      );
+      console.error(
+        '   Stopping: this package and the ones after it are not published.'
+      );
+      break;
+    }
+    if (alreadyPublished) {
       console.log(`✅ ${name}@${version} — already published, skipping`);
       results.skipped.push(`${name}@${version}`);
       continue;
