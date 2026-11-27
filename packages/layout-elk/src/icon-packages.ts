@@ -69,8 +69,29 @@ function defaultContext(): IconSearchContext {
 const emptySet = (): IconSet => ({ map: {}, normalized: new Map() });
 
 /**
+ * Whether a connection ends at something the file does not declare. Such an
+ * endpoint is drawn as an implicit node ("External System"), and unless a GCP
+ * cloud is present the builder takes its icon from the AWS set, whatever the
+ * file's clouds are.
+ */
+function hasUndeclaredEndpoint(adac: AdacConfig): boolean {
+  const declared = new Set<string>();
+  for (const cloud of adac.infrastructure?.clouds ?? []) {
+    for (const service of cloud.services ?? []) declared.add(service.id);
+  }
+  for (const app of adac.applications ?? []) declared.add(app.id);
+  return (adac.connections ?? []).some((conn) =>
+    [conn.from || conn.source, conn.to || conn.target].some(
+      (endpoint) => endpoint && !declared.has(endpoint)
+    )
+  );
+}
+
+/**
  * The providers whose icons the file can use. AWS icons are the default, so
- * they are needed unless every cloud is GCP or Azure and nothing else is drawn.
+ * they are needed unless every cloud is GCP or Azure and nothing else is drawn:
+ * no application, and no connection to an undeclared endpoint (an implicit
+ * node, which has an AWS icon unless a GCP cloud is present).
  */
 export function neededIconProviders(adac: AdacConfig): IconProvider[] {
   const providers = (adac.infrastructure?.clouds ?? []).map((c) =>
@@ -78,7 +99,13 @@ export function neededIconProviders(adac: AdacConfig): IconProvider[] {
   );
   const needed: IconProvider[] = [];
   const onlyGcpOrAzure = providers.every((p) => p === 'gcp' || p === 'azure');
-  if (!onlyGcpOrAzure || (adac.applications ?? []).length > 0) {
+  const drawsImplicitAwsNodes =
+    !providers.includes('gcp') && hasUndeclaredEndpoint(adac);
+  if (
+    !onlyGcpOrAzure ||
+    (adac.applications ?? []).length > 0 ||
+    drawsImplicitAwsNodes
+  ) {
     needed.push('aws');
   }
   if (providers.includes('gcp')) needed.push('gcp');

@@ -130,6 +130,76 @@ describe('neededIconProviders', () => {
   it('needs the AWS icons for applications, whatever the clouds', () => {
     expect(neededIconProviders(config(['gcp'], true))).toEqual(['aws', 'gcp']);
   });
+
+  describe('connections to an endpoint that is not declared', () => {
+    // such an endpoint is drawn as an implicit node, whose icon comes from the
+    // AWS set unless a GCP cloud is present (then from the GCP set)
+    const withConnection = (
+      providers: string[],
+      connection: { from: string; to: string },
+      declared: string[] = []
+    ) =>
+      ({
+        version: '0.2',
+        metadata: { name: 't', created: '2026-01-01' },
+        infrastructure: {
+          clouds: providers.map((provider) => ({
+            id: provider,
+            provider,
+            region: 'r',
+            services: declared.map((id) => ({ id, service: 'vm' })),
+          })),
+        },
+        connections: [{ id: 'c1', type: 'https', ...connection }],
+      }) as never;
+
+    it('need the AWS icons in an Azure-only file', () => {
+      expect(
+        neededIconProviders(
+          withConnection(['azure'], { from: 'users', to: 'vm1' }, ['vm1'])
+        )
+      ).toEqual(['aws', 'azure']);
+    });
+
+    it('are found through source and target too', () => {
+      const adac = withConnection(['azure'], { from: '', to: '' }, ['vm1']);
+      (adac as { connections: unknown[] }).connections = [
+        { id: 'c1', type: 'https', source: 'internet', target: 'vm1' },
+      ];
+      expect(neededIconProviders(adac)).toEqual(['aws', 'azure']);
+    });
+
+    it('need nothing more when every endpoint is declared', () => {
+      expect(
+        neededIconProviders(
+          withConnection(['azure'], { from: 'vm1', to: 'vm2' }, ['vm1', 'vm2'])
+        )
+      ).toEqual(['azure']);
+    });
+
+    it('need nothing more in a GCP file, whose implicit nodes use GCP icons', () => {
+      expect(
+        neededIconProviders(
+          withConnection(['gcp'], { from: 'users', to: 'vm1' }, ['vm1'])
+        )
+      ).toEqual(['gcp']);
+      expect(
+        neededIconProviders(
+          withConnection(['gcp', 'azure'], { from: 'users', to: 'vm1' }, [
+            'vm1',
+          ])
+        )
+      ).toEqual(['gcp', 'azure']);
+    });
+
+    it('change nothing for AWS', () => {
+      expect(
+        neededIconProviders(
+          withConnection(['aws'], { from: 'users', to: 'vm1' }, ['vm1'])
+        )
+      ).toEqual(['aws']);
+    });
+  });
 });
 
 describe('finding an icon package', () => {
