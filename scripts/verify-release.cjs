@@ -16,7 +16,9 @@
  *                     --smoke on that folder
  *
  * ADAC_ROOT overrides the repository root. ADAC_PNPM overrides the pnpm
- * command used to pack (for example "corepack pnpm").
+ * command used to pack (for example "corepack pnpm"): the first word is the
+ * executable, the others are its fixed arguments (split on spaces, so a path
+ * with a space cannot be used in it).
  */
 
 'use strict';
@@ -28,7 +30,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const zlib = require('zlib');
-const { spawnSync, execSync } = require('child_process');
+const { spawnSync } = require('child_process');
 const { builtinModules, createRequire } = require('module');
 
 const ROOT = path.resolve(process.env.ADAC_ROOT || path.join(__dirname, '..'));
@@ -469,20 +471,20 @@ function moduleSpecifiers(fileName, text, kind) {
 
 function packAll(dir) {
   fs.mkdirSync(dir, { recursive: true });
-  const pnpm = process.env.ADAC_PNPM || 'pnpm';
+  // The launcher is an executable and its fixed arguments ("corepack pnpm"),
+  // kept apart from the destination folder, which is passed on as one argument
+  // and never read by a shell (on Windows pnpm is a .cmd file, which `run`
+  // starts through one with every argument quoted).
+  const [launcher, ...launcherArgs] = (process.env.ADAC_PNPM || 'pnpm')
+    .trim()
+    .split(/\s+/);
   for (const { name, dir: pkgDir } of releaseEntries()) {
-    try {
-      execSync(`${pnpm} pack --pack-destination "${dir}"`, {
-        cwd: pkgDir,
-        stdio: 'pipe',
-      });
-    } catch (err) {
-      fail(
-        'pack',
-        `could not pack ${name}`,
-        `${err.stdout || ''}${err.stderr || ''}`
-      );
-    }
+    const r = run(
+      launcher,
+      [...launcherArgs, 'pack', '--pack-destination', dir],
+      { cwd: pkgDir, shell: true }
+    );
+    if (r.code !== 0) fail('pack', `could not pack ${name}`, r.out);
   }
 }
 
@@ -627,7 +629,8 @@ function run(command, args, options = {}) {
     : spawnSync(command, args, spawnOptions);
   return {
     code: result.status === null ? 1 : result.status,
-    out: `${result.stdout || ''}${result.stderr || ''}`,
+    // an error (the command could not be started) has no output of its own
+    out: `${result.stdout || ''}${result.stderr || ''}${result.error ? `${result.error.message}\n` : ''}`,
   };
 }
 
