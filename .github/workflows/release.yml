@@ -54,8 +54,14 @@ jobs:
       - name: Test
         run: pnpm run test
 
-      - name: Verify the packed artifacts
-        run: node scripts/verify-release.cjs
+      # the release set was checked above; these are the pack and smoke stages of
+      # "node scripts/verify-release.cjs", with the tarballs kept: the publish
+      # step uploads exactly these files, not a new pack of each package
+      - name: Pack and check the release tarballs
+        run: node scripts/verify-release.cjs --pack ${{ runner.temp }}/tarballs
+
+      - name: Smoke test the tarballs
+        run: node scripts/verify-release.cjs --smoke ${{ runner.temp }}/tarballs
 
       - name: Authenticate to npmjs
         run: echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > .npmrc
@@ -72,3 +78,5 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          # the verified tarballs that "pnpm release:publish" publishes
+          ADAC_TARBALLS: ${{ runner.temp }}/tarballs
