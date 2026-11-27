@@ -234,10 +234,13 @@ function runStatic() {
       const text = readText(path.join(dir, file));
       const front = /^---\n([\s\S]*?)\n---/.exec(text);
       expect(front, `.changeset/${file} has no front matter`);
-      for (const line of front[1].split('\n')) {
+      for (const rawLine of front[1].split('\n')) {
+        // a YAML comment is a # at the start of the line or after a space; a
+        // package name has no #, so nothing inside a quoted key is cut
+        const line = rawLine.replace(/(^|\s)#.*$/, '');
         if (!line.trim()) continue;
         const m = /^\s*['"]?([^'":]+?)['"]?\s*:\s*\S+\s*$/.exec(line);
-        expect(m, `.changeset/${file}: cannot read "${line}"`);
+        expect(m, `.changeset/${file}: cannot read "${rawLine}"`);
         expect(
           RELEASE.includes(m[1]),
           `.changeset/${file} names ${m[1]}, which is not a release package`
