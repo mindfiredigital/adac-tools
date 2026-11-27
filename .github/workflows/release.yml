@@ -37,9 +37,18 @@ jobs:
         run: node scripts/verify-release.cjs --static
 
       # the AWS icons that are published are the files committed in git;
-      # nothing is downloaded during a release
+      # nothing is downloaded during a release.
+      # Builds the four release packages and what they are built from (15 of the
+      # 21 workspace packages, in dependency order); web, web-server, vscode,
+      # doc, layout and templates are not published and are built in CI.
       - name: Build Packages
-        run: pnpm run build
+        run: >-
+          pnpm
+          --filter "@mindfiredigital/adac-validator..."
+          --filter "@mindfiredigital/adac-icons-aws..."
+          --filter "@mindfiredigital/adac-core..."
+          --filter "@mindfiredigital/adac-diagram..."
+          run build
 
       # after the build: packages/icons-aws/__tests__/index.test.ts loads dist/index.js
       - name: Test
